@@ -1,7 +1,7 @@
-# using FFTW
+# reference: ETSI ES 201 108 V1.1.2 (2000-04)
+# https://www.3gpp.org/ftp/tsg_sa/TSG_SA/TSGS_13/Docs/PDF/SP-010566.pdf
 
-# include("../signalDataStructure.jl")
-# include("../windowing/windowing.jl")
+# use FFTW package
 
 # function get_fft_length( # switch case da ricordare!!!
 #     sr::Int64,
@@ -19,6 +19,38 @@ function get_onesided_fft_range(fft_length::Int64)
         return collect(1:Int((fft_length + 1) / 2))  # ODD
     end
 end # get_onesided_fft_range
+
+function takeFFT(
+    data::signal_data,
+    setup::signal_setup
+)
+    # TODO validate FFT length, validate overlap length (audioFeatureExtractor.m line 1324)
+
+    setup.fft_length = setup.window_length # definisce la fft pari alla finestra
+    hop_length = setup.window_length - setup.overlap_length
+    data.fft_window, unused = gencoswin(setup.window_type[1], setup.window_length, setup.window_type[2])
+
+    # split in windows
+    y = buffer(data.x, setup.window_length, hop_length)
+
+    # apply window and take fft
+    Z = fft(y .* data.fft_window, (1,))
+
+    # take one side
+    logical_ossb = falses(setup.fft_length)
+    logical_ossb[get_onesided_fft_range(setup.fft_length)] .= true
+    Z = Z[logical_ossb, :]
+
+    setup.spectrum_type == :power ? data.fft = real(Z .* conj(Z)) : data.fft = abs.(Z)
+
+    # log energy
+    # reference: ETSI ES 201 108 V1.1.2 (2000-04)
+    # https://www.3gpp.org/ftp/tsg_sa/TSG_SA/TSGS_13/Docs/PDF/SP-010566.pdf
+    log_energy = sum(eachrow(y .^ 2))
+    log_energy[log_energy.==0] .= floatmin(Float64)
+    data.log_energy = log.(log_energy)
+
+end # takeFFT(data, setup)
 
 # function takeFFT(
 #     x::AbstractArray{Float64},
@@ -50,33 +82,3 @@ end # get_onesided_fft_range
 
 #     takeFFT(data, setup)
 # end # takeFFT(kwarg...)
-
-function takeFFT(
-    data::signal_data,
-    setup::signal_setup
-)
-    # TODO validate FFT length, validate overlap length (audioFeatureExtractor.m line 1324)
-
-    setup.fft_length = setup.window_length # definisce la fft pari alla finestra
-    hop_length = setup.window_length - setup.overlap_length
-    data.fft_window, unused = gencoswin(setup.window_type, setup.window_length, :symmetric)
-
-    # split in windows
-    y = buffer(data.x, setup.window_length, hop_length)
-
-    # apply window and take fft
-    Z = fft(y .* data.fft_window, (1,))
-
-    # take one side
-    logical_ossb = falses(setup.fft_length)
-    logical_ossb[get_onesided_fft_range(setup.fft_length)] .= true
-    Z = Z[logical_ossb, :]
-
-    setup.spectrum_type == :power ? data.fft = real(Z .* conj(Z)) : data.fft = abs.(Z)
-
-    # log energy
-    E = sum(eachrow(y .^ 2)) # somma per righe
-    E[E.==0] .= floatmin(Float64) # il minimo float al posto di zero
-    data.log_energy = log.(E)
-
-end # takeFFT(data, setup)

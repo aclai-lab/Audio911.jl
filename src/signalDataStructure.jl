@@ -1,11 +1,17 @@
-# using Parameters
+"""
+    SoleAudio signal data structures
 
+    uses package Parameter for @with_kw mutable struct
+
+    signal_setup stores all datas that has to be shared in SoleAudio module
+    signal_data stores all results from signal analysis
+"""
 @with_kw mutable struct signal_setup
     sr::Int64
 
     # fft
     fft_length::Int64 = 0
-    window_type::Symbol = :hann
+    window_type::Vector{Symbol} = [:hann, :periodic]
     window_length::Int64 = 0
     overlap_length::Int64 = 0
     window_norm::Bool = true
@@ -20,15 +26,16 @@
     mel_style::Symbol = :htk # :htk, :slaney
     num_bands::Int64 = 32
     mel_frequencies::Vector{Float64} = []
-    filterbank_design_domain::Symbol=:linear
+    filterbank_design_domain::Symbol = :linear
     filterbank_normalization::Symbol = :bandwidth # :bandwidth, :area, :none
-    frequency_scale::Symbol=:mel # :mel, :erb
+    frequency_scale::Symbol = :mel # :mel, :erb
 
     # mfcc
     num_coeffs::Int64 = 13
     rectification::Symbol = :log
     log_energy_pos::Symbol = :append #:append, :replace, :none
     delta_window_length::Int64 = 9
+    delta_axe::Int64 = 1 # 1: matlab, 2: audioflux
 
     # spectral
     spectral_spectrum::Symbol = :linear

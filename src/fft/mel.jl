@@ -1,8 +1,3 @@
-# using DSP
-
-# include("../signalDataStructure.jl")
-# include("fft.jl")
-
 function hz2mel(
     hz::Vector{Float64},
     mel_style::Symbol=:htk # :htk, :slaney, :default_htk, :default_slaney
@@ -208,14 +203,20 @@ end # function cepstralCoefficients
 
 function audioDelta(
     x::AbstractMatrix{T},
-    window_length::Int64
+    window_length::Int64,
+    axe::Int64=1
 ) where {T<:AbstractFloat}
 
-    DT = eltype(x)
-    M = convert(DT, floor(window_length / 2))
-    b = collect(M:-1:-M) ./ sum((1:M) .^ 2)
-
-    return delta = filt(b, 1, x)
+    # define window shape
+    m = Int(floor(window_length / 2))
+    b = collect(m:-1:-m) ./ sum((1:m) .^ 2)
+    
+    if axe == 2
+        filt(b, 1.0, x')'   #:audioflux setting
+    else
+        filt(b, 1.0, x)     #:matlab setting
+    end
+    
 end
 
 # function mel_spectrogram(
@@ -297,90 +298,80 @@ function _mfcc(
 
     # Calculate cepstral coefficients
     data.mfcc_coeffs = cepstralCoefficients(data.mel_spectrogram', setup.num_coeffs, setup.rectification)
+    # METTERE IL CASO CHE le delta vengono calcolate solo se necessario
+    data.mfcc_delta = audioDelta(data.mfcc_coeffs, setup.delta_window_length, setup.delta_axe)
+    data.mfcc_deltadelta = audioDelta(data.mfcc_delta, setup.delta_window_length, setup.delta_axe)
 
-    # place log energy
     if (setup.log_energy_pos == :append)
         data.mfcc_coeffs = hcat(data.mfcc_coeffs, data.log_energy)
     elseif (setup.log_energy_pos == :replace)
-        # data.coeffs = [logE.',data.coeffs(:,2:end)];
-        # da fare
+        data.mfcc_coeffs = hcat(data.log_energy, data.mfcc_coeffs[:, 2:end])
     end
-
-    # METTERE IL CASO CHE le delta vengono calcolate solo se necessario
-    data.mfcc_delta = audioDelta(data.mfcc_coeffs, setup.delta_window_length)
-    data.mfcc_deltadelta = audioDelta(data.mfcc_delta, setup.delta_window_length)
-
-    # window_length = size(data.window, 1)
-    # hop_length = window_length - setup.overlap_length
-    # numHops = Int(floor((size(data.x, 1) - window_length) / hop_length) + 1)
-    # bandUpLimit = collect(0:(numHops-1)) * hop_length .+ window_length
-
-    # return data.mfcc_coeffs, data.mfcc_delta, data.mfcc_deltadelta, bandUpLimit
 end
 
-function mfcc(
-    x::AbstractArray{T},
-    sr::Int64;
+# function mfcc(
+#     x::AbstractArray{T},
+#     sr::Int64;
 
-    # default setup
-    # fft
-    window_type::Symbol=:hann,
-    window_length::Int=Int(round(0.03 * sr)),
-    overlap_length::Int=Int(round(0.02 * sr)),
-    window_norm::Bool=true,
+#     # default setup
+#     # fft
+#     window_type::Symbol=:hann,
+#     window_length::Int=Int(round(0.03 * sr)),
+#     overlap_length::Int=Int(round(0.02 * sr)),
+#     window_norm::Bool=true,
 
-    # mel
-    num_bands::Int=32,
-    mel_style::Symbol=:slaney, # :htk, :slaney
-    frequency_range::Vector{Int64}=[0, Int(round(sr / 2))],
-    filterbank_normalization::Symbol=:bandwidth,
-    spectrum_type::Symbol=:power,
+#     # mel
+#     num_bands::Int=32,
+#     mel_style::Symbol=:slaney, # :htk, :slaney
+#     frequency_range::Vector{Int64}=[0, Int(round(sr / 2))],
+#     filterbank_normalization::Symbol=:bandwidth,
+#     spectrum_type::Symbol=:power,
 
-    # mfcc
-    num_coeffs::Int=13,
-    rectification::Symbol=:log,
-    log_energy_pos::Symbol=:append,
-    delta_window_length::Int=9,
+#     # mfcc
+#     num_coeffs::Int=13,
+#     rectification::Symbol=:log,
+#     log_energy_pos::Symbol=:append,
+#     delta_window_length::Int=9,
 
-    # filterbank_design_domain::Symbol=:linear, # settato, ma si usa?
-    # oneSided::Bool=true # default, non viene parametrizzato
-) where {T<:AbstractFloat}
+#     # filterbank_design_domain::Symbol=:linear, # settato, ma si usa?
+#     # oneSided::Bool=true # default, non viene parametrizzato
+# ) where {T<:AbstractFloat}
 
-    # setup and data structures definition
-    setup = signal_setup(
-        sr=sr,
+#     # setup and data structures definition
+#     setup = signal_setup(
+#         sr=sr,
 
-        # fft
-        window_type=window_type,
-        window_length=window_length,
-        overlap_length=overlap_length,
-        window_norm=window_norm,
+#         # fft
+#         window_type=window_type,
+#         window_length=window_length,
+#         overlap_length=overlap_length,
+#         window_norm=window_norm,
 
-        # linear spectrum
-        lin_frequency_range=[0.0, sr / 2],
+#         # linear spectrum
+#         lin_frequency_range=[0.0, sr / 2],
 
-        # mel
-        num_bands=num_bands,
-        mel_style=mel_style,
-        frequency_range=Float64.(frequency_range),
-        filterbank_normalization=filterbank_normalization,
-        spectrum_type=spectrum_type,
+#         # mel
+#         num_bands=num_bands,
+#         mel_style=mel_style,
+#         frequency_range=Float64.(frequency_range),
+#         filterbank_normalization=filterbank_normalization,
+#         spectrum_type=spectrum_type,
 
-        # mfcc
-        num_coeffs=num_coeffs,
-        rectification=rectification,
-        log_energy_pos=log_energy_pos,
-        delta_window_length=delta_window_length,
+#         # mfcc
+#         num_coeffs=num_coeffs,
+#         rectification=rectification,
+#         log_energy_pos=log_energy_pos,
+#         delta_window_length=delta_window_length,
 
-        # filterbank_design_domain=filterbank_design_domain, # settato, ma si usa?
-        # oneSided=oneSided # default, non viene parametrizzato
-    )
+#         # filterbank_design_domain=filterbank_design_domain, # settato, ma si usa?
+#         # oneSided=oneSided # default, non viene parametrizzato
+#     )
 
-    data = signal_data(
-        x=Float64.(x)
-    )
+#     data = signal_data(
+#         x=Float64.(x)
+#     )
 
-    takeFFT(data, setup)
-    melSpectrogram(data, setup)
-    _mfcc(data, setup)
-end # mfcc
+#     takeFFT(data, setup)
+#     melSpectrogram(data, setup)
+#     _mfcc(data, setup)
+# end # mfcc

@@ -7,6 +7,8 @@ function calc_window(
 
     if (winType == :hann)
         w = 0.5 .- 0.5 * cos.(2 * pi * x)
+        # elseif (winType == :hann_v2)
+
     elseif (winType == :hamming)
         w = 0.54 .- 0.46 * cos.(2 * pi * x)
     elseif (winType == :blackman)
@@ -49,9 +51,9 @@ function gencoswin(
     samplingFlag::Symbol
 )
 
-    if (samplingFlag == :periodic)
+    if samplingFlag == :periodic
         w, hL = sym_window(fftLength + 1, winType, 2)
-    elseif (samplingFlag == :symmetric)
+    elseif samplingFlag == :symmetric
         w, hL = sym_window(fftLength, winType, 1)
     end
     return w, Int(round(hL))
@@ -60,5 +62,5 @@ end # function gencoswin
 function rectwin(
     fftLength::Int64
 )
-        return ones(fftLength), fftLength
+    return ones(fftLength), fftLength
 end
