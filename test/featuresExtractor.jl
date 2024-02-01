@@ -28,6 +28,8 @@ setup = signal_setup(
     window_type=[:hann, :periodic],
     window_length=FFTLength,
     overlap_length=round(Integer, FFTLength * 0.500),
+    # window_length::Int=Int(round(0.03 * sr)),
+    # overlap_length::Int=Int(round(0.02 * sr)),
     window_norm=:false,
 
     # spectrum
@@ -36,7 +38,7 @@ setup = signal_setup(
 
     # mel
     mel_style=:htk,
-    num_bands=mel_num,
+    mel_bands=mel_num,
     filterbank_design_domain=:linear,
     filterbank_normalization=:bandwidth,
     frequency_scale=:mel,
@@ -44,9 +46,10 @@ setup = signal_setup(
     # mfcc
     num_coeffs=13,
     rectification=:log,
-    log_energy_pos=:replace,
+    # log_energy_source=:standard,
+    log_energy_pos=:append,
     delta_window_length=9,
-    delta_axe=2,
+    delta_matrix=:transposed,
 
     # spectral
     spectral_spectrum=:linear
@@ -54,11 +57,15 @@ setup = signal_setup(
 
 # convert to Float64
 x = Float64.(x)
+
 # preemphasis
-# zi = 2 * x[1] - x[2]
-# filt!(x, [1.0, -0.97], 1.0, x, [zi])
+# not siutable for our kind of experiments, maybe for speak recognition: needs to look over it.
+# zi = 2 * audio[1] - audio[2]
+# filt!(audio, [1.0, -0.97], 1.0, audio, [zi])
 # normalize
-# x = x ./ maximum(abs.(x))
+# TODO
+# already normalized. think to remove previous normalization and move it here.
+# audio = audio ./ maximum(abs.(audio))
 
 data = signal_data(
     x=x
@@ -70,3 +77,11 @@ mel_spectrogram(data, setup)
 # _mfcc(data, setup)
 # spectral_features(data, setup)
 # f0(data, setup)
+
+audio_features = vcat((
+    data.mfcc_coeffs',
+    data.mfcc_delta',
+    # data.mfcc_deltadelta',
+    data.mel_spectrogram[:, 1:13]'
+    # data.mel_spectrogram'
+)...)

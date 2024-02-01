@@ -54,7 +54,7 @@ function designMelFilterBank(data::signal_data, setup::signal_setup)
     # compute band edges
     # TODO da inserire il caso :erb e :bark
     melRange = hz2mel(setup.frequency_range, setup.mel_style)
-    setup.band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.num_bands + 2), setup.mel_style)
+    setup.band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
 
     ### parte esclusiva per mel filterbank si passa a file designmelfilterbank.m
     # determine the number of bands
@@ -65,7 +65,7 @@ function designMelFilterBank(data::signal_data, setup::signal_setup)
     valid_num_bands = valid_num_edges - 2
 
     # preallocate the filter bank
-    data.mel_filterbank = zeros(Float64, setup.fft_length, setup.num_bands)
+    data.mel_filterbank = zeros(Float64, setup.fft_length, setup.mel_bands)
     setup.mel_frequencies = setup.band_edges[2:end-1]
 
     # Set this flag to true if the number of FFT length is insufficient to
@@ -127,10 +127,10 @@ function designMelFilterBank(data::signal_data, setup::signal_setup)
     elseif (setup.filterbank_normalization == :bandwidth)
         weight_per_band = BW / 2
     else
-        weight_per_band = ones(1, setup.num_bands)
+        weight_per_band = ones(1, setup.mel_bands)
     end
 
-    for i = 1:setup.num_bands
+    for i = 1:setup.mel_bands
         if (weight_per_band[i] != 0)
             data.mel_filterbank[i, :] = data.mel_filterbank[i, :] ./ weight_per_band[i]
         end
@@ -148,75 +148,61 @@ function designMelFilterBank(data::signal_data, setup::signal_setup)
     end
 end # function designMelFilterBank
 
-function createDCTmatrix(
-    numCoeffs::Int64,
-    numFilters::Int64,
-    DT::DataType
+function create_DCT_matrix(
+    num_coeffs::Int64,
+    time_length::Int64,
 )
     # create DCT matrix
-    N = convert(DT, numCoeffs)
-    K = numFilters
-    matrix = zeros(DT, Int(N), numFilters)
-    A = sqrt(1 / K)
-    B = sqrt(2 / K)
-    C = 2 * K
-    piCCast = convert(DT, 2 * pi / C)
+    matrix = zeros(Float64, num_coeffs, time_length)
+    s0 = sqrt(1 / time_length)
+    s1 = sqrt(2 / time_length)
+    piCCast = 2 * pi / (2 * time_length)
 
-    matrix[1, :] .= A
-    for k in 1:K
-        for n in 2:Int(N)
-            matrix[n, k] = B * cos(piCCast * (n - 1) * (k - 0.5))
-        end
+    matrix[1, :] .= s0
+    for k in 1:time_length, n in 2:num_coeffs
+        matrix[n, k] = s1 * cos(piCCast * (n - 1) * (k - 0.5))
     end
 
-    return matrix
+    matrix
 end
 
-function cepstralCoefficients(
-    S::AbstractMatrix{T},
-    numCoeffs::Int64,
+function cepstral_coefficients(
+    mel_spec::AbstractMatrix{T},
+    n_coeffs::Int64,
     rectification::Symbol
 ) where {T<:AbstractFloat}
-    DT = eltype(S)
+
+    time_length = size(mel_spec, 1)
     # Rectify
     if (rectification == :log)
-        amin = floatmin(DT)
-        S[S.==0] .= amin
-        S = log10.(S)
+        mel_spec[mel_spec.==0] .= floatmin(Float64)
+        mel_spec = log10.(mel_spec)
     end
-    # Reshape spectrogram to matrix for vectorized matrix multiplication
-    L, M = size(S)
-    N = 1
-    S = reshape(S, L, M * N)
+
     # Design DCT matrix
-    DCTmatrix = createDCTmatrix(numCoeffs, L, DT)
+    DCTmatrix = create_DCT_matrix(n_coeffs, time_length)
     # Apply DCT matrix
-    coeffs = DCTmatrix * S
+    coeffs = DCTmatrix * mel_spec
 
-    return permutedims(coeffs, [2 1])
-
-    # # Unpack matrix back to 3d array DA EVITARE già da prima
-    # coeffs = reshape(coeffs,numCoeffs,M,N)
-    # # Put time along the first dimension
-    # coeffs = permutedims(coeffs,[2 1 3])
-end # function cepstralCoefficients
+    coeffs'
+end # function cepstral_coefficients
 
 function audioDelta(
     x::AbstractMatrix{T},
     window_length::Int64,
-    axe::Int64=1
+    source::Symbol=:standard
 ) where {T<:AbstractFloat}
 
     # define window shape
     m = Int(floor(window_length / 2))
     b = collect(m:-1:-m) ./ sum((1:m) .^ 2)
-    
-    if axe == 2
+
+    if source == :transposed
         filt(b, 1.0, x')'   #:audioflux setting
     else
         filt(b, 1.0, x)     #:matlab setting
     end
-    
+
 end
 
 # function mel_spectrogram(
@@ -229,7 +215,7 @@ end
 #     overlap_length::Int=Int(round(0.02 * sr)),
 
 #     # mel
-#     num_bands::Int=32,
+#     mel_bands::Int=32,
 #     mel_style::Symbol=:slaney, # :htk, :slaney
 #     frequency_range::Vector{Int64}=[0, Int(round(sr / 2))],
 #     filterbank_normalization::Symbol=:bandwidth,
@@ -253,7 +239,7 @@ end
 #         lin_frequency_range=[0.0, sr / 2],
 
 #         # mel
-#         num_bands=num_bands,
+#         mel_bands=mel_bands,
 #         mel_style=mel_style,
 #         frequency_range=Float64.(frequency_range),
 #         filterbank_normalization=filterbank_normalization,
@@ -283,11 +269,16 @@ function mel_spectrogram(
 
     # apply filterbank
     if (setup.spectrum_type == :power)
-        data.mel_spectrogram = reshape(data.mel_filterbank * data.fft, setup.num_bands, num_hops)
+        data.mel_spectrogram = reshape(data.mel_filterbank * data.fft, setup.mel_bands, num_hops)
     else
         # magnitude, da fare
     end
     data.mel_spectrogram = data.mel_spectrogram'
+
+    ### audioFlux test
+    # if setup.log_energy_source == :mfcc
+    #     data.log_energy = log.(sum(eachcol(data.mel_spectrogram .^2)) / setup.mel_bands)
+    # end
 
 end # melSpectrogram
 
@@ -297,16 +288,17 @@ function _mfcc(
 )
 
     # Calculate cepstral coefficients
-    data.mfcc_coeffs = cepstralCoefficients(data.mel_spectrogram', setup.num_coeffs, setup.rectification)
-    # METTERE IL CASO CHE le delta vengono calcolate solo se necessario
-    data.mfcc_delta = audioDelta(data.mfcc_coeffs, setup.delta_window_length, setup.delta_axe)
-    data.mfcc_deltadelta = audioDelta(data.mfcc_delta, setup.delta_window_length, setup.delta_axe)
+    data.mfcc_coeffs = cepstral_coefficients(data.mel_spectrogram', setup.num_coeffs, setup.rectification)
 
     if (setup.log_energy_pos == :append)
         data.mfcc_coeffs = hcat(data.mfcc_coeffs, data.log_energy)
     elseif (setup.log_energy_pos == :replace)
         data.mfcc_coeffs = hcat(data.log_energy, data.mfcc_coeffs[:, 2:end])
     end
+
+    # METTERE IL CASO CHE le delta vengono calcolate solo se necessario
+    data.mfcc_delta = audioDelta(data.mfcc_coeffs, setup.delta_window_length, setup.delta_matrix)
+    data.mfcc_deltadelta = audioDelta(data.mfcc_delta, setup.delta_window_length, setup.delta_matrix)
 end
 
 # function mfcc(
@@ -321,7 +313,7 @@ end
 #     window_norm::Bool=true,
 
 #     # mel
-#     num_bands::Int=32,
+#     mel_bands::Int=32,
 #     mel_style::Symbol=:slaney, # :htk, :slaney
 #     frequency_range::Vector{Int64}=[0, Int(round(sr / 2))],
 #     filterbank_normalization::Symbol=:bandwidth,
@@ -351,7 +343,7 @@ end
 #         lin_frequency_range=[0.0, sr / 2],
 
 #         # mel
-#         num_bands=num_bands,
+#         mel_bands=mel_bands,
 #         mel_style=mel_style,
 #         frequency_range=Float64.(frequency_range),
 #         filterbank_normalization=filterbank_normalization,

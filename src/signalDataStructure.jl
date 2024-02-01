@@ -24,7 +24,7 @@
 
     # mel
     mel_style::Symbol = :htk # :htk, :slaney
-    num_bands::Int64 = 32
+    mel_bands::Int64 = 32
     mel_frequencies::Vector{Float64} = []
     filterbank_design_domain::Symbol = :linear
     filterbank_normalization::Symbol = :bandwidth # :bandwidth, :area, :none
@@ -32,10 +32,12 @@
 
     # mfcc
     num_coeffs::Int64 = 13
+    dct_type::Int64 = 2 # from 1 to 4
     rectification::Symbol = :log
+    # log_energy_source::Symbol = :standard # :standard (after windowing), :mfcc
     log_energy_pos::Symbol = :append #:append, :replace, :none
     delta_window_length::Int64 = 9
-    delta_axe::Int64 = 1 # 1: matlab, 2: audioflux
+    delta_matrix::Symbol = :standard # :standard, :transposed
 
     # spectral
     spectral_spectrum::Symbol = :linear

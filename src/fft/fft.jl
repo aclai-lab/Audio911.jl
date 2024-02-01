@@ -46,9 +46,11 @@ function takeFFT(
     # log energy
     # reference: ETSI ES 201 108 V1.1.2 (2000-04)
     # https://www.3gpp.org/ftp/tsg_sa/TSG_SA/TSGS_13/Docs/PDF/SP-010566.pdf
-    log_energy = sum(eachrow(y .^ 2))
-    log_energy[log_energy.==0] .= floatmin(Float64)
-    data.log_energy = log.(log_energy)
+    # if setup.log_energy_source == :standard
+        log_energy = sum(eachrow(y .^ 2))
+        log_energy[log_energy.==0] .= floatmin(Float64)
+        data.log_energy = log.(log_energy)
+    # end
 
 end # takeFFT(data, setup)
 
