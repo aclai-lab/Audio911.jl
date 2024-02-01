@@ -11,6 +11,8 @@ using Statistics
 export signal_setup, signal_data
 # main functions
 export takeFFT, lin_spectrogram, mel_spectrogram, _mfcc, spectral_features, f0
+# utility functions
+export trim_audio
 
 include("signalDataStructure.jl")
 # windowing
@@ -23,5 +25,7 @@ include("fft/fft.jl")
 include("fft/lin.jl")
 include("fft/mel.jl")
 include("fft/spectral.jl")
+# utils
+include("utils/trimaudio.jl")
 
 end # module SoleAudio
