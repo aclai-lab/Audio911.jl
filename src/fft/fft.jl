@@ -46,41 +46,48 @@ function takeFFT(
     # log energy
     # reference: ETSI ES 201 108 V1.1.2 (2000-04)
     # https://www.3gpp.org/ftp/tsg_sa/TSG_SA/TSGS_13/Docs/PDF/SP-010566.pdf
-    # if setup.log_energy_source == :standard
+    if setup.log_energy_source == :standard
         log_energy = sum(eachrow(y .^ 2))
-        log_energy[log_energy.==0] .= floatmin(Float64)
+
+        if setup.normalization_type == :standard
+            log_energy[log_energy.==0] .= floatmin(Float64)
+        elseif setup.normalization_type == :dithered
+            log_energy[log_energy.<1e-8] .= 1e-8
+        end
+        
         data.log_energy = log.(log_energy)
-    # end
+    end
 
 end # takeFFT(data, setup)
 
-# function takeFFT(
-#     x::AbstractArray{Float64},
-#     sr::Int64;
-#     fft_length::Int64=256,
-#     window_type::Symbol=:hann,
-#     window_length::Int64=Int(round(0.03 * sr)),
-#     overlap_length::Int64=Int(round(0.02 * sr)),
-#     # windowNormalization::Bool=true,
-#     # oneSided::Bool=true
-# )
-#     # setup and data structures definition    
-#     setup = signal_Setup(
-#         sr=sr,
-#         fft_length=fft_length,
-#         window_type=window_type,
-#         window_length=window_length,
-#         overlap_length=overlap_length,
+function takeFFT(
+    x::AbstractArray{T},
+    sr::Int64;
+    fft_length::Int64=256,
+    window_type::Vector{Symbol}=[:hann, :periodic],
+    window_length::Int64=Int(round(0.03 * sr)),
+    overlap_length::Int64=Int(round(0.02 * sr)),
+    window_norm::Bool=true,
+    frequency_range::Vector{Int64}=[0, Int(floor(sr /2))],
+    spectrum_type::Bool=:power
+) where {T<:AbstractFloat}
+    # setup and data structures definition    
+    setup = signal_Setup(
+        sr=sr,
+        fft_length=fft_length,
+        window_type=window_type,
+        window_length=window_length,
+        overlap_length=overlap_length,
+        window_norm=window_norm,
+        frequency_range=frequency_range,
+        spectrum_type=spectrum_type
+    )
 
-#         # linear spectrum
-#         lin_frequency_range=[0.0, sr / 2],
-#         # windowNormalization=windowNormalization,
-#         # oneSided=oneSided
-#     )
+    data = signal_data(
+        x=Float64.(x)
+    )
 
-#     data = signal_data(
-#         x=Float64.(x)
-#     )
+    takeFFT(data, setup)
 
-#     takeFFT(data, setup)
-# end # takeFFT(kwarg...)
+    return data.fft, setup.fft_frequencies
+end # takeFFT(kwarg...)

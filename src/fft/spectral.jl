@@ -122,19 +122,6 @@ function spectral_slope(
     data.spectral_slope = vec(real(sum(X_minus_mu_X .* f_minus_mu_f, dims=1) ./ sum(f_minus_mu_f .^ 2)))
 end
 
-# function spectral_spread(
-#     s::AbstractArray{Float64},
-#     data::signal_data,
-#     sum_x1::Vector{Float64},
-#     centroid::Vector{Float64},
-# )
-#     # calculate centroid
-#     centroid = vec(sum(s .* setup.fft_frequencies, dims=1) ./ sum(s, dims=1))
-#     temp = (setup.fft_frequencies .- centroid') .^ 2
-#     spread = sqrt.(sum((temp) .* s, dims=1) ./ sum(s, dims=1))
-#     data.spectral_spread = vec(real(spread))
-# end
-
 # function spectral_features(
 #     x::AbstractArray{T},
 #     sr::Int64;
@@ -189,5 +176,47 @@ function spectral_features(data::signal_data, setup::signal_setup)
     spectral_skewness(s, data, sum_x1, data.spectral_centroid, higher_moment_denom, higher_momement_num)
     spectral_decrease(s, data)
     spectral_slope(s, data, sum_x1, arithmetic_mean, freq)
+end
+
+function spectral_spread(
+    x::AbstractArray{T},
+    sr::Int64;
+    fft_length::Int64=256,
+    window_type::Vector{Symbol}=[:hann, :periodic],
+    window_length::Int64=Int(round(0.03 * sr)),
+    overlap_length::Int64=Int(round(0.02 * sr)),
+    window_norm::Bool=true,
+    frequency_range::Vector{Int64}=[0, Int(floor(sr / 2))],
+    spectrum_type::Symbol=:magnitude
+) where {T<:AbstractFloat}
+    # setup and data structures definition    
+    setup_spread = signal_setup(
+        sr=sr,
+        fft_length=fft_length,
+        window_type=window_type,
+        window_length=window_length,
+        overlap_length=overlap_length,
+        window_norm=window_norm,
+        frequency_range=frequency_range,
+        spectrum_type=spectrum_type
+    )
+
+    data_spread = signal_data(
+        x=Float64.(x)
+    )
+
+    takeFFT(data_spread, setup_spread)
+    lin_spectrogram(data_spread, setup_spread)
+
+    s, freq = data_spread.lin_spectrogram', setup_spread.lin_frequencies
+
+    sum_x1 = vec(sum(s, dims=1))
+    data_spread.spectral_centroid = vec(sum(s .* freq, dims=1) ./ sum_x1')
+    data_spread.spectral_centroid = replace!(data_spread.spectral_centroid, NaN => 0)
+    higher_moment_tmp = freq .- data_spread.spectral_centroid'
+
+    data_spread.spectral_spread = vec(sqrt.(sum((higher_moment_tmp .^ 2) .* s, dims=1) ./ sum_x1'))
+    
+    return data_spread.spectral_spread
 end
 

@@ -1,8 +1,8 @@
 function hz2mel(
-    hz::Vector{Float64},
-    mel_style::Symbol=:htk # :htk, :slaney, :default_htk, :default_slaney
+    hz::Vector{Int64},
+    mel_style::Symbol=:htk # :htk, :slaney
 )
-    if mel_style == :htk || mel_style == :default_htk
+    if mel_style == :htk
         mel = 2595 * log10.(1 .+ hz / 700)
     else # slaney
         linStep = 200 / 3
@@ -19,9 +19,9 @@ end # hz2mel
 
 function mel2hz(
     mel::LinRange{Float64,Int64},
-    mel_style::Symbol=:htk # :htk, :slaney, :default_htk, :default_slaney
+    mel_style::Symbol=:htk # :htk, :slaney
 )
-    if mel_style == :htk || mel_style == :default_htk
+    if mel_style == :htk
         hz = 700 * (exp10.(mel / 2595) .- 1)
     else
         linStep = 200 / 3
@@ -149,43 +149,21 @@ function designMelFilterBank(data::signal_data, setup::signal_setup)
 end # function designMelFilterBank
 
 function create_DCT_matrix(
-    num_coeffs::Int64,
-    time_length::Int64,
+    mel_coeffs::Int64,
 )
     # create DCT matrix
-    matrix = zeros(Float64, num_coeffs, time_length)
-    s0 = sqrt(1 / time_length)
-    s1 = sqrt(2 / time_length)
-    piCCast = 2 * pi / (2 * time_length)
+    matrix = zeros(Float64, mel_coeffs, mel_coeffs)
+    s0 = sqrt(1 / mel_coeffs)
+    s1 = sqrt(2 / mel_coeffs)
+    piCCast = 2 * pi / (2 * mel_coeffs)
 
     matrix[1, :] .= s0
-    for k in 1:time_length, n in 2:num_coeffs
+    for k in 1:mel_coeffs, n in 1:mel_coeffs
         matrix[n, k] = s1 * cos(piCCast * (n - 1) * (k - 0.5))
     end
 
     matrix
 end
-
-function cepstral_coefficients(
-    mel_spec::AbstractMatrix{T},
-    n_coeffs::Int64,
-    rectification::Symbol
-) where {T<:AbstractFloat}
-
-    time_length = size(mel_spec, 1)
-    # Rectify
-    if (rectification == :log)
-        mel_spec[mel_spec.==0] .= floatmin(Float64)
-        mel_spec = log10.(mel_spec)
-    end
-
-    # Design DCT matrix
-    DCTmatrix = create_DCT_matrix(n_coeffs, time_length)
-    # Apply DCT matrix
-    coeffs = DCTmatrix * mel_spec
-
-    coeffs'
-end # function cepstral_coefficients
 
 function audioDelta(
     x::AbstractMatrix{T},
@@ -273,12 +251,8 @@ function mel_spectrogram(
     else
         # magnitude, da fare
     end
-    data.mel_spectrogram = data.mel_spectrogram'
 
-    ### audioFlux test
-    # if setup.log_energy_source == :mfcc
-    #     data.log_energy = log.(sum(eachcol(data.mel_spectrogram .^2)) / setup.mel_bands)
-    # end
+    data.mel_spectrogram = data.mel_spectrogram'
 
 end # melSpectrogram
 
@@ -286,9 +260,36 @@ function _mfcc(
     data::signal_data,
     setup::signal_setup
 )
+    # Design DCT matrix
+    DCTmatrix = create_DCT_matrix(setup.mel_bands)
 
-    # Calculate cepstral coefficients
-    data.mfcc_coeffs = cepstral_coefficients(data.mel_spectrogram', setup.num_coeffs, setup.rectification)
+    # Rectify
+    mel_spec = deepcopy(data.mel_spectrogram')
+    if (setup.rectification == :log)
+        if setup.normalization_type == :standard
+            mel_spec[mel_spec.==0] .= floatmin(Float64)
+        elseif setup.normalization_type == :dithered
+            mel_spec[mel_spec.<1e-8] .= 1e-8
+        end
+    end
+
+    # apply DCT matrix
+    coeffs = DCTmatrix * log10.(mel_spec)
+    # reduce to mfcc coefficients
+    data.mfcc_coeffs = coeffs[1:setup.num_coeffs, :]'
+
+    # log energy calc
+    if setup.log_energy_source == :mfcc
+        log_energy = sum(eachrow(mel_spec .^ 2)) / setup.mel_bands
+
+        if setup.normalization_type == :standard
+            log_energy[log_energy.==0] .= floatmin(Float64)
+        elseif setup.normalization_type == :dithered
+            log_energy[log_energy.<1e-8] .= 1e-8
+        end
+        
+        data.log_energy = log.(log_energy)
+    end
 
     if (setup.log_energy_pos == :append)
         data.mfcc_coeffs = hcat(data.mfcc_coeffs, data.log_energy)

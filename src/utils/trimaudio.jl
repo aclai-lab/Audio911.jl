@@ -26,7 +26,7 @@ function signal_to_db(
 end
 
 function trim_audio(
-    x::AbstractVector{Float64},
+    x::AbstractVector{Float64};
     fft_length::Int64=1024,
     threshold::Real=60
 )
@@ -86,11 +86,15 @@ function trim_audio(
 end
 
 function trim_audio(
-    x::AbstractVector{T},
+    x::AbstractVector{T};
     fft_length::Int64=1024,
     threshold::Real=60
 ) where {T<:AbstractFloat}
     x_type = eltype(x)
-    signal, silence = trim_audio(Float64.(x), fft_length, threshold)
-    x_type.(signal), x_type.(silence)
+    signal, silence = trim_audio(Float64.(x), fft_length=fft_length, threshold=threshold)
+    # x_type.(signal), x_type.(silence)
+end
+
+function normalize_audio(x::AbstractVector{T}) where {T<:AbstractFloat}
+    x ./ maximum(abs.(x))
 end

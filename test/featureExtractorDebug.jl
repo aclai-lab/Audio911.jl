@@ -20,20 +20,19 @@ x, sr = librosa.load("/home/riccardopasini/Documents/Aclai/Datasets/SpcDS/SpcDS_
 FFTLength = 256
 mel_num = 26
 
-# setup and data structures definition
 setup = signal_setup(
     sr=sr,
 
     # fft
     window_type=[:hann, :periodic],
     window_length=FFTLength,
-    overlap_length=round(Integer, FFTLength * 0.500),
-    # window_length::Int=Int(round(0.03 * sr)),
-    # overlap_length::Int=Int(round(0.02 * sr)),
+    overlap_length=Int(round(FFTLength * 0.500)),
+    # window_length=Int(round(0.03 * sr)),
+    # overlap_length=Int(round(0.02 * sr)),
     window_norm=:false,
 
     # spectrum
-    frequency_range=[0, round(Integer, sr / 2)],
+    frequency_range=Int[0, sr/2],
     spectrum_type=:power,
 
     # mel
@@ -45,9 +44,10 @@ setup = signal_setup(
 
     # mfcc
     num_coeffs=13,
+    normalization_type=:dithered,
     rectification=:log,
-    # log_energy_source=:standard,
-    log_energy_pos=:append,
+    log_energy_source=:standard,
+    log_energy_pos=:replace,
     delta_window_length=9,
     delta_matrix=:transposed,
 
@@ -56,7 +56,7 @@ setup = signal_setup(
 )
 
 # convert to Float64
-x = Float64.(x)
+audio = Float64.(audio)
 
 # preemphasis
 # not siutable for our kind of experiments, maybe for speak recognition: needs to look over it.
@@ -68,17 +68,17 @@ x = Float64.(x)
 # audio = audio ./ maximum(abs.(audio))
 
 data = signal_data(
-    x=x
+    x=audio
 )
 
 takeFFT(data, setup)
-# lin_spectrogram(data, setup)
+lin_spectrogram(data, setup)
 mel_spectrogram(data, setup)
-# _mfcc(data, setup)
-# spectral_features(data, setup)
-# f0(data, setup)
+_mfcc(data, setup)
+spectral_features(data, setup)
+f0(data, setup)
 
-audio_features = vcat((
+vcat((
     data.mfcc_coeffs',
     data.mfcc_delta',
     # data.mfcc_deltadelta',
