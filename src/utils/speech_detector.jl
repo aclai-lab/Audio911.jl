@@ -325,5 +325,5 @@ function speech_detector(
         y = [y; x[i[1]:i[2]]]
     end
 
-    return y
+    return Float64.(y)
 end

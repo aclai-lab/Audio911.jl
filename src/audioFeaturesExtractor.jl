@@ -84,25 +84,42 @@ function audio_features_extractor(
     )
 
     takeFFT(data, setup)
-    # lin_spectrogram(data, setup)
+    lin_spectrogram(data, setup)
     mel_spectrogram(data, setup)
     _mfcc(data, setup)
-    # spectral_features(data, setup)
-    # f0(data, setup) da debuggare!!! TODO verifica col database debug_speech proprio il primo waV HA SCAZZATO
+    spectral_features(data, setup)
+    f0(data, setup) # da debuggare!!! TODO verifica col database debug_speech proprio il primo waV HA SCAZZATO
 
-    if dataset == :all
-    vcat((
-        data.mfcc_coeffs',
-        data.mfcc_delta',
-        data.mfcc_deltadelta',
-        data.mel_spectrogram'
-    )...)
+    # TODO verificare che il sample sia di lunghezza superiore a fft_length
+
+    if dataset == :full
+        vcat((
+            data.mel_spectrogram',
+
+            data.mfcc_coeffs',
+            data.mfcc_delta',
+            data.mfcc_deltadelta',
+            
+            data.spectral_centroid',
+            data.spectral_crest',
+            data.spectral_decrease',
+            data.spectral_entropy',
+            data.spectral_flatness',
+            data.spectral_flux',
+            data.spectral_kurtosis',
+            data.spectral_rolloff',
+            data.spectral_skewness',
+            data.spectral_slope',
+            data.spectral_spread'
+        )...)
+
     elseif dataset == :gender
         vcat((
-        data.mfcc_coeffs',
-        data.mfcc_delta',
-        data.mel_spectrogram[:, 1:13]'
-    )...)
+            data.mfcc_coeffs',
+            data.mfcc_delta',
+            data.mel_spectrogram[:, 1:13]'
+        )...)
+
     elseif dataset == :speaker_recognition
         vcat((
             data.mfcc_coeffs',
@@ -120,6 +137,11 @@ function audio_features_extractor(
             # data.spectral_skewness',
             # data.spectral_slope',
             # data.spectral_spread'
+        )...)
+
+    elseif dataset == :debug
+        vcat((
+            data.mfcc_coeffs'[2:4, :],
         )...)
     else
         error("Unknown dataset type: $dataset.")
