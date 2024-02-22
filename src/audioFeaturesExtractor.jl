@@ -88,7 +88,7 @@ function audio_features_extractor(
     mel_spectrogram(data, setup)
     _mfcc(data, setup)
     spectral_features(data, setup)
-    f0(data, setup) # da debuggare!!! TODO verifica col database debug_speech proprio il primo waV HA SCAZZATO
+    f0(data, setup) # pay attention to fft length!
 
     # TODO verificare che il sample sia di lunghezza superiore a fft_length
 
@@ -110,7 +110,9 @@ function audio_features_extractor(
             data.spectral_rolloff',
             data.spectral_skewness',
             data.spectral_slope',
-            data.spectral_spread'
+            data.spectral_spread',
+
+            data.f0'
         )...)
 
     elseif dataset == :gender

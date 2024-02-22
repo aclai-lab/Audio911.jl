@@ -12,11 +12,11 @@ include("../src/fft/mel.jl")
 include("../src/fft/spectral.jl")
 include("../src/fft/f0.jl")
 
-af = pyimport("audioflux")
+# af = pyimport("audioflux")
 librosa = pyimport("librosa")
 
-sr_src = 16000
-x, sr = librosa.load("/home/riccardopasini/Documents/Aclai/Datasets/SpcDS/SpcDS_gender_1000_60_100/WavFiles/common_voice_en_23616312.wav", sr=sr_src, mono=true)
+sr_src = 8000
+x, sr = librosa.load("/home/riccardopasini/Documents/Aclai/Datasets/0c40e715_nohash_0.wav", sr=sr_src, mono=true)
 FFTLength = 256
 mel_num = 26
 
@@ -56,32 +56,15 @@ setup = signal_setup(
 )
 
 # convert to Float64
-audio = Float64.(audio)
-
-# preemphasis
-# not siutable for our kind of experiments, maybe for speak recognition: needs to look over it.
-# zi = 2 * audio[1] - audio[2]
-# filt!(audio, [1.0, -0.97], 1.0, audio, [zi])
-# normalize
-# TODO
-# already normalized. think to remove previous normalization and move it here.
-# audio = audio ./ maximum(abs.(audio))
+x = Float64.(x)
 
 data = signal_data(
-    x=audio
+    x=x
 )
 
 takeFFT(data, setup)
 lin_spectrogram(data, setup)
-mel_spectrogram(data, setup)
-_mfcc(data, setup)
-spectral_features(data, setup)
+# mel_spectrogram(data, setup)
+# _mfcc(data, setup)
+# spectral_features(data, setup)
 f0(data, setup)
-
-vcat((
-    data.mfcc_coeffs',
-    data.mfcc_delta',
-    # data.mfcc_deltadelta',
-    data.mel_spectrogram[:, 1:13]'
-    # data.mel_spectrogram'
-)...)
