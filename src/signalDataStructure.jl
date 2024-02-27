@@ -40,7 +40,7 @@
     delta_matrix::Symbol = :standard # :standard, :transposed
 
     # spectral
-    spectral_spectrum::Symbol = :linear
+    spectral_spectrum::Symbol = :linear # :linear, :mel
 end
 
 @with_kw mutable struct signal_data

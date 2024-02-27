@@ -10,7 +10,7 @@ function hz2mel(
         changePoint = 1000
         changePoint_mel = changePoint / linStep
         isLinearRegion = hz .< changePoint
-        mel = deepcopy(hz)
+        mel = Float64.(hz)
         mel[isLinearRegion] .= hz[isLinearRegion] / linStep
         mel[.!isLinearRegion] .= changePoint_mel .+ log.(hz[.!isLinearRegion] / changePoint) / logStep
     end
@@ -249,7 +249,8 @@ function mel_spectrogram(
     if (setup.spectrum_type == :power)
         data.mel_spectrogram = reshape(data.mel_filterbank * data.fft, setup.mel_bands, num_hops)
     else
-        # magnitude, da fare
+        #TODO
+        error("magnitude not yet implemented.")
     end
 
     data.mel_spectrogram = data.mel_spectrogram'
