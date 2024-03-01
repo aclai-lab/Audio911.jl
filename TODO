@@ -1,0 +1,3 @@
+- Decide package name
+- Docstrings
+- Add tests and replace `include(...)` with `using SoleAudio`
