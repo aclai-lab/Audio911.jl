@@ -41,6 +41,13 @@ function takeFFT(
     logical_ossb[get_onesided_fft_range(setup.fft_length)] .= true
     Z = Z[logical_ossb, :]
 
+    # if setup.spectrum_type == :power
+    #     data.fft = real(Z .* conj(Z))
+    # elseif setup.spectrum_type == :magnitude
+    #     data.fft = sqrt(real(Z .* conj(Z)))
+    # else
+    #     data.fft = abs.(Z)
+    # end
     setup.spectrum_type == :power ? data.fft = real(Z .* conj(Z)) : data.fft = abs.(Z)
 
     # log energy

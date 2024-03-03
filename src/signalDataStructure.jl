@@ -28,7 +28,7 @@
     mel_frequencies::Vector{Float64} = []
     filterbank_design_domain::Symbol = :linear
     filterbank_normalization::Symbol = :bandwidth # :bandwidth, :area, :none
-    frequency_scale::Symbol = :mel # :mel, :erb
+    frequency_scale::Symbol = :mel # TODO :mel, :bark, :erb
 
     # mfcc
     num_coeffs::Int64 = 13

@@ -39,8 +39,10 @@ end # mel2hz
 function get_mel_norm_factor(spectrum_type::Symbol, fft_window::Vector{Float64})
     if spectrum_type == :power
         return 1 / (sum(fft_window)^2)
-    else
+    elseif spectrum_type == :magnitude
         return 1 / sum(fft_window)
+    else
+        error("Unknown spectrum_type $spectrum_type.")
     end
 end
 
@@ -54,7 +56,14 @@ function designMelFilterBank(data::signal_data, setup::signal_setup)
     # compute band edges
     # TODO da inserire il caso :erb e :bark
     melRange = hz2mel(setup.frequency_range, setup.mel_style)
-    setup.band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
+
+    # mimic audioflux linear mel_style
+    if setup.mel_style == :linear
+        lin_fq = collect(0:setup.fft_length-1) / setup.fft_length * setup.sr
+        setup.band_edges = lin_fq[1:setup.mel_bands+2]
+    else
+        setup.band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
+    end
 
     ### parte esclusiva per mel filterbank si passa a file designmelfilterbank.m
     # determine the number of bands
@@ -246,12 +255,12 @@ function mel_spectrogram(
     num_hops = Int(floor((size(data.x, 1) - setup.window_length) / hop_length) + 1)
 
     # apply filterbank
-    if (setup.spectrum_type == :power)
-        data.mel_spectrogram = reshape(data.mel_filterbank * data.fft, setup.mel_bands, num_hops)
-    else
-        #TODO
-        error("magnitude not yet implemented.")
-    end
+    # if (setup.spectrum_type == :power)
+    data.mel_spectrogram = reshape(data.mel_filterbank * data.fft, setup.mel_bands, num_hops)
+    # else
+    #     #TODO
+    #     error("magnitude not yet implemented.")
+    # end
 
     data.mel_spectrogram = data.mel_spectrogram'
 
@@ -288,7 +297,7 @@ function _mfcc(
         elseif setup.normalization_type == :dithered
             log_energy[log_energy.<1e-8] .= 1e-8
         end
-        
+
         data.log_energy = log.(log_energy)
     end
 

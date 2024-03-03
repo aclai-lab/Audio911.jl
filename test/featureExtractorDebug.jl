@@ -7,7 +7,7 @@ include("../src/windowing/windowing.jl")
 include("../src/windowing/windows.jl")
 include("../src/signalDataStructure.jl")
 include("../src/fft/fft.jl")
-include("../src/fft/lin.jl")
+# include("../src/fft/lin.jl")
 include("../src/fft/mel.jl")
 include("../src/fft/spectral.jl")
 include("../src/fft/f0.jl")
@@ -16,7 +16,7 @@ include("../src/fft/f0.jl")
 librosa = pyimport("librosa")
 
 sr_src = 8000
-x, sr = librosa.load("/home/riccardopasini/Documents/Aclai/Datasets/0c40e715_nohash_0.wav", sr=sr_src, mono=true)
+x, sr = librosa.load("/home/riccardopasini/.julia/dev/SoleAudio.jl/test/common_voice_en_23616312.wav", sr=sr_src, mono=true)
 FFTLength = 256
 mel_num = 26
 
@@ -62,8 +62,8 @@ data = signal_data(
     x=x
 )
 
-takeFFT(data, setup)
-lin_spectrogram(data, setup)
+# takeFFT(data, setup)
+# lin_spectrogram(data, setup)
 # mel_spectrogram(data, setup)
 # _mfcc(data, setup)
 # spectral_features(data, setup)
