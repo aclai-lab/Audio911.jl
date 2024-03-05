@@ -1,6 +1,6 @@
 function hz2mel(
-    hz::Vector{Int64},
-    mel_style::Symbol=:htk # :htk, :slaney
+        hz::Vector{Int64},
+        mel_style::Symbol = :htk # :htk, :slaney
 )
     if mel_style == :htk
         mel = 2595 * log10.(1 .+ hz / 700)
@@ -12,14 +12,15 @@ function hz2mel(
         isLinearRegion = hz .< changePoint
         mel = Float64.(hz)
         mel[isLinearRegion] .= hz[isLinearRegion] / linStep
-        mel[.!isLinearRegion] .= changePoint_mel .+ log.(hz[.!isLinearRegion] / changePoint) / logStep
+        mel[.!isLinearRegion] .= changePoint_mel .+
+                                 log.(hz[.!isLinearRegion] / changePoint) / logStep
     end
     return mel
 end # hz2mel
 
 function mel2hz(
-    mel::LinRange{Float64,Int64},
-    mel_style::Symbol=:htk # :htk, :slaney
+        mel::LinRange{Float64, Int64},
+        mel_style::Symbol = :htk # :htk, :slaney
 )
     if mel_style == :htk
         hz = 700 * (exp10.(mel / 2595) .- 1)
@@ -31,7 +32,8 @@ function mel2hz(
         isLinearRegion = mel .< changePoint_mel
         hz = [mel;]
         hz[isLinearRegion] .= hz[isLinearRegion] * linStep
-        hz[.!isLinearRegion] .= changePoint * exp.(logStep * (mel[.!isLinearRegion] .- changePoint_mel))
+        hz[.!isLinearRegion] .= changePoint *
+                                exp.(logStep * (mel[.!isLinearRegion] .- changePoint_mel))
     end
     return hz
 end # mel2hz
@@ -51,18 +53,21 @@ end
 ### filterbanl_design_domain :linear, :warped (da verificare se serve)
 function designMelFilterBank(data::signal_data, setup::signal_setup)
     # set the design domain ### da implementare in futuro
-    setup.filterbank_design_domain == :linear ? design_domain = :linear : design_domain = setup.frequency_scale
+    setup.filterbank_design_domain == :linear ? design_domain = :linear :
+    design_domain = setup.frequency_scale
 
     # compute band edges
     # TODO da inserire il caso :erb e :bark
+    
     melRange = hz2mel(setup.frequency_range, setup.mel_style)
 
     # mimic audioflux linear mel_style
     if setup.mel_style == :linear
-        lin_fq = collect(0:setup.fft_length-1) / setup.fft_length * setup.sr
-        setup.band_edges = lin_fq[1:setup.mel_bands+2]
+        lin_fq = collect(0:(setup.fft_length - 1)) / setup.fft_length * setup.sr
+        setup.band_edges = lin_fq[1:(setup.mel_bands + 2)]
     else
-        setup.band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
+        setup.band_edges = mel2hz(
+        LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
     end
 
     ### parte esclusiva per mel filterbank si passa a file designmelfilterbank.m
@@ -75,17 +80,17 @@ function designMelFilterBank(data::signal_data, setup::signal_setup)
 
     # preallocate the filter bank
     data.mel_filterbank = zeros(Float64, setup.fft_length, setup.mel_bands)
-    setup.mel_frequencies = setup.band_edges[2:end-1]
+    setup.mel_frequencies = setup.band_edges[2:(end - 1)]
 
     # Set this flag to true if the number of FFT length is insufficient to
     # compute the specified number of mel bands
     FFTLengthTooSmall = false
 
     # if :hz 
-    linFq = collect(0:setup.fft_length-1) / setup.fft_length * setup.sr
+    linFq = collect(0:(setup.fft_length - 1)) / setup.fft_length * setup.sr
 
     # Determine inflection points
-    @assert(valid_num_edges <= num_edges)
+    @assert(valid_num_edges<=num_edges)
     p = zeros(Float64, valid_num_edges, 1)
 
     for edge_n in 1:valid_num_edges
@@ -104,15 +109,15 @@ function designMelFilterBank(data::signal_data, setup::signal_setup)
 
     for k in 1:Int(valid_num_bands)
         # Rising side of triangle
-        for j in Int(p[k]):Int(p[k+1])-1
+        for j in Int(p[k]):(Int(p[k + 1]) - 1)
             data.mel_filterbank[j, k] = (FqMod[j] - setup.band_edges[k]) / bw[k]
         end
         # Falling side of triangle
-        for j = Int(p[k+1]):Int(p[k+2])-1
-            data.mel_filterbank[j, k] = (setup.band_edges[k+2] - FqMod[j]) / bw[k+1]
+        for j in Int(p[k + 1]):(Int(p[k + 2]) - 1)
+            data.mel_filterbank[j, k] = (setup.band_edges[k + 2] - FqMod[j]) / bw[k + 1]
         end
-        emptyRange1 = p[k] .> p[k+1] - 1
-        emptyRange2 = p[k+1] .> p[k+2] - 1
+        emptyRange1 = p[k] .> p[k + 1] - 1
+        emptyRange2 = p[k + 1] .> p[k + 2] - 1
         if (!FFTLengthTooSmall && (emptyRange1 || emptyRange2))
             FFTLengthTooSmall = true
         end
@@ -121,15 +126,15 @@ function designMelFilterBank(data::signal_data, setup::signal_setup)
     # mirror two sided
     range = get_onesided_fft_range(setup.fft_length)
     range = range[2:end]
-    data.mel_filterbank[end:-1:end-length(range)+1, :] = data.mel_filterbank[range, :]
+    data.mel_filterbank[end:-1:(end - length(range) + 1), :] = data.mel_filterbank[range, :]
 
     data.mel_filterbank = data.mel_filterbank'
 
     # normalizzazione    
-    BW = setup.band_edges[3:end] - setup.band_edges[1:end-2]
+    BW = setup.band_edges[3:end] - setup.band_edges[1:(end - 2)]
 
     if (setup.filterbank_normalization == :area)
-        weight_per_band = sum(data.mel_filterbank, dims=2)
+        weight_per_band = sum(data.mel_filterbank, dims = 2)
         if setup.frequency_scale != :erb
             weight_per_band = weight_per_band / 2
         end
@@ -139,7 +144,7 @@ function designMelFilterBank(data::signal_data, setup::signal_setup)
         weight_per_band = ones(1, setup.mel_bands)
     end
 
-    for i = 1:setup.mel_bands
+    for i in 1:(setup.mel_bands)
         if (weight_per_band[i] != 0)
             data.mel_filterbank[i, :] = data.mel_filterbank[i, :] ./ weight_per_band[i]
         end
@@ -158,7 +163,7 @@ function designMelFilterBank(data::signal_data, setup::signal_setup)
 end # function designMelFilterBank
 
 function create_DCT_matrix(
-    mel_coeffs::Int64,
+        mel_coeffs::Int64,
 )
     # create DCT matrix
     matrix = zeros(Float64, mel_coeffs, mel_coeffs)
@@ -167,7 +172,7 @@ function create_DCT_matrix(
     piCCast = 2 * pi / (2 * mel_coeffs)
 
     matrix[1, :] .= s0
-    for k in 1:mel_coeffs, n in 1:mel_coeffs
+    for k in 1:mel_coeffs, n in 2:mel_coeffs
         matrix[n, k] = s1 * cos(piCCast * (n - 1) * (k - 0.5))
     end
 
@@ -175,21 +180,20 @@ function create_DCT_matrix(
 end
 
 function audioDelta(
-    x::AbstractMatrix{T},
-    window_length::Int64,
-    source::Symbol=:standard
-) where {T<:AbstractFloat}
+        x::AbstractMatrix{T},
+        window_length::Int64,
+        source::Symbol = :standard
+) where {T <: AbstractFloat}
 
     # define window shape
     m = Int(floor(window_length / 2))
-    b = collect(m:-1:-m) ./ sum((1:m) .^ 2)
+    b = collect(m:-1:(-m)) ./ sum((1:m) .^ 2)
 
     if source == :transposed
         filt(b, 1.0, x')'   #:audioflux setting
     else
         filt(b, 1.0, x)     #:matlab setting
     end
-
 end
 
 # function mel_spectrogram(
@@ -246,8 +250,8 @@ end
 # end
 
 function mel_spectrogram(
-    data::signal_data,
-    setup::signal_setup
+        data::signal_data,
+        setup::signal_setup
 )
     designMelFilterBank(data, setup)
 
@@ -256,19 +260,19 @@ function mel_spectrogram(
 
     # apply filterbank
     # if (setup.spectrum_type == :power)
-    data.mel_spectrogram = reshape(data.mel_filterbank * data.fft, setup.mel_bands, num_hops)
+    data.mel_spectrogram = reshape(
+        data.mel_filterbank * data.fft, setup.mel_bands, num_hops)
     # else
     #     #TODO
     #     error("magnitude not yet implemented.")
     # end
 
     data.mel_spectrogram = data.mel_spectrogram'
-
 end # melSpectrogram
 
 function _mfcc(
-    data::signal_data,
-    setup::signal_setup
+        data::signal_data,
+        setup::signal_setup
 )
     # Design DCT matrix
     DCTmatrix = create_DCT_matrix(setup.mel_bands)
@@ -277,25 +281,33 @@ function _mfcc(
     mel_spec = deepcopy(data.mel_spectrogram')
     if (setup.rectification == :log)
         if setup.normalization_type == :standard
-            mel_spec[mel_spec.==0] .= floatmin(Float64)
+            mel_spec[mel_spec .== 0] .= floatmin(Float64)
         elseif setup.normalization_type == :dithered
-            mel_spec[mel_spec.<1e-8] .= 1e-8
+            mel_spec[mel_spec .< 1e-8] .= 1e-8
         end
+        # apply DCT matrix
+        coeffs = DCTmatrix * log10.(mel_spec)
+    elseif (setup.rectification == :cubic_root)
+        # apply DCT matrix
+        coeffs = DCTmatrix * mel_spec .^ (1 / 3)
+    else
+        error("Unknown rectification type: ", setup.rectification)
     end
 
-    # apply DCT matrix
-    coeffs = DCTmatrix * log10.(mel_spec)
+    # # apply DCT matrix
+    # coeffs = DCTmatrix * log10.(mel_spec)
+
     # reduce to mfcc coefficients
-    data.mfcc_coeffs = coeffs[1:setup.num_coeffs, :]'
+    data.mfcc_coeffs = coeffs[1:(setup.num_coeffs), :]'
 
     # log energy calc
     if setup.log_energy_source == :mfcc
         log_energy = sum(eachrow(mel_spec .^ 2)) / setup.mel_bands
 
         if setup.normalization_type == :standard
-            log_energy[log_energy.==0] .= floatmin(Float64)
+            log_energy[log_energy .== 0] .= floatmin(Float64)
         elseif setup.normalization_type == :dithered
-            log_energy[log_energy.<1e-8] .= 1e-8
+            log_energy[log_energy .< 1e-8] .= 1e-8
         end
 
         data.log_energy = log.(log_energy)
@@ -308,8 +320,10 @@ function _mfcc(
     end
 
     # METTERE IL CASO CHE le delta vengono calcolate solo se necessario
-    data.mfcc_delta = audioDelta(data.mfcc_coeffs, setup.delta_window_length, setup.delta_matrix)
-    data.mfcc_deltadelta = audioDelta(data.mfcc_delta, setup.delta_window_length, setup.delta_matrix)
+    data.mfcc_delta = audioDelta(
+        data.mfcc_coeffs, setup.delta_window_length, setup.delta_matrix)
+    data.mfcc_deltadelta = audioDelta(
+        data.mfcc_delta, setup.delta_window_length, setup.delta_matrix)
 end
 
 # function mfcc(

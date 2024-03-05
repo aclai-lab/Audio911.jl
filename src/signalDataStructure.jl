@@ -33,7 +33,7 @@
     # mfcc
     num_coeffs::Int64 = 13
     normalization_type::Symbol = :standard # :standard, :dithered
-    rectification::Symbol = :log
+    rectification::Symbol = :log # :log, :cubic_root
     log_energy_source::Symbol = :standard # :standard (after windowing), :mfcc
     log_energy_pos::Symbol = :append #:append, :replace, :none
     delta_window_length::Int64 = 9
@@ -81,22 +81,115 @@ end
     spectral_spread::Vector{Float64} = []
 end
 
-# The other alternative, which is also common, is to define a structure with all parameters and pass that instead, like:
+mutable struct SignalSetup
+    sr::Int
 
-# julia> Base.@kwdef struct Options
-#            a::Int = 1
-#            b::Int = 2
-#        end
-# Options
+    # fft
+    fft_length::Int
+    window_type::Tuple{Symbol, Symbol} # [:hann, :periodic]
+    window_length::Int
+    overlap_length::Int
+    window_norm::Bool
 
-# julia> _f(x; opt = Options()) = x + opt.a + opt.b
-# _f (generic function with 1 method)
+    # spectrum
+    frequency_range::Vector{Int}
+    lin_frequencies::Vector{AbstractFloat}
+    band_edges::AbstractVector{AbstractFloat}
+    spectrum_type::Symbol
 
-# julia> f(x; opt=Options()) = _f(x; opt=opt)
-# f (generic function with 1 method)
+    # # mel
+    # mel_style::Symbol = :htk # :htk, :slaney
+    # mel_bands::Int64 = 26
+    # mel_frequencies::Vector{Float64} = []
+    # filterbank_design_domain::Symbol = :linear
+    # filterbank_normalization::Symbol = :bandwidth # :bandwidth, :area, :none
+    # frequency_scale::Symbol = :mel # TODO :mel, :bark, :erb
 
-# julia> f(1)
-# 4
+    # # mfcc
+    # num_coeffs::Int64 = 13
+    # normalization_type::Symbol = :standard # :standard, :dithered
+    # rectification::Symbol = :log # :log, :cubic_root
+    # log_energy_source::Symbol = :standard # :standard (after windowing), :mfcc
+    # log_energy_pos::Symbol = :append #:append, :replace, :none
+    # delta_window_length::Int64 = 9
+    # delta_matrix::Symbol = :standard # :standard, :transposed
 
-# julia> f(1; opt = Options(a=2))
-# 5
+    # # spectral
+    # spectral_spectrum::Symbol = :linear # :linear, :mel
+
+    function SignalSetup(;
+        sr::Int,
+        fft_length::Int,
+        window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
+        window_length::Int = 0,
+        overlap_length::Int = 0,
+        window_norm::Bool = false,
+        # spectrum
+        frequency_range::Vector{Int} = [],
+        lin_frequencies::Vector{AbstractFloat} = [],
+        band_edges::Vector{AbstractFloat} = [],
+        spectrum_type::Symbol=:power,
+    )
+    if window_type[1] ∉ (:hann, :hamming, :blackman, :flattopwin, :rect)
+        error("Unknown window_type $window_type[1].")
+    end
+    if window_type[2] ∉ (:periodic, :symmetric)
+        error("window_type second parameter must be :periodic or :symmetric.")
+    end
+
+    if window_length == 0
+        window_length = fft_length
+    elseif window_length < fft_length
+        error("window_length can't be smaller than fft_length.")
+    end
+
+    if overlap_length == 0
+        overlap_length=Int(round(FFTLength * 0.500))
+    elseif overlap_length > window_length
+        error("overlap_length can't be greater than window_length.")
+    end
+
+    # if isempty(frequency_range)
+
+    if spectrum_type ∉ (:power, :magnitude)
+        error("spectrum_type parameter must be symbol, :power or :magnitude.")
+    end
+
+        new(
+            sr,
+
+            # fft
+            fft_length,
+            window_type,
+            window_length,
+            overlap_length,
+            window_norm,
+        
+            # spectrum
+            frequency_range,
+            lin_frequencies,
+            band_edges,
+            spectrum_type,
+        
+            # # mel
+            # mel_style::Symbol = :htk # :htk, :slaney
+            # mel_bands::Int64 = 26
+            # mel_frequencies::Vector{Float64} = []
+            # filterbank_design_domain::Symbol = :linear
+            # filterbank_normalization::Symbol = :bandwidth # :bandwidth, :area, :none
+            # frequency_scale::Symbol = :mel # TODO :mel, :bark, :erb
+        
+            # # mfcc
+            # num_coeffs::Int64 = 13
+            # normalization_type::Symbol = :standard # :standard, :dithered
+            # rectification::Symbol = :log # :log, :cubic_root
+            # log_energy_source::Symbol = :standard # :standard (after windowing), :mfcc
+            # log_energy_pos::Symbol = :append #:append, :replace, :none
+            # delta_window_length::Int64 = 9
+            # delta_matrix::Symbol = :standard # :standard, :transposed
+        
+            # # spectral
+            # spectral_spectrum::Symbol = :linear # :linear, :mel
+        )
+    end
+end
