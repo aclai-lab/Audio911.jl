@@ -263,7 +263,7 @@ end
 
 # # debug
 # using PyCall
-# librosa = pyimport("librosa")
+# librosa = pyimport_conda("librosa")
 # sr_src = 8000
 # x, sr = librosa.load("/home/riccardopasini/Documents/Aclai/Julia_additional_files/test.wav", sr=sr_src, mono=true)
 
