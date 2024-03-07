@@ -1,4 +1,3 @@
-- Remove Manifest from git (`mv Manifest.toml tmp; git rm Manifest.toml; mv tmp Manifest.toml`) and re-run Pkg.instantiate()
 - Decide package name
 - Docstrings
-- Add tests and replace `include(...)` with `using SoleAudio`
+- Add tests and replace `include(...)` with `using SoleAudio`, @test, @test_nowarn, @test_broken

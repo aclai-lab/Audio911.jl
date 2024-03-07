@@ -14,8 +14,8 @@ using SoleAudio
 # include("../src/fft/spectral.jl")
 # include("../src/fft/f0.jl")
 
-# af = pyimport("audioflux")
-librosa = pyimport("librosa")
+# af = pyimport_conda("audioflux")
+librosa = pyimport_conda("librosa")
 
 sr_src = 16000
 x, sr = load_audio("/home/riccardopasini/.julia/dev/SoleAudio.jl/test/common_voice_en_23616312.wav", sr=sr_src)
