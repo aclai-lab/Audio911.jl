@@ -4,8 +4,6 @@ using Parameters
 using PyCall
 using LinearAlgebra
 
-# using SoleAudio
-
 include("../src/windowing/windowing.jl")
 include("../src/windowing/windows.jl")
 include("../src/signalDataStructure.jl")
@@ -21,8 +19,7 @@ include("../src/utils/in_out.jl")
 librosa = pyimport("librosa")
 
 sr_src = 8000
-# x, sr = librosa.load("/home/riccardopasini/.julia/dev/SoleAudio.jl/test/common_voice_en_23616312.wav", sr=sr_src, mono=true)
-x, sr = librosa.load("/home/riccardopasini/Documents/Aclai/Datasets/Common_voice_ds/6/Wavfiles/common_voice_de_19572503.wav", sr=sr_src, mono=true)
+x, sr = librosa.load("/home/riccardopasini/.julia/dev/SoleAudio.jl/test/common_voice_en_23616312.wav", sr=sr_src, mono=true)
 fft_length = 256
 frequency_range=Int[0, sr/2]
 mel_bands = 26
@@ -34,7 +31,7 @@ setup = signal_setup(
     window_type=[:hann, :periodic],
     window_length=fft_length,
     overlap_length=Int(round(fft_length * 0.500)),
-    window_norm=true,
+    window_norm=false,
     # spectrum
     frequency_range=frequency_range,
     spectrum_type=:power, # :power, :magnitude
@@ -68,4 +65,4 @@ takeFFT(data, setup)
 # _mfcc(data, setup)
 # lin_spectrogram(data, setup)
 # spectral_features(data, setup)
-# f0(data, setup)
+# f0(data, setup) # pay attention to fft length

@@ -10,30 +10,30 @@ function audio_features_extractor(
 	overlap_length::Int64 = Int(round(fft_length * 0.500)),
 	# window_length::Int64 = Int(round(0.03 * sr)),
 	# overlap_length::Int64 = Int(round(0.02 * sr)),
-	window_norm::Bool = :false,
+	window_norm::Bool = true,
 
 	# spectrum
 	frequency_range::Vector{Int64} = Int[0, sr/2],
-	spectrum_type::Symbol = :power,
+	spectrum_type::Symbol = :power, # :power, :magnitude
 
 	# mel
-	mel_style::Symbol = :htk,
+	mel_style::Symbol = :htk, # :htk, :slaney
 	mel_bands::Int64 = 26,
 	filterbank_design_domain::Symbol = :linear,
-	filterbank_normalization::Symbol = :bandwidth,
+	filterbank_normalization::Symbol = :bandwidth, # :bandwidth, :area, :none
 	frequency_scale::Symbol = :mel,
 
 	# mfcc
 	num_coeffs::Int64 = 13,
-	normalization_type::Symbol = :dithered,
+	normalization_type::Symbol = :dithered, # :standard, :dithered
 	rectification::Symbol = :log,
-	log_energy_source::Symbol = :standard,
-	log_energy_pos::Symbol = :replace,
+	log_energy_source::Symbol = :standard, # :standard (after windowing), :mfcc
+	log_energy_pos::Symbol = :none, #:append, :replace, :none
 	delta_window_length::Int64 = 9,
-	delta_matrix::Symbol = :transposed,
+	delta_matrix::Symbol = :standard, # :standard, :transposed
 
 	# spectral
-	spectral_spectrum::Symbol = :linear,
+	spectral_spectrum::Symbol = :linear # :linear, :mel
 ) where {T <: AbstractFloat}
 
 	setup = signal_setup(
@@ -84,12 +84,13 @@ function audio_features_extractor(
 	)
 
 	takeFFT(data, setup)
-	lin_spectrogram(data, setup)
 	mel_spectrogram(data, setup)
 	_mfcc(data, setup)
-	spectral_features(data, setup)
 	f0(data, setup) # pay attention to fft length!
-
+	setup.frequency_range=Int[80, 1000] # verifica che 1000 < sr/2
+	lin_spectrogram(data, setup)
+	spectral_features(data, setup)
+	
 	# TODO verificare che il sample sia di lunghezza superiore a fft_length
 
 	if profile == :full
