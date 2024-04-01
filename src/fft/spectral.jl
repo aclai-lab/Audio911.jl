@@ -6,7 +6,7 @@
 function get_spectrum(data::signal_data, setup::signal_setup)
     setup.spectral_spectrum == :mel && return data.mel_spectrogram', setup.mel_frequencies
     setup.spectral_spectrum == :linear && return data.lin_spectrogram', setup.lin_frequencies
-    return data.lin_spectrogram[:, 1:Int(round(setup.fft_length /4))]', setup.lin_frequencies[1:Int(round(setup.fft_length /4))]
+    error("Unknown spectral spectrum")
 end
 
 function spectral_crest(

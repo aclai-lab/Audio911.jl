@@ -66,6 +66,8 @@ data = signal_data(
 takeFFT(data, setup)
 # mel_spectrogram(data, setup)
 # _mfcc(data, setup)
-# lin_spectrogram(data, setup)
+lin_spectrogram(data, setup)
 # spectral_features(data, setup)
 # f0(data, setup)
+
+# setup.frequency_range = Int[80, 1000]

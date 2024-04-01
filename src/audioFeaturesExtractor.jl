@@ -73,7 +73,7 @@ function audio_features_extractor(
 	x = Float64.(x)
 
 	# preemphasis
-	# not siutable for our kind of experiments, maybe for speaker recognition: needs to look over it.
+	# not siutable for our kind of experiments.
 	# zi = 2 * x[1] - x[2]
 	# filt!(x, [1.0, -0.97], 1.0, x, [zi])
 	# normalize
@@ -124,22 +124,22 @@ function audio_features_extractor(
 
 	elseif profile == :speaker_recognition
 		vcat((
-			# data.mel_spectrogram[:, 1:26]',
+			# data.mel_spectrogram',
 			data.mfcc_coeffs',
-			data.mfcc_delta',
-			data.mfcc_deltadelta',
-			# data.spectral_centroid', #NO
-			data.spectral_crest', #FORSE
-			data.spectral_decrease', #SI
-			# data.spectral_entropy', #NO
-			# data.spectral_flatness', #NO
-			data.spectral_flux', #FORSE
-			data.spectral_kurtosis', #FORSE
-			# data.spectral_rolloff', #NO
-			data.spectral_skewness', #FORSE
-			# data.spectral_slope', #NO
-			# data.spectral_spread', #NO
-			data.f0', #SI
+			# data.mfcc_delta',
+			# data.mfcc_deltadelta',
+			data.spectral_centroid',
+			# data.spectral_crest',
+			data.spectral_decrease',
+			# data.spectral_entropy',
+			data.spectral_flatness',
+			# data.spectral_flux',
+			# data.spectral_kurtosis',
+			# data.spectral_rolloff',
+			# data.spectral_skewness',
+			# data.spectral_slope',
+			# data.spectral_spread',
+			data.f0',
 		)...)
 
 	else
