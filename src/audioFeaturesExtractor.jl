@@ -117,9 +117,42 @@ function audio_features_extractor(
 
 	elseif profile == :gender_recognition
 		vcat((
+			data.mel_spectrogram[:, 1:13]',
 			data.mfcc_coeffs',
-			data.mfcc_delta',
-			data.mel_spectrogram[:, 1:13]', # TODO: 13 -> a function of mel_bands or num_coeffs
+			# data.mfcc_delta',
+			# data.mfcc_deltadelta',
+			data.spectral_centroid',
+			data.spectral_crest',
+			data.spectral_decrease',
+			data.spectral_entropy',
+			data.spectral_flatness',
+			data.spectral_flux',
+			data.spectral_kurtosis',
+			data.spectral_rolloff',
+			data.spectral_skewness',
+			data.spectral_slope',
+			data.spectral_spread',
+			data.f0',
+		)...)
+
+	elseif profile == :age
+		vcat((
+			data.mel_spectrogram[:, 1:13]',
+			data.mfcc_coeffs',
+			# data.mfcc_delta',
+			# data.mfcc_deltadelta',
+			data.spectral_centroid',
+			data.spectral_crest',
+			data.spectral_decrease',
+			data.spectral_entropy',
+			data.spectral_flatness',
+			data.spectral_flux',
+			data.spectral_kurtosis',
+			data.spectral_rolloff',
+			data.spectral_skewness',
+			data.spectral_slope',
+			data.spectral_spread',
+			data.f0',
 		)...)
 
 	elseif profile == :speaker_recognition
