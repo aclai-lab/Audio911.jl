@@ -10,7 +10,7 @@ function audio_features_extractor(
 	overlap_length::Int64 = Int(round(fft_length * 0.500)),
 	# window_length::Int64 = Int(round(0.03 * sr)),
 	# overlap_length::Int64 = Int(round(0.02 * sr)),
-	window_norm::Bool = true,
+	window_norm::Bool = false,
 
 	# spectrum
 	frequency_range::Vector{Int64} = Int[0, sr/2],
@@ -30,7 +30,7 @@ function audio_features_extractor(
 	log_energy_source::Symbol = :standard, # :standard (after windowing), :mfcc
 	log_energy_pos::Symbol = :none, #:append, :replace, :none
 	delta_window_length::Int64 = 9,
-	delta_matrix::Symbol = :standard, # :standard, :transposed
+	delta_matrix::Symbol = :transposed, # :standard, :transposed
 
 	# spectral
 	spectral_spectrum::Symbol = :linear # :linear, :mel
@@ -87,13 +87,14 @@ function audio_features_extractor(
 	mel_spectrogram(data, setup)
 	_mfcc(data, setup)
 	f0(data, setup) # pay attention to fft length!
-	setup.frequency_range=Int[80, 1000] # verifica che 1000 < sr/2
-	lin_spectrogram(data, setup)
-	spectral_features(data, setup)
 	
 	# TODO verificare che il sample sia di lunghezza superiore a fft_length
 
 	if profile == :full
+		setup.frequency_range=Int[0, 1000] # verifica che 1000 < sr/2
+		lin_spectrogram(data, setup)
+		spectral_features(data, setup)
+
 		vcat(
 			(
 				data.mel_spectrogram',
@@ -115,7 +116,11 @@ function audio_features_extractor(
 			)...,
 		)
 
-	elseif profile == :gender_recognition
+	elseif profile == :gender
+		setup.frequency_range=Int[0, 1000] # verifica che 1000 < sr/2
+		lin_spectrogram(data, setup)
+		spectral_features(data, setup)
+
 		vcat((
 			data.mel_spectrogram[:, 1:13]',
 			data.mfcc_coeffs',
@@ -136,26 +141,57 @@ function audio_features_extractor(
 		)...)
 
 	elseif profile == :age
+		lin_spectrogram(data, setup)
+		spectral_features(data, setup)
+		
 		vcat((
-			data.mel_spectrogram[:, 1:13]',
+			# data.mel_spectrogram',
 			data.mfcc_coeffs',
 			# data.mfcc_delta',
 			# data.mfcc_deltadelta',
 			data.spectral_centroid',
 			data.spectral_crest',
 			data.spectral_decrease',
-			data.spectral_entropy',
+			# data.spectral_entropy',
 			data.spectral_flatness',
 			data.spectral_flux',
-			data.spectral_kurtosis',
-			data.spectral_rolloff',
-			data.spectral_skewness',
-			data.spectral_slope',
-			data.spectral_spread',
+			# data.spectral_kurtosis',
+			# data.spectral_rolloff',
+			# data.spectral_skewness',
+			# data.spectral_slope',
+			# data.spectral_spread',
 			data.f0',
 		)...)
 
-	elseif profile == :speaker_recognition
+	elseif profile == :speaker
+		setup.frequency_range=Int[0, 1000] # verifica che 1000 < sr/2
+		lin_spectrogram(data, setup)
+		spectral_features(data, setup)
+		
+		vcat((
+			# data.mel_spectrogram',
+			data.mfcc_coeffs',
+			# data.mfcc_delta',
+			# data.mfcc_deltadelta',
+			data.spectral_centroid',
+			# data.spectral_crest',
+			data.spectral_decrease',
+			# data.spectral_entropy',
+			data.spectral_flatness',
+			# data.spectral_flux',
+			# data.spectral_kurtosis',
+			# data.spectral_rolloff',
+			# data.spectral_skewness',
+			# data.spectral_slope',
+			# data.spectral_spread',
+			data.f0',
+		)...)
+
+	elseif profile == :experimental
+		setup.frequency_range=Int[0, 1000] # verifica che 1000 < sr/2
+		lin_spectrogram(data, setup)
+		spectral_features(data, setup)
+		
 		vcat((
 			# data.mel_spectrogram',
 			data.mfcc_coeffs',
