@@ -1,6 +1,6 @@
-# include("/home/riccardopasini/.julia/dev/SoleAudio.jl/src/windowing/windows.jl")
-# include("/home/riccardopasini/.julia/dev/SoleAudio.jl/src/windowing/windowing.jl")
-# include("/home/riccardopasini/.julia/dev/SoleAudio.jl/src/fft/spectral.jl")
+# include("../windowing/windows.jl")
+# include("../windowing/windowing.jl")
+# include("../fft/spectral.jl")
 
 function moving_mean(
     x::Vector{T},
