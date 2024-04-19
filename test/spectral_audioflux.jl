@@ -19,7 +19,7 @@ include("../src/utils/in_out.jl")
 librosa = pyimport("librosa")
 
 sr_src = 8000
-x, sr = librosa.load("/home/riccardopasini/.julia/dev/SoleAudio.jl/test/common_voice_en_23616312.wav", sr=sr_src, mono=true)
+x, sr = librosa.load("/home/riccardopasini/.julia/dev/Audio911.jl/test/common_voice_en_23616312.wav", sr=sr_src, mono=true)
 fft_length = 256
 frequency_range=Int[0, sr/2]
 mel_bands = 26

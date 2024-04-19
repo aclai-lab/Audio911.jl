@@ -1,4 +1,4 @@
-# SoleAudio.jl – Audio features in Julia
+# Audio911.jl – Audio features in Julia
 
 
 <!-- [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://aclai-lab.github.io/SoleModels.jl/stable)

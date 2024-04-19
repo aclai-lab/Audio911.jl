@@ -1,4 +1,4 @@
-module SoleAudio
+module Audio911
 
 using DSP
 using FFTW
@@ -51,4 +51,4 @@ export load_audio, save_audio, trim_audio, normalize_audio
 # audio features audioFeaturesExtractor
 export audio_features_extractor
 
-end # module SoleAudio
+end # module Audio911

@@ -1,9 +1,9 @@
 """
-    SoleAudio signal data structures
+    Audio911 signal data structures
 
     uses package Parameter for @with_kw mutable struct
 
-    signal_setup stores all datas that has to be shared in SoleAudio module
+    signal_setup stores all datas that has to be shared in Audio911 module
     signal_data stores all results from signal analysis
 """
 @with_kw mutable struct signal_setup
