@@ -16,12 +16,13 @@ include("../src/fft/spectral.jl")
 include("../src/fft/f0.jl")
 include("../src/utils/in_out.jl")
 
+TESTPATH = joinpath(dirname(pathof(Audio911)), "..", "test")
 
 # af = pyimport_conda("audioflux")
 librosa = pyimport("librosa")
 
 sr_src = 8000
-# x, sr = librosa.load("/home/riccardopasini/.julia/dev/Audio911.jl/test/common_voice_en_23616312.wav", sr=sr_src, mono=true)
+# x, sr = librosa.load("$TESTPATH/common_voice_en_23616312.wav", sr=sr_src, mono=true)
 x, sr = librosa.load("/home/riccardopasini/Documents/Aclai/Datasets/Common_voice_ds/6/Wavfiles/common_voice_de_19572503.wav", sr=sr_src, mono=true)
 fft_length = 256
 frequency_range=Int[0, sr/2]

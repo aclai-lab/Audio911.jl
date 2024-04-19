@@ -1,31 +1,24 @@
-using DSP
-using FFTW
-using Parameters
-using PyCall
-using LinearAlgebra
+using Test
+using Audio911
 
-include("../src/windowing/windowing.jl")
-include("../src/windowing/windows.jl")
-include("../src/signalDataStructure.jl")
-include("../src/fft/fft.jl")
-include("../src/fft/lin.jl")
-include("../src/fft/mel.jl")
-include("../src/fft/spectral.jl")
-include("../src/fft/f0.jl")
-include("../src/utils/in_out.jl")
+TESTPATH = joinpath(dirname(pathof(Audio911)), "..", "test")
+
+# Load audio
+
+sr_resample = 8000
+x, sr = load_audio("$TESTPATH/common_voice_en_23616312.wav"; sr = sr_resample)
+
+# No resampling (use original sampling)
+# x, sr = load_audio("$TESTPATH/common_voice_en_23616312.wav")
 
 
-# af = pyimport_conda("audioflux")
-librosa = pyimport("librosa")
 
-sr_src = 8000
-x, sr = librosa.load("/home/riccardopasini/.julia/dev/Audio911.jl/test/common_voice_en_23616312.wav", sr=sr_src, mono=true)
 fft_length = 256
 frequency_range=Int[0, sr/2]
 mel_bands = 26
 num_coeffs = 13
 
-setup = signal_setup(
+setup = FeatureSetup(
     sr=sr,
     # fft
     window_type=[:hann, :periodic],
@@ -56,13 +49,36 @@ setup = signal_setup(
 # convert to Float64
 x = Float64.(x)
 
+################################################################################
+# Pipelined feature extraction
+################################################################################
+
+@test_nowarn data = extractfeatures(x, setup)
+
+features = mel_spectrogram(data)
+features = _mfcc(data)
+features = lin_spectrogram(data)
+features = spectral_features(data)
+features = f0(data) # pay attention to fft length
+
+################################################################################
+# Standalone feature extraction
+################################################################################
+
+features = mel_spectrogram(x)
+features = mel_spectrogram(x, setup)
+features = mel_spectrogram(x, mel_style = :htk, mel_bands = mel_bands)
+features = mel_spectrogram(x, setup, mel_style = :htk, mel_bands = mel_bands)
+
+features = lin_spectrogram(x)
+
+################################################################################
+
+data = extractFFT(setup, x)
+
+
 data = signal_data(
-    x=x
+    x = x,
 )
 
-takeFFT(data, setup)
-# mel_spectrogram(data, setup)
-# _mfcc(data, setup)
-# lin_spectrogram(data, setup)
-# spectral_features(data, setup)
-# f0(data, setup) # pay attention to fft length
+@test_nowarn extractfeatures(data, setup) isa Vector

@@ -51,4 +51,9 @@ export load_audio, save_audio, trim_audio, normalize_audio
 # audio features audioFeaturesExtractor
 export audio_features_extractor
 
+# TODO patch
+extractfeatures = takeFFT
+export extractfeatures
+
+
 end # module Audio911
