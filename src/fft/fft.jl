@@ -20,10 +20,10 @@ function get_onesided_fft_range(fft_length::Int64)
     end
 end # get_onesided_fft_range
 
-function takeFFT(
-    data::signal_data,
-    setup::signal_setup
-)
+################################################################################
+#                                    main                                      #
+################################################################################
+function get_fft!(setup::AudioSetup, data::AudioData)
     # TODO validate FFT length, validate overlap length (audioFeatureExtractor.m line 1324)
 
     setup.fft_length = setup.window_length # definisce la fft pari alla finestra
@@ -48,6 +48,9 @@ function takeFFT(
     # else
     #     data.fft = abs.(Z)
     # end
+
+    ######### NON è nel punto corretto: la fft deve essere a numeri complessi, poi convertita in reali nel calcolo degli spettrogrammi!!!
+    ########### DA CAMBIARE ANCHE la struttura dati.
     setup.spectrum_type == :power ? data.fft = real(Z .* conj(Z)) : data.fft = abs.(Z)
 
     # log energy
@@ -64,37 +67,4 @@ function takeFFT(
         
         data.log_energy = log.(log_energy)
     end
-
-end # takeFFT(data, setup)
-
-function takeFFT(
-    x::AbstractArray{T},
-    sr::Int64;
-    fft_length::Int64=256,
-    window_type::Vector{Symbol}=[:hann, :periodic],
-    window_length::Int64=Int(round(0.03 * sr)),
-    overlap_length::Int64=Int(round(0.02 * sr)),
-    window_norm::Bool=true,
-    frequency_range::Vector{Int64}=[0, Int(floor(sr /2))],
-    spectrum_type::Bool=:power
-) where {T<:AbstractFloat}
-    # setup and data structures definition    
-    setup = signal_Setup(
-        sr=sr,
-        fft_length=fft_length,
-        window_type=window_type,
-        window_length=window_length,
-        overlap_length=overlap_length,
-        window_norm=window_norm,
-        frequency_range=frequency_range,
-        spectrum_type=spectrum_type
-    )
-
-    data = signal_data(
-        x=Float64.(x)
-    )
-
-    takeFFT(data, setup)
-
-    return data.fft, setup.fft_frequencies
-end # takeFFT(kwarg...)
+end # get_fft!

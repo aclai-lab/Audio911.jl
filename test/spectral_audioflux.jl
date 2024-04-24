@@ -14,14 +14,14 @@ x, sr = load_audio("$TESTPATH/common_voice_en_23616312.wav"; sr = sr_resample)
 
 
 fft_length = 256
-frequency_range=Int[0, sr/2]
+frequency_range=(0, floor(Int, sr/2))
 mel_bands = 26
 num_coeffs = 13
 
 setup = FeatureSetup(
     sr=sr,
     # fft
-    window_type=[:hann, :periodic],
+    window_type=(:hann, :periodic),
     window_length=fft_length,
     overlap_length=Int(round(fft_length * 0.500)),
     window_norm=false,
@@ -77,7 +77,7 @@ features = lin_spectrogram(x)
 data = extractFFT(setup, x)
 
 
-data = signal_data(
+data = AudioData(
     x = x,
 )
 

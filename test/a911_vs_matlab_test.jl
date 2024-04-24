@@ -16,7 +16,7 @@ using JLD2, DataFrames
 # # audio parameters
 # sr = 8000
 # fft_length = 256
-# frequency_range = Int[0, sr/2]
+# frequency_range = (0, floor(Int, sr/2))
 # mel_bands = 26
 # num_coeffs = 13
 
@@ -24,10 +24,10 @@ using JLD2, DataFrames
 #--------------------------------------------------------------------------------------#
 #                                       audio911                                       #
 #--------------------------------------------------------------------------------------#
-# setup = signal_setup(
+# setup = AudioSetup(
 #     sr=sr,
 #     # fft
-#     window_type=[:hann, :periodic],
+#     window_type=(:hann, :periodic),
 #     window_length=fft_length,
 #     overlap_length=Int(round(fft_length * 0.500)),
 #     window_norm=false,
@@ -52,11 +52,11 @@ using JLD2, DataFrames
 #     spectral_spectrum=:linear # :linear, :mel
 # )
 
-# data = signal_data(
+# data = AudioData(
 #     x=x
 # )
 
-# takeFFT(data, setup)
+# get_fft!(data, setup)
 # mel_spectrogram(data, setup)
 # _mfcc(data, setup)
 # lin_spectrogram(data, setup)

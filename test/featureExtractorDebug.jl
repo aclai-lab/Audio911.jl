@@ -25,14 +25,14 @@ sr_src = 8000
 # x, sr = librosa.load("$TESTPATH/common_voice_en_23616312.wav", sr=sr_src, mono=true)
 x, sr = librosa.load("/home/riccardopasini/Documents/Aclai/Datasets/Common_voice_ds/6/Wavfiles/common_voice_de_19572503.wav", sr=sr_src, mono=true)
 fft_length = 256
-frequency_range=Int[0, sr/2]
+frequency_range=(0, floor(Int, sr/2))
 mel_bands = 26
 num_coeffs = 13
 
-setup = signal_setup(
+setup = AudioSetup(
     sr=sr,
     # fft
-    window_type=[:hann, :periodic],
+    window_type=(:hann, :periodic),
     window_length=fft_length,
     overlap_length=Int(round(fft_length * 0.500)),
     window_norm=true,
@@ -60,15 +60,15 @@ setup = signal_setup(
 # convert to Float64
 x = Float64.(x)
 
-data = signal_data(
+data = AudioData(
     x=x
 )
 
-takeFFT(data, setup)
+get_fft!(data, setup)
 # mel_spectrogram(data, setup)
 # _mfcc(data, setup)
 lin_spectrogram(data, setup)
 # spectral_features(data, setup)
 # f0(data, setup)
 
-# setup.frequency_range = Int[80, 1000]
+# setup.frequency_range = (80, 1000)

@@ -1,11 +1,10 @@
 module Audio911
 
-using DSP
-using FFTW
+using FFTW, DSP
 using LinearAlgebra
 using Parameters
 using SpecialFunctions
-using Statistics
+using Statistics, Roots
 using NaNStatistics
 
 using PyCall
@@ -40,20 +39,22 @@ include("fft/spectral.jl")
 include("utils/speech_detector.jl")
 include("utils/in_out.jl")
 include("utils/trimaudio.jl")
+# wavelets
+include("wavelet/cwt.jl")
 
 # structures
-export signal_setup, signal_data
-# main functions
-export takeFFT, lin_spectrogram, mel_spectrogram, _mfcc, spectral_features, f0
+export AudioSetup, AudioData, AudioObj
+# audio features
+export audio_features_obj, get_feature
+
 # utility functions
 export speech_detector
 export load_audio, save_audio, trim_audio, normalize_audio
-# audio features audioFeaturesExtractor
-export audio_features_extractor
-
+# wavelets
+export cwt, cwt_windowing
+get_fft!
 # TODO patch
-extractfeatures = takeFFT
+extractfeatures = 
 export extractfeatures
-
 
 end # module Audio911
