@@ -187,45 +187,49 @@ mutable struct AudioObj
         return self.data.fft
     end
 
-    function get_features(self::AudioObj)
-        if isempty(self.data.fft)
-            get_fft!(self.setup, self.data)
-        end
-        if isempty(self.data.mel_spectrogram)
-            get_mel_spec!(self.setup, self.data)
-        end
-        if isempty(self.data.mfcc_coeffs)
-            get_mfcc!(self.setup, self.data)
-            get_mfcc_deltas!(self.setup, self.data)
-        end
-        if self.setup.spectral_spectrum == :lin && isempty(self.data.lin_spectrogram)
-            lin_spectrogram!(self.setup, self.data)
-        end
-        if isempty(self.data.spectral_centroid)
-            get_spectrals!(self.setup, self.data)
-        end
-        if isempty(self.data.f0)
-            get_f0!(self.setup, self.data)
-        end
+    function get_features(self::AudioObj; profile::Symbol)
+        if profile == :full
+            if isempty(self.data.fft)
+                get_fft!(self.setup, self.data)
+            end
+            if isempty(self.data.mel_spectrogram)
+                get_mel_spec!(self.setup, self.data)
+            end
+            if isempty(self.data.mfcc_coeffs)
+                get_mfcc!(self.setup, self.data)
+                get_mfcc_deltas!(self.setup, self.data)
+            end
+            if self.setup.spectral_spectrum == :lin && isempty(self.data.lin_spectrogram)
+                lin_spectrogram!(self.setup, self.data)
+            end
+            if isempty(self.data.spectral_centroid)
+                get_spectrals!(self.setup, self.data)
+            end
+            if isempty(self.data.f0)
+                get_f0!(self.setup, self.data)
+            end
 
-        return vcat((
-            self.data.mel_spectrogram',
-            self.data.mfcc_coeffs',
-            self.data.mfcc_delta',
-            self.data.mfcc_deltadelta',
-            self.data.spectral_centroid',
-            self.data.spectral_crest',
-            self.data.spectral_decrease',
-            self.data.spectral_entropy',
-            self.data.spectral_flatness',
-            self.data.spectral_flux',
-            self.data.spectral_kurtosis',
-            self.data.spectral_rolloff',
-            self.data.spectral_skewness',
-            self.data.spectral_slope',
-            self.data.spectral_spread',
-            self.data.f0'
-        )...)
+            return vcat((
+                self.data.mel_spectrogram',
+                self.data.mfcc_coeffs',
+                self.data.mfcc_delta',
+                self.data.mfcc_deltadelta',
+                self.data.spectral_centroid',
+                self.data.spectral_crest',
+                self.data.spectral_decrease',
+                self.data.spectral_entropy',
+                self.data.spectral_flatness',
+                self.data.spectral_flux',
+                self.data.spectral_kurtosis',
+                self.data.spectral_rolloff',
+                self.data.spectral_skewness',
+                self.data.spectral_slope',
+                self.data.spectral_spread',
+                self.data.f0'
+            )...)
+        else
+            @error("Unknown $profile profile.")
+        end
     end
 
     function AudioObj(setup::AudioSetup, data::AudioData)
@@ -237,7 +241,7 @@ mutable struct AudioObj
             () -> get_mfcc(obj),
             () -> get_spectrals(obj),
             () -> get_f0(obj),
-            () -> get_features(obj)
+            (x) -> get_features(obj; profile=x)
         )
         #   return obj
     end

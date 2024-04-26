@@ -28,7 +28,7 @@ function get_fft!(setup::AudioSetup, data::AudioData)
 
     setup.fft_length = setup.window_length # definisce la fft pari alla finestra
     hop_length = setup.window_length - setup.overlap_length
-    data.fft_window, unused = gencoswin(setup.window_type[1], setup.window_length, setup.window_type[2])
+    data.fft_window, _ = gencoswin(setup.window_type[1], setup.window_length, setup.window_type[2])
 
     # split in windows
     y = buffer(data.x, setup.window_length, hop_length)

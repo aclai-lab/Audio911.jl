@@ -1,11 +1,7 @@
-# include("../windowing/windows.jl")
-# include("../windowing/windowing.jl")
-# include("../fft/spectral.jl")
-
 function moving_mean(
-    x::Vector{T},
-    w::Int64
-) where {T<:AbstractFloat}
+        x::Vector{Float64},
+        w::Int64
+)
     # w must be odd!
     x_length = size(x, 1)
     m = zeros(x_length)
@@ -19,10 +15,10 @@ function moving_mean(
 end
 
 function binpicker(
-    xmin::Float64,
-    xmax::Float64,
-    nbins::Int64,
-    raw_bins_width::Float64
+        xmin::Float64,
+        xmax::Float64,
+        nbins::Int64,
+        raw_bins_width::Float64
 )
     xscale = max(abs(xmin), abs(xmax))
     xrange = xmax - xmin
@@ -73,7 +69,8 @@ function binpicker(
         end
 
         nbins_actual = nbins
-        right_edge = min(max(left_edge + nbins_actual .* bin_width, xmax), floatmax(Float64))
+        right_edge = min(
+            max(left_edge + nbins_actual .* bin_width, xmax), floatmax(Float64))
         # end
 
     else # the data are nearly constant
@@ -101,18 +98,19 @@ function binpicker(
         # if binWidth overflows, don't worry about nice bin edges anymore
         edges = LinRange(left_edge, right_edge, nbins_actual + 1)
     else
-        edges = union(left_edge, left_edge .+ (1:nbins_actual-1) .* bin_width, right_edge)
-        step = round(minimum(diff(edges)), digits=8)
-        edges = range(edges[1], edges[end], step=step)
+        edges = union(
+            left_edge, left_edge .+ (1:(nbins_actual - 1)) .* bin_width, right_edge)
+        step = round(minimum(diff(edges)), digits = 8)
+        edges = range(edges[1], edges[end], step = step)
     end
 
     return edges
 end
 
 function histcounts(
-    feature::Vector{T},
-    hist_bins::Int64
-) where {T<:AbstractFloat}
+        feature::Vector{Float64},
+        hist_bins::Int64
+)
     edgestransposed = false
 
     xmin = minimum(feature)
@@ -122,12 +120,12 @@ function histcounts(
 
     edges = binpicker(xmin, xmax, hist_bins, raw_bins_width)
 
-    n, bin = histcountindices(feature, edges)
+    n, _ = histcountindices(feature, edges)
 
     return n, edges
 end
 
-function f_peaks(n::Vector{T}) where {T<:AbstractFloat}
+function f_peaks(n::Vector{T}) where {T <: AbstractFloat}
     z7 = zeros(Float64, 7)
     z8 = zeros(Float64, 8)
     z3 = zeros(Float64, 3)
@@ -137,7 +135,7 @@ function f_peaks(n::Vector{T}) where {T<:AbstractFloat}
     n[end] = 0
     temp = repeat([z3; n; z3], 6, 1)
 
-    b = all(reshape(nn .< temp, (Int(round(length(nn) / 6)), 6)), dims=2)
+    b = all(reshape(nn .< temp, (Int(round(length(nn) / 6)), 6)), dims = 2)
 
     peaks_idx = []
     for i in eachindex(b)
@@ -151,12 +149,12 @@ function f_peaks(n::Vector{T}) where {T<:AbstractFloat}
 end
 
 function get_threshs_from_feature(
-    feature::Vector{T},
-    bins::Int64,
-    type::Symbol,
-) where {T<:AbstractFloat}
+        feature::Vector{Float64},
+        bins::Int64,
+        type::Symbol
+)
     # get histogram
-    hist_bins = Int(round(length(feature) / bins))
+    hist_bins = round(Int, length(feature) / bins)
     # at leat 10 histogram
     hist_bins = max(10, hist_bins)
 
@@ -200,25 +198,53 @@ function get_threshs_from_feature(
     elseif length(peaks_idx) == 1
         eF0 = vcat(collect(edges_feature), 0)
         M1 = 0.5 * (vcat(0, collect(edges_feature)) .- eF0) + eF0
-        M1 = M1[peaks_idx.+1]
+        M1 = M1[peaks_idx .+ 1]
         M2 = minval
     else
         eF0 = vcat(collect(edges_feature), 0)
         AA = 0.5 * (vcat(0, collect(edges_feature)) .- eF0) + eF0
-        M2 = AA[peaks_idx[1]+1]
-        M1 = AA[peaks_idx[2]+1]
+        M2 = AA[peaks_idx[1] + 1]
+        M1 = AA[peaks_idx[2] + 1]
     end
 
     return M1, M2
 end
 
+function spectral_spread(
+        x::Vector{Float64},
+        sr::Int64;
+        fft_length::Int64,
+        window_length::Int64,
+        overlap_length::Int64,
+        window_norm::Bool = true,
+        spectrum_type::Symbol = :magnitude)
+    X = audio_features_obj(
+        x, sr,
+        fft_length = fft_length,
+        window_length = window_length,
+        overlap_length = overlap_length,
+        window_norm = window_norm,
+        spectrum_type = spectrum_type
+    )
+    X.get_lin_spec()
+
+    s, freq = X.data.lin_spectrogram', X.setup.lin_frequencies
+
+    sum_x1 = vec(sum(s, dims = 1))
+    spectral_centroid = vec(sum(s .* freq, dims = 1) ./ sum_x1')
+    spectral_centroid = replace!(spectral_centroid, NaN => 0)
+    higher_moment_tmp = freq .- spectral_centroid'
+
+    spectral_spread = vec(sqrt.(sum((higher_moment_tmp .^ 2) .* s, dims = 1) ./ sum_x1'))
+
+    return spectral_spread
+end
+
 function speech_detector(
-    x::AbstractVector{T},
-    sr::Int64
-) where {T<:AbstractFloat}
-    # window, unused = gencoswin(setup.window_type[1], setup.window_length, setup.window_type[2])
-    # la window la devo fare, perchè questa funzione è di utilità fatta prima del feature extraction
-    window, unused = gencoswin(:hann, Int(round(0.03 * sr)), :periodic)
+        x_in::AbstractVector{Float64},
+        sr::Int64;        #thresholds
+)
+    window, _ = gencoswin(:hann, Int(round(0.03 * sr)), :periodic)
     frame_length = size(window, 1)
     merge_distance = frame_length * 5
 
@@ -232,7 +258,13 @@ function speech_detector(
     #----------------------------------------------------------------------------------#
     #      step 1: extract short-term spectral spread and energy from whole signal     #
     #----------------------------------------------------------------------------------#
-    sig_max = maximum(abs.(x))
+    sig_max = maximum(abs.(x_in))
+
+    x = deepcopy(x_in)
+    # normalize
+    if sig_max > 0
+        x = x ./ sig_max
+    end
 
     # buffer signal
     frames = buffer(x, frame_length, frame_length)
@@ -240,22 +272,24 @@ function speech_detector(
     # determine short term energy
     energy = vec(window' .^ 2 * frames .^ 2)
     # filter the short term energy twice
-    filtered_energy = moving_mean(moving_mean(energy, smoothing_filter_length), smoothing_filter_length)
+    filtered_energy = moving_mean(
+        moving_mean(energy, smoothing_filter_length), smoothing_filter_length)
     # get spectral spread
     spec_spread = spectral_spread(
         x,
         sr,
-        fft_length=2 * frame_length,
-        window_length=frame_length,
-        overlap_length=0,
-        spectrum_type=:magnitude
+        fft_length = 2 * frame_length,
+        window_length = frame_length,
+        overlap_length = 0,
+        spectrum_type = :magnitude
     )
     # normalize the feature
     spec_spread = spec_spread / (sr / 2)
     # set spectral spread value to 0 for frames with low energy
-    spec_spread[energy.<spectral_spread_threshold] .= 0
+    spec_spread[energy .< spectral_spread_threshold] .= 0
     # filter spectral spread twice
-    filtered_spread = moving_mean(moving_mean(spec_spread, smoothing_filter_length), smoothing_filter_length)
+    filtered_spread = moving_mean(
+        moving_mean(spec_spread, smoothing_filter_length), smoothing_filter_length)
 
     #----------------------------------------------------------------------------------#
     #                        step 2: determine thresholds                              #
@@ -284,9 +318,9 @@ function speech_detector(
     frame_length_new = frame_length
 
     # change frames into data points
-    a = repeat(unbuff_out', outer=[frame_length_new, 1])
+    a = repeat(unbuff_out', outer = [frame_length_new, 1])
     unbuff_out_mask = [a[:]; falses(length(x) - length(a), 1)]
-    difference = diff([unbuff_out_mask; false], dims=1)
+    difference = diff([unbuff_out_mask; false], dims = 1)
 
     # find all changes from speech to silence; return index before change
     idx_m1 = findall(difference .== -1)
@@ -299,12 +333,11 @@ function speech_detector(
     else
         idx_p1 = findall(difference .== 1)
         idx_p1 = vcat(1, getindex.(idx_p1, 1))
-
     end
 
     # find gaps less than merge distance
     if length(idx_p1) > 1
-        testmask = idx_p1[2:end] .- idx_m1[1:length(idx_p1)-1] .<= merge_distance
+        testmask = idx_p1[2:end] .- idx_m1[1:(length(idx_p1) - 1)] .<= merge_distance
     else
         testmask = falses(0, 1)
     end
@@ -315,15 +348,19 @@ function speech_detector(
     else
         # arrange output
         idx_p2 = idx_p1[2:end, :]
-        idx_m2 = idx_m1[1:length(idx_p1)-1, :]
+        idx_m2 = idx_m1[1:(length(idx_p1) - 1), :]
         amask = .!testmask
         outidx = reshape([idx_p1[1]; idx_p2[amask]; idx_m2[amask]; idx_m1[end]], :, 2)
     end
 
     y = []
     for i in eachrow(outidx)
-        y = [y; x[i[1]:i[2]]]
+        y = [y; x_in[i[1]:i[2]]]
     end
 
-    return Float64.(y)
+    return Float64.(y), outidx
+end
+
+function speech_detector(x_in::AbstractVector{<:AbstractFloat}, sr::Int64)
+    speech_detector(Float64.(x_in), sr)
 end

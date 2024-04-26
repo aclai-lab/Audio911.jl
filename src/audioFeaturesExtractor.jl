@@ -13,7 +13,7 @@ audio.get_mel_spec()
 audio.get_mfcc()
 audio.get_spectrals()
 audio.get_f0()
-audio.get_features()
+audio.get_features(profile, per ora solo :full)
 
 #########################################################################################################
 2-utilizzare l'invocazione get_feature per ottenere le features separatamente
