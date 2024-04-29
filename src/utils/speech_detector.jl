@@ -364,3 +364,6 @@ end
 function speech_detector(x_in::AbstractVector{<:AbstractFloat}, sr::Int64)
     speech_detector(Float64.(x_in), sr)
 end
+
+# references
+# https://github.com/linan2/Voice-activity-detection-VAD-paper-and-code
