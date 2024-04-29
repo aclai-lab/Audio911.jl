@@ -32,12 +32,12 @@
 
 	# mfcc
 	num_coeffs::Int64 = 13
-	normalization_type::Symbol = :standard # :standard, :dithered
+	normalization_type::Symbol = :dithered # :standard, :dithered
 	rectification::Symbol = :log # :log, :cubic_root
 	log_energy_source::Symbol = :standard # :standard (after windowing), :mfcc
-	log_energy_pos::Symbol = :append #:append, :replace, :none
+	log_energy_pos::Symbol = :none #:append, :replace, :none
 	delta_window_length::Int64 = 9
-	delta_matrix::Symbol = :standard # :standard, :transposed
+	delta_matrix::Symbol = :transposed # :standard, :transposed
 
 	# spectral
 	spectral_spectrum::Symbol = :lin # :lin, :mel
@@ -344,19 +344,19 @@ mutable struct AudioObj
 					self.data.mel_spectrogram',
 					self.data.mfcc_coeffs',
 					self.data.mfcc_delta',
-					# self.data.mfcc_deltadelta',
+					self.data.mfcc_deltadelta',
 					self.data.spectral_centroid',
 					self.data.spectral_crest',
 					self.data.spectral_decrease',
 					self.data.spectral_entropy',
-					# self.data.spectral_flatness',
+					self.data.spectral_flatness',
 					self.data.spectral_flux',
 					self.data.spectral_kurtosis',
-					# self.data.spectral_rolloff',
+					self.data.spectral_rolloff',
 					self.data.spectral_skewness',
 					self.data.spectral_slope',
 					self.data.spectral_spread',
-					# self.data.f0'
+					self.data.f0'
 				)...,
 			)
 
