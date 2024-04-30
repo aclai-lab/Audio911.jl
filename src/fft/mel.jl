@@ -5,6 +5,7 @@ function hz2mel(
     if mel_style == :htk
         mel = 2595 * log10.(1 .+ reduce(vcat, getindex.(hz)) / 700)
     else # slaney
+        hz = reduce(vcat, getindex.(hz))
         linStep = 200 / 3
         logStep = log(6.4) / 27
         changePoint = 1000

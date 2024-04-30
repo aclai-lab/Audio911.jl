@@ -45,7 +45,7 @@ include("wavelet/cwt.jl")
 # structures
 export AudioSetup, AudioData, AudioObj
 # audio features
-export audio_features_obj, get_feature
+export audio_features_obj, get_features
 
 # utility functions
 export speech_detector

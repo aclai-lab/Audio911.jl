@@ -10,46 +10,46 @@
 	sr::Int64
 
 	# fft
-	fft_length::Int64 = 0
-	window_type::Tuple{Symbol, Symbol} = (:hann, :periodic)
-	window_length::Int64 = 0
-	overlap_length::Int64 = 0
-	window_norm::Bool = true
+	fft_length::Int64
+	window_type::Tuple{Symbol, Symbol}
+	window_length::Int64
+	overlap_length::Int64
+	window_norm::Bool
 
 	# spectrum
-	frequency_range::Tuple{Int64, Int64} = (0, 0)
+	frequency_range::Tuple{Int64, Int64}
 	lin_frequencies::Vector{Float64} = []
 	band_edges::AbstractVector{AbstractFloat} = []
-	spectrum_type::Symbol = :power # :power, :magnitude
+	spectrum_type::Symbol
 
 	# mel
-	mel_style::Symbol = :htk # :htk, :slaney
-	mel_bands::Int64 = 26
+	mel_style::Symbol
+	mel_bands::Int64
 	mel_frequencies::Vector{Float64} = []
-	filterbank_design_domain::Symbol = :linear
-	filterbank_normalization::Symbol = :bandwidth # :bandwidth, :area, :none
-	frequency_scale::Symbol = :mel # TODO :mel, :bark, :erb
+	filterbank_design_domain::Symbol
+	filterbank_normalization::Symbol
+	frequency_scale::Symbol
 
 	# mfcc
-	num_coeffs::Int64 = 13
-	normalization_type::Symbol = :dithered # :standard, :dithered
-	rectification::Symbol = :log # :log, :cubic_root
-	log_energy_source::Symbol = :standard # :standard (after windowing), :mfcc
-	log_energy_pos::Symbol = :none #:append, :replace, :none
-	delta_window_length::Int64 = 9
-	delta_matrix::Symbol = :transposed # :standard, :transposed
+	num_coeffs::Int64
+	normalization_type::Symbol
+	rectification::Symbol
+	log_energy_source::Symbol
+	log_energy_pos::Symbol
+	delta_window_length::Int64
+	delta_matrix::Symbol
 
 	# spectral
-	spectral_spectrum::Symbol = :lin # :lin, :mel
+	spectral_spectrum::Symbol
 
 	# f0
-	f0_method::Symbol = :nfc
-	f0_range::Tuple{Int64, Int64} = (50, 400)
-	median_filter_length::Int64 = 1
+	f0_method::Symbol
+	f0_range::Tuple{Int64, Int64}
+	median_filter_length::Int64
 end
 
 @with_kw mutable struct AudioData
-	x::AbstractVector{Float64} = []
+	x::AbstractVector{Float64}
 
 	# fft
 	fft::AbstractArray{Float64} = []
@@ -89,8 +89,6 @@ end
 # reference:
 # https://www.functionalnoise.com/pages/2023-01-31-julia-class/
 
-# TODO metti a posto gli output dei metodi
-
 mutable struct AudioObj
 	setup::AudioSetup
 	data::AudioData
@@ -108,7 +106,7 @@ mutable struct AudioObj
 			get_fft!(self.setup, self.data)
 		end
 
-		return self.data.fft
+		return self.data.fft'
 	end
 
 	function get_lin_spec(self::AudioObj)
@@ -119,7 +117,7 @@ mutable struct AudioObj
 			lin_spectrogram!(self.setup, self.data)
 		end
 
-		return self.data.lin_spectrogram, self.setup.lin_frequencies
+		return self.data.lin_spectrogram
 	end
 
 	function get_mel_spec(self::AudioObj)
@@ -130,7 +128,7 @@ mutable struct AudioObj
 			get_mel_spec!(self.setup, self.data)
 		end
 
-		return self.data.mel_spectrogram, self.setup.mel_frequencies
+		return self.data.mel_spectrogram
 	end
 
 	function get_mfcc(self::AudioObj)
@@ -145,7 +143,7 @@ mutable struct AudioObj
 			get_mfcc_deltas!(self.setup, self.data)
 		end
 
-		return self.data.mfcc_coeffs, self.data.mfcc_delta, self.data.mfcc_deltadelta
+		return hcat((self.data.mfcc_coeffs, self.data.mfcc_delta, self.data.mfcc_deltadelta)...)
 	end
 
 	function get_spectrals(self::AudioObj)
@@ -164,19 +162,21 @@ mutable struct AudioObj
 			get_spectrals!(self.setup, self.data)
 		end
 
-		return [
-			self.data.spectral_centroid,
-			self.data.spectral_crest,
-			self.data.spectral_decrease,
-			self.data.spectral_entropy,
-			self.data.spectral_flatness,
-			self.data.spectral_flux,
-			self.data.spectral_kurtosis,
-			self.data.spectral_rolloff,
-			self.data.spectral_skewness,
-			self.data.spectral_slope,
-			self.data.spectral_spread,
-		]
+		return hcat(
+			(
+				self.data.spectral_centroid,
+				self.data.spectral_crest,
+				self.data.spectral_decrease,
+				self.data.spectral_entropy,
+				self.data.spectral_flatness,
+				self.data.spectral_flux,
+				self.data.spectral_kurtosis,
+				self.data.spectral_rolloff,
+				self.data.spectral_skewness,
+				self.data.spectral_slope,
+				self.data.spectral_spread,
+			)...,
+		)
 	end
 
 	function get_f0(self::AudioObj)
@@ -190,7 +190,7 @@ mutable struct AudioObj
 	# --------------------------------------------------------------------------- #
 	#                            get features profiles                            #
 	# --------------------------------------------------------------------------- #
-	function get_features(self::AudioObj; profile::Symbol)
+	function get_features(self::AudioObj, profile::Symbol = :full)
 		if profile == :full
 			if isempty(self.data.fft)
 				get_fft!(self.setup, self.data)
@@ -212,31 +212,31 @@ mutable struct AudioObj
 				get_f0!(self.setup, self.data)
 			end
 
-			return vcat(
+			return hcat(
 				(
-					self.data.mel_spectrogram',
-					self.data.mfcc_coeffs',
-					self.data.mfcc_delta',
-					self.data.mfcc_deltadelta',
-					self.data.spectral_centroid',
-					self.data.spectral_crest',
-					self.data.spectral_decrease',
-					self.data.spectral_entropy',
-					self.data.spectral_flatness',
-					self.data.spectral_flux',
-					self.data.spectral_kurtosis',
-					self.data.spectral_rolloff',
-					self.data.spectral_skewness',
-					self.data.spectral_slope',
-					self.data.spectral_spread',
-					self.data.f0',
+					self.data.mel_spectrogram,
+					self.data.mfcc_coeffs,
+					self.data.mfcc_delta,
+					self.data.mfcc_deltadelta,
+					self.data.spectral_centroid,
+					self.data.spectral_crest,
+					self.data.spectral_decrease,
+					self.data.spectral_entropy,
+					self.data.spectral_flatness,
+					self.data.spectral_flux,
+					self.data.spectral_kurtosis,
+					self.data.spectral_rolloff,
+					self.data.spectral_skewness,
+					self.data.spectral_slope,
+					self.data.spectral_spread,
+					self.data.f0,
 				)...,
 			)
 
 			# --------------------------------------------------------------------------- #
 			#                           emotion work in progress                          #
 			# --------------------------------------------------------------------------- #
-		elseif profile == :emotion_set_1
+		elseif profile == :emotion
 			if isempty(self.data.fft)
 				get_fft!(self.setup, self.data)
 			end
@@ -245,7 +245,7 @@ mutable struct AudioObj
 			end
 			if isempty(self.data.mfcc_coeffs)
 				get_mfcc!(self.setup, self.data)
-				# get_mfcc_deltas!(self.setup, self.data)
+				get_mfcc_deltas!(self.setup, self.data)
 			end
 			if self.setup.spectral_spectrum == :lin && isempty(self.data.lin_spectrogram)
 				lin_spectrogram!(self.setup, self.data)
@@ -253,37 +253,121 @@ mutable struct AudioObj
 			if isempty(self.data.spectral_centroid)
 				get_spectrals!(self.setup, self.data)
 			end
-			# if isempty(self.data.f0)
-			#     get_f0!(self.setup, self.data)
-			# end
+			if isempty(self.data.f0)
+				get_f0!(self.setup, self.data)
+			end
 
-			return vcat(
+			return hcat(
 				(
-					self.data.mel_spectrogram',
-					self.data.mfcc_coeffs',
-					# self.data.mfcc_delta',
-					# self.data.mfcc_deltadelta',
-					self.data.spectral_centroid',
-					self.data.spectral_crest',
-					self.data.spectral_decrease',
-					self.data.spectral_entropy',
-					self.data.spectral_flatness',
-					self.data.spectral_flux',
-					self.data.spectral_kurtosis',
-					self.data.spectral_rolloff',
-					self.data.spectral_skewness',
-					self.data.spectral_slope',
-					self.data.spectral_spread',
-					# self.data.f0'
+					self.data.mel_spectrogram,
+					self.data.mfcc_coeffs,
+					self.data.mfcc_delta,
+					self.data.mfcc_deltadelta,
+					self.data.spectral_centroid,
+					self.data.spectral_crest,
+					self.data.spectral_decrease,
+					self.data.spectral_entropy,
+					self.data.spectral_flatness,
+					self.data.spectral_flux,
+					self.data.spectral_kurtosis,
+					self.data.spectral_rolloff,
+					self.data.spectral_skewness,
+					self.data.spectral_slope,
+					self.data.spectral_spread,
+					self.data.f0,
 				)...,
 			)
 
-		elseif profile == :emotion_set_2
+			# elseif profile == :emotion_set_1
+			# 	if isempty(self.data.fft)
+			# 		get_fft!(self.setup, self.data)
+			# 	end
+			# 	if isempty(self.data.mel_spectrogram)
+			# 		get_mel_spec!(self.setup, self.data)
+			# 	end
+			# 	if isempty(self.data.mfcc_coeffs)
+			# 		get_mfcc!(self.setup, self.data)
+			# 		# get_mfcc_deltas!(self.setup, self.data)
+			# 	end
+			# 	if self.setup.spectral_spectrum == :lin && isempty(self.data.lin_spectrogram)
+			# 		lin_spectrogram!(self.setup, self.data)
+			# 	end
+			# 	if isempty(self.data.spectral_centroid)
+			# 		get_spectrals!(self.setup, self.data)
+			# 	end
+			# 	# if isempty(self.data.f0)
+			# 	#     get_f0!(self.setup, self.data)
+			# 	# end
+
+			# 	return vcat(
+			# 		(
+			# 			self.data.mel_spectrogram',
+			# 			self.data.mfcc_coeffs',
+			# 			# self.data.mfcc_delta',
+			# 			# self.data.mfcc_deltadelta',
+			# 			self.data.spectral_centroid',
+			# 			self.data.spectral_crest',
+			# 			self.data.spectral_decrease',
+			# 			self.data.spectral_entropy',
+			# 			self.data.spectral_flatness',
+			# 			self.data.spectral_flux',
+			# 			self.data.spectral_kurtosis',
+			# 			self.data.spectral_rolloff',
+			# 			self.data.spectral_skewness',
+			# 			self.data.spectral_slope',
+			# 			self.data.spectral_spread',
+			# 			# self.data.f0'
+			# 		)...,
+			# 	)
+
+			# elseif profile == :emotion_set_2
+			# 	if isempty(self.data.fft)
+			# 		get_fft!(self.setup, self.data)
+			# 	end
+			# 	if isempty(self.data.mfcc_coeffs)
+			# 		get_mel_spec!(self.setup, self.data)
+			# 		get_mfcc!(self.setup, self.data)
+			# 		get_mfcc_deltas!(self.setup, self.data)
+			# 	end
+			# 	if self.setup.spectral_spectrum == :lin && isempty(self.data.lin_spectrogram)
+			# 		lin_spectrogram!(self.setup, self.data)
+			# 	end
+			# 	if isempty(self.data.spectral_centroid)
+			# 		get_spectrals!(self.setup, self.data)
+			# 	end
+			# 	if isempty(self.data.f0)
+			# 		get_f0!(self.setup, self.data)
+			# 	end
+
+			# 	return vcat(
+			# 		(
+			# 			# self.data.mel_spectrogram',
+			# 			self.data.mfcc_coeffs',
+			# 			self.data.mfcc_delta',
+			# 			self.data.mfcc_deltadelta',
+			# 			self.data.spectral_centroid',
+			# 			self.data.spectral_crest',
+			# 			self.data.spectral_decrease',
+			# 			self.data.spectral_entropy',
+			# 			self.data.spectral_flatness',
+			# 			self.data.spectral_flux',
+			# 			self.data.spectral_kurtosis',
+			# 			self.data.spectral_rolloff',
+			# 			self.data.spectral_skewness',
+			# 			self.data.spectral_slope',
+			# 			self.data.spectral_spread',
+			# 			self.data.f0',
+			# 		)...,
+			# 	)
+
+			# elseif profile == :emotion_set_3
 			if isempty(self.data.fft)
 				get_fft!(self.setup, self.data)
 			end
-			if isempty(self.data.mfcc_coeffs)
+			if isempty(self.data.mel_spectrogram)
 				get_mel_spec!(self.setup, self.data)
+			end
+			if isempty(self.data.mfcc_coeffs)
 				get_mfcc!(self.setup, self.data)
 				get_mfcc_deltas!(self.setup, self.data)
 			end
@@ -299,7 +383,7 @@ mutable struct AudioObj
 
 			return vcat(
 				(
-					# self.data.mel_spectrogram',
+					self.data.mel_spectrogram',
 					self.data.mfcc_coeffs',
 					self.data.mfcc_delta',
 					self.data.mfcc_deltadelta',
@@ -315,48 +399,6 @@ mutable struct AudioObj
 					self.data.spectral_slope',
 					self.data.spectral_spread',
 					self.data.f0',
-				)...,
-			)
-
-		elseif profile == :emotion_set_3
-			if isempty(self.data.fft)
-				get_fft!(self.setup, self.data)
-			end
-			if isempty(self.data.mel_spectrogram)
-				get_mel_spec!(self.setup, self.data)
-			end
-			if isempty(self.data.mfcc_coeffs)
-				get_mfcc!(self.setup, self.data)
-				get_mfcc_deltas!(self.setup, self.data)
-			end
-			if self.setup.spectral_spectrum == :lin && isempty(self.data.lin_spectrogram)
-				lin_spectrogram!(self.setup, self.data)
-			end
-			if isempty(self.data.spectral_centroid)
-				get_spectrals!(self.setup, self.data)
-			end
-			if isempty(self.data.f0)
-				get_f0!(self.setup, self.data)
-			end
-
-			return vcat(
-				(
-					self.data.mel_spectrogram',
-					self.data.mfcc_coeffs',
-					self.data.mfcc_delta',
-					self.data.mfcc_deltadelta',
-					self.data.spectral_centroid',
-					self.data.spectral_crest',
-					self.data.spectral_decrease',
-					self.data.spectral_entropy',
-					self.data.spectral_flatness',
-					self.data.spectral_flux',
-					self.data.spectral_kurtosis',
-					self.data.spectral_rolloff',
-					self.data.spectral_skewness',
-					self.data.spectral_slope',
-					self.data.spectral_spread',
-					self.data.f0'
 				)...,
 			)
 
@@ -381,27 +423,28 @@ mutable struct AudioObj
 			# 	get_spectrals!(self.setup, self.data)
 			# end
 			if isempty(self.data.f0)
+				self.setup.f0_range = (200, 700),
 				get_f0!(self.setup, self.data)
 			end
 
-			return vcat(
+			return hcat(
 				(
-					# self.data.mel_spectrogram',
-					self.data.mfcc_coeffs',
-					# self.data.mfcc_delta',
-					# self.data.mfcc_deltadelta',
-					# self.data.spectral_centroid',
-					# self.data.spectral_crest',
-					# self.data.spectral_decrease',
-					# self.data.spectral_entropy',
-					# self.data.spectral_flatness',
-					# self.data.spectral_flux',
-					# self.data.spectral_kurtosis',
-					# self.data.spectral_rolloff',
-					# self.data.spectral_skewness',
-					# self.data.spectral_slope',
-					# self.data.spectral_spread',
-					self.data.f0',
+					# self.data.mel_spectrogram,
+					self.data.mfcc_coeffs,
+					# self.data.mfcc_delta,
+					# self.data.mfcc_deltadelta,
+					# self.data.spectral_centroid,
+					# self.data.spectral_crest,
+					# self.data.spectral_decrease,
+					# self.data.spectral_entropy,
+					# self.data.spectral_flatness,
+					# self.data.spectral_flux,
+					# self.data.spectral_kurtosis,
+					# self.data.spectral_rolloff,
+					# self.data.spectral_skewness,
+					# self.data.spectral_slope,
+					# self.data.spectral_spread,
+					self.data.f0,
 				)...,
 			)
 		else
@@ -418,7 +461,7 @@ mutable struct AudioObj
 			() -> get_mfcc(obj),
 			() -> get_spectrals(obj),
 			() -> get_f0(obj),
-			(x) -> get_features(obj; profile = x),
+			(x) -> get_features(obj, x),
 		)
 		#   return obj
 	end
