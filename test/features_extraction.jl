@@ -20,6 +20,7 @@
 # # mfcc
 # num_coeffs::Int64 = 13,
 # normalization_type::Symbol = :dithered, # available options :standard, :dithered
+# use_dct::Bool = true
 # rectification::Symbol = :log, # available options :log, :cubic_root
 # log_energy_source::Symbol = :standard, # available options :standard (after windowing), :mfcc
 # log_energy_pos::Symbol = :none, # available options :append, :replace, :none
@@ -73,6 +74,7 @@ full_1 = get_features(x, sr, :full)
 fft_1 = get_features(x, sr, :fft)
 lin_1 = get_features(x, sr, :lin)
 mel_1 = get_features(x, sr, :mel)
+logmel_1 = get_features(x, sr, :logmel)
 mfcc_1 = get_features(x, sr, :mfcc)
 spectral_1 = get_features(x, sr, :spectral)
 f0_1 = get_features(x, sr, :f0)
@@ -89,6 +91,7 @@ audio = audio_features_obj(x, sr)
 audio.get_fft()
 audio.get_lin_spec()
 audio.get_mel_spec()
+audio.get_log_mel()
 audio.get_mfcc()
 audio.get_spectrals()
 audio.get_f0()

@@ -96,7 +96,7 @@ function trim_audio(
 end
 
 function normalize_audio(x::AbstractVector{T}) where {T <: AbstractFloat}
-	if lenght(x) != 0
+	if length(x) != 0
 		x ./ maximum(abs.(x))
 	end
 end

@@ -272,6 +272,7 @@ end
 function get_full(setup::AudioSetup, data::AudioData)
 	get_fft!(setup, data)
 	get_mel_spec!(setup, data)
+	get_log_mel!(setup, data)
 	get_mfcc!(setup, data)
 	get_mfcc_deltas!(setup, data)
 	if setup.spectral_spectrum == :lin
@@ -283,6 +284,7 @@ function get_full(setup::AudioSetup, data::AudioData)
 	return hcat(
 		(
 			data.mel_spectrogram,
+			data.log_mel,
 			data.mfcc_coeffs,
 			data.mfcc_delta,
 			data.mfcc_deltadelta,
@@ -319,6 +321,14 @@ function get_mel_spec(setup::AudioSetup, data::AudioData)
 	get_mel_spec!(setup, data)
 
 	return data.mel_spectrogram
+end
+
+function get_log_mel(setup::AudioSetup, data::AudioData)
+	get_fft!(setup, data)
+	get_mel_spec!(setup, data)
+	get_log_mel!(setup, data)
+
+	return data.log_mel
 end
 
 function get_mfcc(setup::AudioSetup, data::AudioData)
@@ -385,6 +395,7 @@ function get_features(
 		:fft => get_fft,
 		:lin => get_lin_spec,
 		:mel => get_mel_spec,
+		:logmel => get_log_mel,
 		:mfcc => get_mfcc,
 		:spectral => get_spectrals,
 		:f0 => get_f0])
