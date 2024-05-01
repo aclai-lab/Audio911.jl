@@ -86,7 +86,7 @@ custom_1 = get_features(x, sr, fft_length = 1024, spectral_spectrum = :mel, freq
 #                       usage example 2: object style                        #
 # -------------------------------------------------------------------------- #
 
-audio = audio_features_obj(x, sr)
+audio = audio_features_obj(x, sr, f0_range = (50,700))
 
 audio.get_fft()
 audio.get_lin_spec()

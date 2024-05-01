@@ -200,7 +200,7 @@ mutable struct AudioObj
 			get_f0!(self.setup, self.data)
 		end
 
-		return self.data.fft
+		return self.data.f0
 	end
 
 	# --------------------------------------------------------------------------- #
@@ -429,6 +429,7 @@ mutable struct AudioObj
 			# --------------------------------------------------------------------------- #
 			#                                 Gio Paglia                                  #
 			# --------------------------------------------------------------------------- #
+
 		elseif profile == :kdd
 			if isempty(self.data.fft)
 				get_fft!(self.setup, self.data)
@@ -447,7 +448,7 @@ mutable struct AudioObj
 			# 	get_spectrals!(self.setup, self.data)
 			# end
 			if isempty(self.data.f0)
-				self.setup.f0_range = (200, 700),
+				self.setup.f0_range = (200, 700)
 				get_f0!(self.setup, self.data)
 			end
 
@@ -468,6 +469,27 @@ mutable struct AudioObj
 					# self.data.spectral_skewness,
 					# self.data.spectral_slope,
 					# self.data.spectral_spread,
+					self.data.f0,
+				)...,
+			)
+		elseif profile == :kdd2
+			if isempty(self.data.fft)
+				get_fft!(self.setup, self.data)
+			end
+			if isempty(self.data.mel_spectrogram)
+				get_mel_spec!(self.setup, self.data)
+			end
+			if isempty(self.data.log_mel)
+				get_log_mel!(self.setup, self.data)
+			end
+			if isempty(self.data.f0)
+				self.setup.f0_range = (200, 700)
+				get_f0!(self.setup, self.data)
+			end
+
+			return hcat(
+				(
+					self.data.log_mel,
 					self.data.f0,
 				)...,
 			)
