@@ -159,6 +159,11 @@ function audio_setup(
 	f0_method::Symbol = :nfc,
 	f0_range::Tuple{Int64, Int64} = (50, 400),
 	median_filter_length::Int64 = 1,
+
+	# constant-q transform	
+	bins_octave::Int64 = 12,
+	freq_limits::Tuple{Float64, Float64} = (0.0, 0.0),
+	transform_type::Symbol = :full,
 )
 
 	window_length == 0 ? window_length = fft_length : window_length
@@ -206,6 +211,11 @@ function audio_setup(
 		f0_method = f0_method,
 		f0_range = f0_range,
 		median_filter_length = median_filter_length,
+
+		# constant-q transform
+		bins_octave = bins_octave,
+		freq_limits = freq_limits,
+		transform_type = transform_type,
 	)
 end
 
@@ -374,6 +384,12 @@ function get_f0(setup::AudioSetup, data::AudioData)
 	return data.f0
 end
 
+function get_cqt(setup::AudioSetup, data::AudioData)
+	get_cqt_spec!(setup, data)
+
+	return data.cqt_spec
+end
+
 #------------------------------------------------------------------------------#
 #                        stand alone functions caller                          #
 #------------------------------------------------------------------------------#
@@ -398,7 +414,8 @@ function get_features(
 		:logmel => get_log_mel,
 		:mfcc => get_mfcc,
 		:spectral => get_spectrals,
-		:f0 => get_f0])
+		:f0 => get_f0,
+		:cqt => get_cqt])
 
 	if isnothing(data)
 		return nothing

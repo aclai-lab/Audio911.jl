@@ -26,6 +26,7 @@ end
 include("signalDataStructure.jl")
 include("audioFeaturesExtractor.jl")
 # windowing
+include("windowing/cswindows.jl")
 include("windowing/windows.jl")
 include("windowing/windowing.jl")
 # fft
@@ -41,6 +42,8 @@ include("utils/in_out.jl")
 include("utils/trimaudio.jl")
 # wavelets
 include("wavelet/cwt.jl")
+# constant-q transform
+include("cqt/cqt.jl")
 
 # structures
 export AudioSetup, AudioData, AudioObj

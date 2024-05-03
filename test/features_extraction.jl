@@ -34,6 +34,11 @@
 # f0_method::Symbol = :nfc,
 # f0_range::Tuple{Int64, Int64} = (50, 400),
 # median_filter_length::Int64 = 1,
+
+# constant-q transform	
+# bins_octave::Int64 = 12, default is 12: semitone scale
+# freq_limits::Tuple{Float64, Float64} = (sr / x_length, sr / 2),
+# transform_type::Symbol = :full, # available options :full, :reduced, :sparse
 """
 
 using Revise
@@ -78,6 +83,7 @@ logmel_1 = get_features(x, sr, :logmel)
 mfcc_1 = get_features(x, sr, :mfcc)
 spectral_1 = get_features(x, sr, :spectral)
 f0_1 = get_features(x, sr, :f0)
+cqt_1 = get_features(x, sr, :cqt)
 
 # submit parameters
 custom_1 = get_features(x, sr, fft_length = 1024, spectral_spectrum = :mel, frequency_range = (50, 1000), mel_style = :slaney)
@@ -86,7 +92,7 @@ custom_1 = get_features(x, sr, fft_length = 1024, spectral_spectrum = :mel, freq
 #                       usage example 2: object style                        #
 # -------------------------------------------------------------------------- #
 
-audio = audio_features_obj(x, sr, f0_range = (50,700))
+audio = audio_features_obj(x, sr, f0_range = (50, 700))
 
 audio.get_fft()
 audio.get_lin_spec()
@@ -95,6 +101,7 @@ audio.get_log_mel()
 audio.get_mfcc()
 audio.get_spectrals()
 audio.get_f0()
+audio.get_cqt()
 audio.get_features(:full)
 
 # -------------------------------------------------------------------------- #

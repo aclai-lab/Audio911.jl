@@ -46,6 +46,11 @@
 	f0_method::Symbol
 	f0_range::Tuple{Int64, Int64}
 	median_filter_length::Int64
+
+	# constant-q transform
+	bins_octave::Int64
+	freq_limits::Tuple{Float64, Float64}
+	transform_type::Symbol
 end
 
 @with_kw mutable struct AudioData
@@ -85,6 +90,9 @@ end
 
 	# f0
 	f0::Vector{Float64} = []
+
+	# constant-q transform
+	cqt_spec::AbstractArray{Float64} = []
 end
 
 # reference:
@@ -101,6 +109,7 @@ mutable struct AudioObj
 	const get_mfcc::Function
 	const get_spectrals::Function
 	const get_f0::Function
+	const get_cqt::Function
 	const get_features::Function
 
 	function get_fft(self::AudioObj)
@@ -201,6 +210,14 @@ mutable struct AudioObj
 		end
 
 		return self.data.f0
+	end
+
+	function get_cqt(self::AudioObj)
+		if isempty(self.data.cqt_spec)
+			get_cqt_spec!(self.setup, self.data)
+		end
+
+		return self.data.cqt_spec
 	end
 
 	# --------------------------------------------------------------------------- #
@@ -508,6 +525,7 @@ mutable struct AudioObj
 			() -> get_mfcc(obj),
 			() -> get_spectrals(obj),
 			() -> get_f0(obj),
+			() -> get_cqt(obj),
 			(x) -> get_features(obj, x),
 		)
 		#   return obj
