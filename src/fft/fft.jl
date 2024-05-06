@@ -50,7 +50,7 @@ function get_fft!(setup::AudioSetup, data::AudioData)
     # end
 
     ######### NON è nel punto corretto: la fft deve essere a numeri complessi, poi convertita in reali nel calcolo degli spettrogrammi!!!
-    ########### DA CAMBIARE ANCHE la struttura dati.
+    ########### DA CAMBIARE ANCHE la struttura dati... FORSE
     setup.spectrum_type == :power ? data.fft = real(Z .* conj(Z)) : data.fft = abs.(Z)
 
     # log energy

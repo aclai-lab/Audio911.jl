@@ -1,3 +1,6 @@
+# ---------------------------------------------------------------------------- #
+#                         mel scale utility functions                          #
+# ---------------------------------------------------------------------------- #
 function hz2mel(
 	hz::Tuple{Int64, Int64},
 	mel_style::Symbol = :htk, # :htk, :slaney
@@ -49,10 +52,33 @@ function get_mel_norm_factor(spectrum_type::Symbol, fft_window::Vector{Float64})
 	end
 end
 
+# ---------------------------------------------------------------------------- #
+#                       semitones scale utility functions                      #
+# ---------------------------------------------------------------------------- #
+hz2semitone(freq, base_freq) = 12 * log2(freq / base_freq)
+semitone2hz(z, base_freq)    = base_freq * (2^(z / 12))
+
+function catch_loudest_index(
+	lin_spec::AbstractArray{Float64},
+	freq_array::AbstractVector{Float64},
+	st_peak_range::Tuple{Int64, Int64},
+)
+	comp_spec = mean(lin_spec, dims = 1)'
+
+	min_index = findfirst((x) -> x >= st_peak_range[1], freq_array)
+	max_index = findfirst((x) -> x >= st_peak_range[2], freq_array) - 1
+
+	_, loudest_index = findmax(comp_spec[min_index:max_index])
+
+	return min_index + loudest_index
+end
+# ---------------------------------------------------------------------------- #
+#                           design filterbank matrix                           #
+# ---------------------------------------------------------------------------- #
 ### da generalizzare per 
 ### frequency_scale :mel, :bark, :erb
 ### filterbanl_design_domain :linear, :warped (da verificare se serve)
-function designMelFilterBank(data::AudioData, setup::AudioSetup)
+function design_filterbank(data::AudioData, setup::AudioSetup)
 	# set the design domain ### da implementare in futuro
 	setup.filterbank_design_domain == :linear ? design_domain = :linear :
 	design_domain = setup.frequency_scale
@@ -65,23 +91,38 @@ function designMelFilterBank(data::AudioData, setup::AudioSetup)
 	# mimic audioflux linear mel_style
 	if setup.mel_style == :linear
 		lin_fq = collect(0:(setup.fft_length-1)) / setup.fft_length * setup.sr
-		setup.band_edges = lin_fq[1:(setup.mel_bands+2)]
+		band_edges = lin_fq[1:(setup.mel_bands+2)]
+	elseif setup.mel_style == :htk || setup.mel_style == :slaney
+		band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
+
+	elseif setup.mel_style == :semitones
+		if isempty(data.lin_spectrogram)
+			lin_spectrogram!(setup, data)
+		end
+
+		loudest_index = catch_loudest_index(data.lin_spectrogram, data.lin_frequencies, setup.st_peak_range)
+
+		minsemitone = hz2semitone(setup.st_peak_range[1], loudest_index)
+		maxsemitone = hz2semitone(setup.st_peak_range[2], loudest_index)
+
+		band_edges = semitone2hz.(minsemitone .+ collect(0:(setup.mel_bands+1)) / (setup.mel_bands + 1) * (maxsemitone - minsemitone), loudest_index)
+
+		println(band_edges)
 	else
-		setup.band_edges = mel2hz(
-			LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
+		error("Unknown mel_style $(setup.mel_style).")
 	end
 
 	### parte esclusiva per mel filterbank si passa a file designmelfilterbank.m
 	# determine the number of bands
-	num_edges = length(setup.band_edges)
+	num_edges = length(band_edges)
 
 	# determine the number of valid bands
-	valid_num_edges = sum((setup.band_edges .- (setup.sr / 2)) .< sqrt(eps(Float64)))
+	valid_num_edges = sum((band_edges .- (setup.sr / 2)) .< sqrt(eps(Float64)))
 	valid_num_bands = valid_num_edges - 2
 
 	# preallocate the filter bank
-	data.mel_filterbank = zeros(Float64, setup.fft_length, setup.mel_bands)
-	setup.mel_frequencies = setup.band_edges[2:(end-1)]
+	filterbank = zeros(Float64, setup.fft_length, setup.mel_bands)
+	data.mel_frequencies = band_edges[2:(end-1)]
 
 	# Set this flag to true if the number of FFT length is insufficient to
 	# compute the specified number of mel bands
@@ -96,7 +137,7 @@ function designMelFilterBank(data::AudioData, setup::AudioSetup)
 
 	for edge_n in 1:valid_num_edges
 		for index in eachindex(linFq)
-			if linFq[index] > setup.band_edges[edge_n]
+			if linFq[index] > band_edges[edge_n]
 				p[edge_n] = index
 				break
 			end
@@ -106,16 +147,16 @@ function designMelFilterBank(data::AudioData, setup::AudioSetup)
 	FqMod = linFq
 
 	# Create triangular filters for each band
-	bw = diff(setup.band_edges)
+	bw = diff(band_edges)
 
 	for k in 1:Int(valid_num_bands)
 		# Rising side of triangle
 		for j in Int(p[k]):(Int(p[k+1])-1)
-			data.mel_filterbank[j, k] = (FqMod[j] - setup.band_edges[k]) / bw[k]
+			filterbank[j, k] = (FqMod[j] - band_edges[k]) / bw[k]
 		end
 		# Falling side of triangle
 		for j in Int(p[k+1]):(Int(p[k+2])-1)
-			data.mel_filterbank[j, k] = (setup.band_edges[k+2] - FqMod[j]) / bw[k+1]
+			filterbank[j, k] = (band_edges[k+2] - FqMod[j]) / bw[k+1]
 		end
 		emptyRange1 = p[k] .> p[k+1] - 1
 		emptyRange2 = p[k+1] .> p[k+2] - 1
@@ -127,15 +168,15 @@ function designMelFilterBank(data::AudioData, setup::AudioSetup)
 	# mirror two sided
 	range = get_onesided_fft_range(setup.fft_length)
 	range = range[2:end]
-	data.mel_filterbank[end:-1:(end-length(range)+1), :] = data.mel_filterbank[range, :]
+	filterbank[end:-1:(end-length(range)+1), :] = filterbank[range, :]
 
-	data.mel_filterbank = data.mel_filterbank'
+	filterbank = filterbank'
 
 	# normalizzazione    
-	BW = setup.band_edges[3:end] - setup.band_edges[1:(end-2)]
+	BW = band_edges[3:end] - band_edges[1:(end-2)]
 
 	if (setup.filterbank_normalization == :area)
-		weight_per_band = sum(data.mel_filterbank, dims = 2)
+		weight_per_band = sum(filterbank, dims = 2)
 		if setup.frequency_scale != :erb
 			weight_per_band = weight_per_band / 2
 		end
@@ -147,22 +188,77 @@ function designMelFilterBank(data::AudioData, setup::AudioSetup)
 
 	for i in 1:(setup.mel_bands)
 		if (weight_per_band[i] != 0)
-			data.mel_filterbank[i, :] = data.mel_filterbank[i, :] ./ weight_per_band[i]
+			filterbank[i, :] = filterbank[i, :] ./ weight_per_band[i]
 		end
 	end
 
 	# get one side
 	range = get_onesided_fft_range(setup.fft_length)
-	data.mel_filterbank = data.mel_filterbank[:, range]
+	filterbank = filterbank[:, range]
 	# manca la parte relativa a :erb e :bark
 
 	# setta fattore di normalizzazione
 	if setup.window_norm
 		win_norm_factor = get_mel_norm_factor(setup.spectrum_type, data.fft_window)
-		data.mel_filterbank = data.mel_filterbank * win_norm_factor
+		filterbank = filterbank * win_norm_factor
 	end
-end # function designMelFilterBank
 
+	return filterbank
+end # function design_filterbank
+
+# ---------------------------------------------------------------------------- #
+#                               mel spectrogram                                #
+# ---------------------------------------------------------------------------- #
+function get_mel_spec!(
+	setup::AudioSetup,
+	data::AudioData,
+)
+	filterbank = design_filterbank(data, setup)
+
+	hop_length = setup.window_length - setup.overlap_length
+	num_hops = Int(floor((size(data.x, 1) - setup.window_length) / hop_length) + 1)
+
+	# apply filterbank
+	# if (setup.spectrum_type == :power)
+	data.mel_spectrogram = reshape(
+		filterbank * data.fft, setup.mel_bands, num_hops)
+	# else
+	#     #TODO
+	#     error("magnitude not yet implemented.")
+	# end
+
+	data.mel_spectrogram = transpose(data.mel_spectrogram)
+end # melSpectrogram
+
+# ---------------------------------------------------------------------------- #
+#                          logaritmic mel spectrogram                          #
+# ---------------------------------------------------------------------------- #
+# TODO prova a fare le delta del log mel
+function get_log_mel!(
+	setup::AudioSetup,
+	data::AudioData,
+)
+	# Reference:
+	# https://dsp.stackexchange.com/questions/85501/log-of-filterbank-energies
+
+	# Rectify
+	mel_spec = deepcopy(data.mel_spectrogram')
+
+	if setup.normalization_type == :standard
+		mel_spec[mel_spec.==0] .= floatmin(Float64)
+	elseif setup.normalization_type == :dithered
+		mel_spec[mel_spec.<1e-8] .= 1e-8
+	else
+		@warn("Unknown $setup.normalization_type normalization type, defaulting to standard.")
+		mel_spec[mel_spec.==0] .= floatmin(Float64)
+	end
+
+	data.log_mel = log10.(mel_spec)'
+end
+
+# ---------------------------------------------------------------------------- #
+#                             mfcc related functions                           #
+# ---------------------------------------------------------------------------- #
 function create_DCT_matrix(
 	mel_coeffs::Int64,
 )
@@ -195,53 +291,6 @@ function audioDelta(
 	else
 		filt(b, 1.0, x)     #:matlab setting
 	end
-end
-
-################################################################################
-#                                    main                                      #
-################################################################################
-function get_mel_spec!(
-	setup::AudioSetup,
-	data::AudioData,
-)
-	designMelFilterBank(data, setup)
-
-	hop_length = setup.window_length - setup.overlap_length
-	num_hops = Int(floor((size(data.x, 1) - setup.window_length) / hop_length) + 1)
-
-	# apply filterbank
-	# if (setup.spectrum_type == :power)
-	data.mel_spectrogram = reshape(
-		data.mel_filterbank * data.fft, setup.mel_bands, num_hops)
-	# else
-	#     #TODO
-	#     error("magnitude not yet implemented.")
-	# end
-
-	data.mel_spectrogram = transpose(data.mel_spectrogram)
-end # melSpectrogram
-
-# TODO prova a fare le delta del log mel
-function get_log_mel!(
-	setup::AudioSetup,
-	data::AudioData,
-)
-	# Reference:
-	# https://dsp.stackexchange.com/questions/85501/log-of-filterbank-energies
-
-	# Rectify
-	mel_spec = deepcopy(data.mel_spectrogram')
-
-	if setup.normalization_type == :standard
-		mel_spec[mel_spec.==0] .= floatmin(Float64)
-	elseif setup.normalization_type == :dithered
-		mel_spec[mel_spec.<1e-8] .= 1e-8
-	else
-		@warn("Unknown $setup.normalization_type normalization type, defaulting to standard.")
-		mel_spec[mel_spec.==0] .= floatmin(Float64)
-	end
-
-	data.log_mel = log10.(mel_spec)'
 end
 
 function get_mfcc!(

@@ -32,7 +32,7 @@ function lin_spectrogram!(
     if (rem(setup.fft_length, 2) == 1 && bin_high == floor(setup.fft_length / 2 + 1))
         w[end] = setup.sr * (setup.fft_length - 1) / (2 * setup.fft_length)
     end
-    setup.lin_frequencies = w[:]
+    data.lin_frequencies = w[:]
 
     # aggiusta bordi banda, preso da audio features extraction
     adjust_first_bin = bins[1] == 1

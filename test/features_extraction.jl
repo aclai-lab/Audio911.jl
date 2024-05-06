@@ -46,6 +46,7 @@ using Audio911
 
 TESTPATH = joinpath(dirname(pathof(Audio911)), "..", "test")
 TESTFILE = "common_voice_en_23616312.wav"
+wavfile = joinpath(TESTPATH, TESTFILE)
 
 # -------------------------------------------------------------------------- #
 #                                 parameters                                 #
@@ -56,7 +57,7 @@ sr_src = 8000
 #                                 load audio                                 #
 # -------------------------------------------------------------------------- #
 
-x, sr = load_audio(joinpath(TESTPATH, TESTFILE), sr = sr_src)
+x, sr = load_audio(wavfile, sr = sr_src)
 
 # -------------------------------------------------------------------------- #
 #                        audio pre process utilities                         #
@@ -68,41 +69,70 @@ x = normalize_audio(x)
 # x = speech_detector(x, sr) BROKEN!
 
 # -------------------------------------------------------------------------- #
-#                        usage example 1: julia style                        #
+#     usage example 1: create audio object and call get features on that     #
+# -------------------------------------------------------------------------- #
+audio_1 = audio_obj(x, sr)
+
+# full features
+full_2 = get_features(audio_1, :full)
+
+# single features
+fft_2 = get_features(audio_1, :fft)
+lin_2 = get_features(audio_1, :lin)
+mel_2 = get_features(audio_1, :mel)
+logmel_2 = get_features(audio_1, :logmel)
+mfcc_2 = get_features(audio_1, :mfcc)
+mfccdelta__2 = get_features(audio_1, :mfcc_delta)
+spectral_2 = get_features(audio_1, :spectral)
+f0_2 = get_features(audio_1, :f0)
+cqt_2 = get_features(audio_1, :cqt)
+
+# submit parameters
+custom_1 = audio_obj(
+	x,
+	sr,
+	fft_length = 1024,
+	spectral_spectrum = :mel,
+	frequency_range = (50, 1000),
+	mel_style = :slaney,
+)
+# -------------------------------------------------------------------------- #
+#            usage example 2: calling features on preloaded audio            #
 # -------------------------------------------------------------------------- #
 
 # full features
-full_1 = get_features(x, sr)
-full_1 = get_features(x, sr, :full)
+full_2 = get_features(x, sr, :full)
 
 # single features
-fft_1 = get_features(x, sr, :fft)
-lin_1 = get_features(x, sr, :lin)
-mel_1 = get_features(x, sr, :mel)
-logmel_1 = get_features(x, sr, :logmel)
-mfcc_1 = get_features(x, sr, :mfcc)
-spectral_1 = get_features(x, sr, :spectral)
-f0_1 = get_features(x, sr, :f0)
-cqt_1 = get_features(x, sr, :cqt)
+fft_2 = get_features(x, sr, :fft)
+lin_2 = get_features(x, sr, :lin)
+mel_2 = get_features(x, sr, :mel)
+logmel_2 = get_features(x, sr, :logmel)
+mfcc_2 = get_features(x, sr, :mfcc)
+mfccdelta__2 = get_features(x, sr, :mfcc_delta)
+spectral_2 = get_features(x, sr, :spectral)
+f0_2 = get_features(x, sr, :f0)
+cqt_2 = get_features(x, sr, :cqt)
 
 # submit parameters
-custom_1 = get_features(x, sr, fft_length = 1024, spectral_spectrum = :mel, frequency_range = (50, 1000), mel_style = :slaney)
+custom_2 = get_features(
+	x,
+	sr,
+	:full,
+	fft_length = 1024,
+	spectral_spectrum = :mel,
+	frequency_range = (50, 1000),
+	mel_style = :slaney,
+	mel_bands = 40,
+)
 
 # -------------------------------------------------------------------------- #
-#                       usage example 2: object style                        #
+#                      usage example 3: submit filepath                      #
 # -------------------------------------------------------------------------- #
 
-audio = audio_features_obj(x, sr, f0_range = (50, 700))
-
-audio.get_fft()
-audio.get_lin_spec()
-audio.get_mel_spec()
-audio.get_log_mel()
-audio.get_mfcc()
-audio.get_spectrals()
-audio.get_f0()
-audio.get_cqt()
-audio.get_features(:full)
+sr = 8000
+audio_3 = audio_obj(wavfile, sr)
+audio_3_1 = get_features(wavfile, sr, :full)
 
 # -------------------------------------------------------------------------- #
 #                                 save audio                                 #
@@ -120,8 +150,9 @@ bad_1 = get_features(bad_x, sr)
 bad_x = (rand(1.0:3.0, 128))
 bad_1 = get_features(bad_x, sr)
 
-bad_x = Float64[]
-bad_1 = audio_features_obj(bad_x, sr)
+mel_1 = get_features(x, sr, :mel, frequency_scale = :chroma)
 
-bad_x = (rand(1.0:3.0, 128))
-bad_1 = audio_features_obj(bad_x, sr)
+# -------------------------------------------------------------------------- #
+#                        	   Gio's semitones                               #
+# -------------------------------------------------------------------------- #
+semi_1 = get_features(x, sr, :mel, mel_style=:semitones)

@@ -1,6 +1,6 @@
 function get_spectrum(setup::AudioSetup, data::AudioData)
-    setup.spectral_spectrum == :mel && return data.mel_spectrogram', setup.mel_frequencies
-    setup.spectral_spectrum == :lin && return data.lin_spectrogram', setup.lin_frequencies
+    setup.spectral_spectrum == :mel && return data.mel_spectrogram', data.mel_frequencies
+    setup.spectral_spectrum == :lin && return data.lin_spectrogram', data.lin_frequencies
     error("Unknown spectral spectrum")
 end
 

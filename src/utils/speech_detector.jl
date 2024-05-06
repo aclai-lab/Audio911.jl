@@ -229,7 +229,7 @@ function spectral_spread(
 	)
 	s = X.get_lin_spec()
 
-	freq = X.setup.lin_frequencies
+	freq = X.data.lin_frequencies
 
 	sum_x1 = vec(sum(s, dims = 1))
 	spectral_centroid = vec(sum(s .* freq, dims = 1) ./ sum_x1')
