@@ -55,8 +55,8 @@ end
 # ---------------------------------------------------------------------------- #
 #                       semitones scale utility functions                      #
 # ---------------------------------------------------------------------------- #
-hz2semitone(freq, base_freq) = 12 * log2(freq / base_freq)
-semitone2hz(z, base_freq)    = base_freq * (2^(z / 12))
+# hz2semitone(freq, base_freq) = 12 * log2(freq / base_freq)
+# semitone2hz(z, base_freq)    = base_freq * (2^(z / 12))
 
 function catch_loudest_index(
 	lin_spec::AbstractArray{Float64},
@@ -68,9 +68,9 @@ function catch_loudest_index(
 	min_index = findfirst((x) -> x >= st_peak_range[1], freq_array)
 	max_index = findfirst((x) -> x >= st_peak_range[2], freq_array) - 1
 
-	_, loudest_index = findmax(comp_spec[min_index:max_index])
+	loudest_peak, loudest_index = findmax(comp_spec[min_index:max_index])
 
-	return min_index + loudest_index
+	return loudest_peak, min_index + loudest_index
 end
 # ---------------------------------------------------------------------------- #
 #                           design filterbank matrix                           #
@@ -86,7 +86,15 @@ function design_filterbank(data::AudioData, setup::AudioSetup)
 	# compute band edges
 	# TODO da inserire il caso :erb e :bark
 
-	melRange = hz2mel(setup.frequency_range, setup.mel_style)
+	if setup.mel_style == :tuned
+		if isempty(data.lin_spectrogram)
+			lin_spectrogram!(setup, data)
+		end
+		_, loudest_index = catch_loudest_index(data.lin_spectrogram, data.lin_frequencies, setup.st_peak_range)
+		melRange = hz2mel((round(Int, data.lin_frequencies[loudest_index]), setup.frequency_range[2]), :htk)
+	else
+		melRange = hz2mel(setup.frequency_range, setup.mel_style)
+	end
 
 	# mimic audioflux linear mel_style
 	if setup.mel_style == :linear
@@ -94,20 +102,19 @@ function design_filterbank(data::AudioData, setup::AudioSetup)
 		band_edges = lin_fq[1:(setup.mel_bands+2)]
 	elseif setup.mel_style == :htk || setup.mel_style == :slaney
 		band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
+	elseif setup.mel_style == :tuned
+		band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), :htk)
+		# elseif setup.mel_style == :semitones
+		# 	if isempty(data.lin_spectrogram)
+		# 		lin_spectrogram!(setup, data)
+		# 	end
 
-	elseif setup.mel_style == :semitones
-		if isempty(data.lin_spectrogram)
-			lin_spectrogram!(setup, data)
-		end
+		# 	_, loudest_index = catch_loudest_index(data.lin_spectrogram, data.lin_frequencies, setup.st_peak_range)
 
-		loudest_index = catch_loudest_index(data.lin_spectrogram, data.lin_frequencies, setup.st_peak_range)
+		# 	minsemitone = hz2semitone(setup.st_peak_range[1], data.lin_frequencies[loudest_index])
+		# 	maxsemitone = hz2semitone(setup.st_peak_range[2], data.lin_frequencies[loudest_index])
 
-		minsemitone = hz2semitone(setup.st_peak_range[1], loudest_index)
-		maxsemitone = hz2semitone(setup.st_peak_range[2], loudest_index)
-
-		band_edges = semitone2hz.(minsemitone .+ collect(0:(setup.mel_bands+1)) / (setup.mel_bands + 1) * (maxsemitone - minsemitone), loudest_index)
-
-		println(band_edges)
+		# 	band_edges = semitone2hz.(minsemitone .+ collect(0:(setup.mel_bands+1)) / (setup.mel_bands + 1) * (maxsemitone - minsemitone), loudest_index)
 	else
 		error("Unknown mel_style $(setup.mel_style).")
 	end

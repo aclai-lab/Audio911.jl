@@ -137,7 +137,7 @@ function audio_setup(
 	spectrum_type::Symbol = :power, # :power, :magnitude
 
 	# mel
-	mel_style::Symbol = :htk, # :htk, :slaney, :semitones
+	mel_style::Symbol = :htk, # :htk, :slaney, :tuned
 	mel_bands::Int64 = 26,
 	filterbank_design_domain::Symbol = :linear,
 	filterbank_normalization::Symbol = :bandwidth, # :bandwidth, :area, :none
@@ -300,7 +300,7 @@ function get_lin_spec(audio_obj::AudioObj)
 		end
 		lin_spectrogram!(audio_obj.setup, audio_obj.data)
 	end
-	return audio_obj.data.lin_spectrogram
+	return audio_obj.data.lin_spectrogram, audio_obj.data.lin_frequencies
 end
 
 function get_mel_spec(audio_obj::AudioObj)
@@ -310,7 +310,7 @@ function get_mel_spec(audio_obj::AudioObj)
 		end
 		get_mel_spec!(audio_obj.setup, audio_obj.data)
 	end
-	return audio_obj.data.mel_spectrogram
+	return audio_obj.data.mel_spectrogram, audio_obj.data.mel_frequencies
 end
 
 function get_log_mel(audio_obj::AudioObj)

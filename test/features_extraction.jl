@@ -45,7 +45,8 @@ using Revise
 using Audio911
 
 TESTPATH = joinpath(dirname(pathof(Audio911)), "..", "test")
-TESTFILE = "common_voice_en_23616312.wav"
+# TESTFILE = "common_voice_en_23616312.wav"
+TESTFILE = "104_1b1_Al_sc_Litt3200_4.wav"
 wavfile = joinpath(TESTPATH, TESTFILE)
 
 # -------------------------------------------------------------------------- #
@@ -74,18 +75,18 @@ x = normalize_audio(x)
 audio_1 = audio_obj(x, sr)
 
 # full features
-full_2 = get_features(audio_1, :full)
+full_1 = get_features(audio_1, :full)
 
 # single features
-fft_2 = get_features(audio_1, :fft)
-lin_2 = get_features(audio_1, :lin)
-mel_2 = get_features(audio_1, :mel)
-logmel_2 = get_features(audio_1, :logmel)
-mfcc_2 = get_features(audio_1, :mfcc)
-mfccdelta__2 = get_features(audio_1, :mfcc_delta)
-spectral_2 = get_features(audio_1, :spectral)
-f0_2 = get_features(audio_1, :f0)
-cqt_2 = get_features(audio_1, :cqt)
+fft_1 = get_features(audio_1, :fft)
+(lin_1, linfreq_1) = get_features(audio_1, :lin)
+(mel_1, melfreq_1) = get_features(audio_1, :mel)
+logmel_1 = get_features(audio_1, :logmel)
+mfcc_1 = get_features(audio_1, :mfcc)
+mfccdelta_1 = get_features(audio_1, :mfcc_delta)
+spectral_1 = get_features(audio_1, :spectral)
+f0_1 = get_features(audio_1, :f0)
+cqt_1 = get_features(audio_1, :cqt)
 
 # submit parameters
 custom_1 = audio_obj(
@@ -105,11 +106,11 @@ full_2 = get_features(x, sr, :full)
 
 # single features
 fft_2 = get_features(x, sr, :fft)
-lin_2 = get_features(x, sr, :lin)
-mel_2 = get_features(x, sr, :mel)
+(lin_2, linfreq_2) = get_features(x, sr, :lin)
+(mel_2, melfreq_2) = get_features(x, sr, :mel)
 logmel_2 = get_features(x, sr, :logmel)
 mfcc_2 = get_features(x, sr, :mfcc)
-mfccdelta__2 = get_features(x, sr, :mfcc_delta)
+mfccdelta_2 = get_features(x, sr, :mfcc_delta)
 spectral_2 = get_features(x, sr, :spectral)
 f0_2 = get_features(x, sr, :f0)
 cqt_2 = get_features(x, sr, :cqt)
@@ -150,9 +151,9 @@ bad_1 = get_features(bad_x, sr)
 bad_x = (rand(1.0:3.0, 128))
 bad_1 = get_features(bad_x, sr)
 
-mel_1 = get_features(x, sr, :mel, frequency_scale = :chroma)
+(mel_3, melfreq_3) = get_features(x, sr, :mel, frequency_scale = :chroma)
 
 # -------------------------------------------------------------------------- #
 #                        	   Gio's semitones                               #
 # -------------------------------------------------------------------------- #
-semi_1 = get_features(x, sr, :mel, mel_style=:semitones)
+(tune_1, tunefreq_1) = get_features(x, sr, :mel, mel_style=:tuned)
