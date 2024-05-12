@@ -126,22 +126,24 @@ function audio_setup(
 	sr::Int64;
 
 	# fft
-	fft_length::Int64 = 256,
+	fft_length::Int64 = sr <= 8000 ? 256 : 512,
+	stft_freq::AbstractVector{Float64} = Float64[],
+	window::AbstractVector{Float64} = Float64[],
 	window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-	window_length::Int64 = 0,
-	overlap_length::Int64 = 0,
+	window_length::Int64 = fft_length, 					# standard setting: round(Int, 0.03 * sr)
+	overlap_length::Int64 = round(Int, fft_length / 2), # standard setting: round(Int, 0.02 * sr)
 	window_norm::Bool = false,
 
 	# spectrum
-	frequency_range::Tuple{Int64, Int64} = (0, 0),
-	spectrum_type::Symbol = :power, # :power, :magnitude
+	frequency_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
+	spectrum_type::Symbol = :power, 					# :power, :magnitude
 
 	# mel
-	mel_style::Symbol = :htk, # :htk, :slaney, :tuned
+	mel_style::Symbol = :htk, 							# :htk, :slaney, :tuned
 	mel_bands::Int64 = 26,
 	filterbank_design_domain::Symbol = :linear,
-	filterbank_normalization::Symbol = :bandwidth, # :bandwidth, :area, :none
-	frequency_scale::Symbol = :mel, # TODO :mel, :bark, :erb
+	filterbank_normalization::Symbol = :bandwidth, 		# :bandwidth, :area, :none
+	frequency_scale::Symbol = :mel, 					# TODO :mel, :bark, :erb
 	st_peak_range::Tuple{Int64, Int64} = (200, 700),
 
 	# chroma
@@ -151,15 +153,15 @@ function audio_setup(
 
 	# mfcc
 	num_coeffs::Int64 = 13,
-	normalization_type::Symbol = :dithered, # :standard, :dithered
-	rectification::Symbol = :log, # :log, :cubic_root
-	log_energy_source::Symbol = :standard, # :standard (after windowing), :mfcc
-	log_energy_pos::Symbol = :none, #:append, :replace, :none
+	normalization_type::Symbol = :dithered, 			# :standard, :dithered
+	rectification::Symbol = :log, 						# :log, :cubic_root
+	log_energy_source::Symbol = :standard, 				# :standard (after windowing), :mfcc
+	log_energy_pos::Symbol = :none, 					#:append, :replace, :none
 	delta_window_length::Int64 = 9,
-	delta_matrix::Symbol = :transposed, # :standard, :transposed
+	delta_matrix::Symbol = :transposed, 				# :standard, :transposed
 
 	# spectral
-	spectral_spectrum::Symbol = :lin, # :lin, :mel
+	spectral_spectrum::Symbol = :lin, 					# :lin, :mel
 
 	# f0
 	f0_method::Symbol = :nfc,
@@ -170,13 +172,6 @@ function audio_setup(
 	freq_limits::Tuple{Float64, Float64} = (0.0, 0.0),
 	transform_type::Symbol = :full,
 )
-
-	window_length == 0 ? window_length = fft_length : window_length
-	overlap_length == 0 ? overlap_length = round(Int, fft_length / 2) : overlap_length
-	# window_length == 0 ? window_length = round(Int, 0.03 * sr) : window_length
-	# overlap_length == 0 ? overlap_length = round(Int, 0.02 * sr) : overlap_length
-	frequency_range == (0, 0) ? frequency_range = (0, floor(Int, sr / 2)) : frequency_range
-
 	# TODO metti warning ed errori
 
 	AudioSetup(
@@ -184,6 +179,8 @@ function audio_setup(
 
 		# fft
 		fft_length = fft_length,
+		stft_freq = stft_freq,
+		window = window,
 		window_type = window_type,
 		window_length = window_length,
 		overlap_length = overlap_length,
@@ -243,7 +240,7 @@ function audio_obj(
 
 	if preemphasis !== nothing
 		zi = 2 * x[1] - x[2]
-		filt!(x, [1.0, -preemphasis], 1.0, x, [zi])
+		filt!(x, [1.0, - preemphasis], 1.0, x, [zi])
 		# # aclai preemphasis
 		# x = filt(PolynomialRatio([1.0, -preemphasis], [1.0]), x)
 	end
@@ -274,7 +271,7 @@ end
 
 function audio_obj(
 	filepath::String,
-	sr::Int64,
+	sr::Int64;
 	preemphasis = nothing,
 	kwargs...,
 )
@@ -448,7 +445,7 @@ function get_features(
 	feat::Symbol = :full,
 )
 	func_call = Dict([
-		:full => get_full,
+		:full => get_full, 
 		:fft => get_fft,
 		:lin => get_lin_spec,
 		:mel => get_mel_spec,
@@ -457,7 +454,31 @@ function get_features(
 		:mfcc_delta => get_mfcc_delta,
 		:spectral => get_spectrals,
 		:f0 => get_f0,
-		:cqt => get_cqt])
+		:cqt => get_cqt,
+		:age_set =>
+			(x) -> begin
+				get_full(x)
+				return hcat(
+					(
+						# audio_obj.data.mel_spectrogram,
+						# audio_obj.data.log_mel,
+						audio_obj.data.mfcc_coeffs,
+						audio_obj.data.mfcc_delta,
+						audio_obj.data.mfcc_deltadelta,
+						# audio_obj.data.spectral_centroid,
+						# audio_obj.data.spectral_crest,
+						# audio_obj.data.spectral_decrease,
+						# audio_obj.data.spectral_entropy,
+						# audio_obj.data.spectral_flatness,
+						# audio_obj.data.spectral_flux,
+						# audio_obj.data.spectral_kurtosis,
+						# audio_obj.data.spectral_rolloff,
+						# audio_obj.data.spectral_skewness,
+						# audio_obj.data.spectral_slope,
+						# audio_obj.data.spectral_spread,
+						# audio_obj.data.f0,
+					)...)
+			end])
 
 	if !isnothing(audio_obj)
 		if haskey(func_call, feat)

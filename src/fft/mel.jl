@@ -104,17 +104,6 @@ function design_filterbank(data::AudioData, setup::AudioSetup)
 		band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
 	elseif setup.mel_style == :tuned
 		band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), :htk)
-		# elseif setup.mel_style == :semitones
-		# 	if isempty(data.lin_spectrogram)
-		# 		lin_spectrogram!(setup, data)
-		# 	end
-
-		# 	_, loudest_index = catch_loudest_index(data.lin_spectrogram, data.lin_frequencies, setup.st_peak_range)
-
-		# 	minsemitone = hz2semitone(setup.st_peak_range[1], data.lin_frequencies[loudest_index])
-		# 	maxsemitone = hz2semitone(setup.st_peak_range[2], data.lin_frequencies[loudest_index])
-
-		# 	band_edges = semitone2hz.(minsemitone .+ collect(0:(setup.mel_bands+1)) / (setup.mel_bands + 1) * (maxsemitone - minsemitone), loudest_index)
 	else
 		error("Unknown mel_style $(setup.mel_style).")
 	end

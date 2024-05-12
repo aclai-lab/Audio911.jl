@@ -42,6 +42,7 @@
 """
 
 using Revise
+using Plots
 using Audio911
 
 TESTPATH = joinpath(dirname(pathof(Audio911)), "..", "test")
@@ -52,7 +53,7 @@ wavfile = joinpath(TESTPATH, TESTFILE)
 # -------------------------------------------------------------------------- #
 #                                 parameters                                 #
 # -------------------------------------------------------------------------- #
-sr_src = 8000
+sr_src = 16000
 
 # -------------------------------------------------------------------------- #
 #                                 load audio                                 #
@@ -67,7 +68,7 @@ x, sr = load_audio(wavfile, sr = sr_src)
 # normalize audio signal
 x = normalize_audio(x)
 # speech detector trim
-# x = speech_detector(x, sr) BROKEN!
+x, _ = speech_detector(x, sr)
 
 # -------------------------------------------------------------------------- #
 #     usage example 1: create audio object and call get features on that     #
@@ -156,4 +157,47 @@ bad_1 = get_features(bad_x, sr)
 # -------------------------------------------------------------------------- #
 #                        	   Gio's semitones                               #
 # -------------------------------------------------------------------------- #
-(tune_1, tunefreq_1) = get_features(x, sr, :mel, mel_style=:tuned)
+(tune_1, tunefreq_1) = get_features(x, sr, :mel, mel_style = :tuned, st_peak_range = (50, 500))
+
+# -------------------------------------------------------------------------- #
+#                           modular implementation                           #
+# -------------------------------------------------------------------------- #
+
+# --------------------------------- stft ----------------------------------- #
+# example 1:
+stft_1, stft_freq_1 = get_stft(x, sr)
+
+# example 2, with args:
+stft_2, stft_freq_2 = get_stft(
+	x,
+	sr,
+	fft_length = 512,
+	spectrum_type = :magnitude,
+	window_type = (:hamming, :symmetric),
+	frequency_range = (100, 3000),
+)
+
+# example 3, modular: signal > windowing > stft
+buffer_3, win_3 = get_frames(x)
+stft_3, stft_freq_3 = get_stft(buffer_3, sr, win_3)
+
+# example 4, utilizing audio_obj
+audio_4 = audio_obj(x, sr)
+get_stft!(audio_4)
+# display(audio_4.data.stft)
+
+# example 5, utilizing audio_obj with args
+audio_5 = audio_obj(x,
+	sr,
+	fft_length = 512,
+	spectrum_type = :magnitude,
+	window_type = (:hamming, :symmetric),
+	frequency_range = (100, 3000))
+get_stft!(audio_5)
+# display(audio_5.data.stft)
+
+# example 6, utilizing audio_obj modular
+audio_6 = audio_obj(x, sr)
+get_frames!(audio_6)
+get_stft!(audio_6)
+display(audio_6.data.stft)

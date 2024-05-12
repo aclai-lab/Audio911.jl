@@ -58,7 +58,7 @@ function lin_spectrogram!(
     end
 
     # calculate linear spectrum and normalization
-    linear_norm_factor = get_lin_norm_factor(setup.spectrum_type, data.fft_window)
+    linear_norm_factor = get_lin_norm_factor(setup.spectrum_type, setup.window)
     full_spectrum ? data.lin_spectrogram = data.fft * linear_norm_factor : data.lin_spectrogram = data.fft[bins_logical, :] * linear_norm_factor
 
     if adjust_bins

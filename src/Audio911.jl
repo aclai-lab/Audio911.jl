@@ -37,6 +37,7 @@ include("fft/lin.jl")
 include("fft/mel.jl")
 include("fft/spectral.jl")
 # utils
+include("utils/histogram.jl")
 include("utils/speech_detector.jl")
 include("utils/in_out.jl")
 include("utils/trimaudio.jl")
@@ -59,5 +60,8 @@ get_fft!
 # TODO patch
 extractfeatures = 
 export extractfeatures
+
+# modular
+export get_frames, get_frames!, get_stft, get_stft!
 
 end # module Audio911
