@@ -4,6 +4,7 @@ using FFTW, DSP
 using LinearAlgebra
 using Parameters
 using SpecialFunctions
+using StatsBase
 using Statistics, Roots
 using NaNStatistics
 
