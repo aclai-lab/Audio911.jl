@@ -46,8 +46,8 @@ using Plots
 using Audio911
 
 TESTPATH = joinpath(dirname(pathof(Audio911)), "..", "test")
-# TESTFILE = "common_voice_en_23616312.wav"
-TESTFILE = "104_1b1_Al_sc_Litt3200_4.wav"
+TESTFILE = "common_voice_en_23616312.wav"
+# TESTFILE = "104_1b1_Al_sc_Litt3200_4.wav"
 wavfile = joinpath(TESTPATH, TESTFILE)
 
 # -------------------------------------------------------------------------- #
