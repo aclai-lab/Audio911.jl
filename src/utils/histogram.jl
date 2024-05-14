@@ -67,7 +67,7 @@ end
 function get_histcounts(
 	x::AbstractVector{Float64};
 	nbins::Union{Int64, Nothing} = nothing,
-	# binwidth::Union{Int64, Float64, Nothing} = nothing,
+	binwidth::Union{Int64, Float64, Nothing} = nothing,
 	norm::Symbol = :none,
 	allow_nan = :false,
 )

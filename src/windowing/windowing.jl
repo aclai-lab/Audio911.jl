@@ -123,3 +123,40 @@ function get_frames(
 end
 
 get_frames!(a::AudioObj; kwargs...) = a.data.frames, a.setup.window = get_frames(a.data.x; kwargs...)
+
+#------------------------------------------------------------------------------#
+#                                   windowing                                  #
+#------------------------------------------------------------------------------#
+function _get_frames2(
+	x::AbstractVector{Float64};
+	window_type::Tuple{Symbol, Symbol},
+	window_length::Int64,
+	overlap_length::Int64,
+)
+	frames = buffer(x, window_length, window_length - overlap_length)
+	window, _ = gencoswin(window_type[1], window_length, window_type[2])
+
+	return frames .* window
+end
+
+function _get_frames2(x::AbstractVector{Float64}, s::AudioSetup)
+	_get_frames2(x, window_type = s.window_type, window_length = s.window_length, overlap_length = s.overlap_length)
+end
+
+function get_frames2(
+	x::AbstractVector{<:AbstractFloat},
+	window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
+	window_length::Int64 = 256,
+	overlap_length::Int64 = 128,
+)
+	@assert 0 < overlap_length < window_length "Overlap length must be < window length."
+
+	frames = _get_frames2(
+		eltype(x) == Float64 ? x : Float64.(x),
+		window_type = window_type,
+		window_length = window_length,
+		overlap_length = overlap_length,
+	)
+end
+
+get_frames2!(a::AudioObj; kwargs...) = a.data.frames, a.setup.window = get_frames2(a.data.x; kwargs...)

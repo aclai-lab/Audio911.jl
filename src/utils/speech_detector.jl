@@ -39,7 +39,7 @@ function get_threshs_from_feature(
 	hist_bins = max(10, hist_bins)
 
 	m_feature = mean(feature)
-	n_feature, edges_feature = histcounts(feature, hist_bins)
+	n_feature, edges_feature = get_histcounts(feature, nbins=hist_bins)
 
 	# working with spectral spread
 	if type == :specspread
