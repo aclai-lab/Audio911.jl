@@ -221,7 +221,7 @@ function speech_detector(
 end
 
 function speech_detector(x::AbstractVector{<:AbstractFloat}, sr::Int64; kwargs...)
-	speech_detector(Float64.(x), sr, kwargs...)
+	speech_detector(Float64.(x), sr; kwargs...)
 end
 
 # references
