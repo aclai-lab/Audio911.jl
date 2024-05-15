@@ -96,7 +96,7 @@ function debuffer_frame_overlap(speech_mask, window_length, overlap_length)
 
     numSharedFrames = floor(Int, window_length/hopLength)
 
-    nearestNVotes = DSP.conv(ones(numSharedFrames), [speech_mask; zeros(numSharedFrames-1)])
+    nearestNVotes = conv(ones(numSharedFrames), [speech_mask; zeros(numSharedFrames-1)])
 
     beginThresh = (1:numSharedFrames-1) ./ 2
     endThresh = reverse(beginThresh)
@@ -252,3 +252,41 @@ end
 
 # references
 # https://github.com/linan2/Voice-activity-detection-VAD-paper-and-code
+
+# using Revise
+# using Plots
+using Audio911
+# using FFTW
+# using StatsBase
+# using NaNStatistics
+# using DSP
+
+TESTPATH = joinpath(dirname(pathof(Audio911)), "..", "test")
+# TESTFILE = "common_voice_en_23616312.wav"
+TESTFILE = "104_1b1_Al_sc_Litt3200_4.wav"
+wavfile = joinpath(TESTPATH, TESTFILE)
+
+# -------------------------------------------------------------------------- #
+#                                 parameters                                 #
+# -------------------------------------------------------------------------- #
+sr_src = 16000
+
+# -------------------------------------------------------------------------- #
+#                                 load audio                                 #
+# -------------------------------------------------------------------------- #
+
+x, sr = load_audio(wavfile, sr_src)
+
+a, b =speech_detector(x, sr, overlap_length = 5)
+
+# window_type = (:hann, :periodic)
+# window_length = round(Int, 0.03 * sr)
+# overlap_length = 5
+# thresholds = (-Inf, -Inf)
+# merge_distance = window_length * 5
+# x = Float64.(x)
+# include("/home/paso/.julia/dev/Audio911.jl/src/windowing/windows.jl")
+# include("/home/paso/.julia/dev/Audio911.jl/src/windowing/windowing.jl")
+# include("/home/paso/.julia/dev/Audio911.jl/src/fft/fft.jl")
+# include("/home/paso/.julia/dev/Audio911.jl/src/fft/spectral.jl")
+# include("/home/paso/.julia/dev/Audio911.jl/src/utils/histogram.jl")
