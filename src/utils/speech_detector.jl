@@ -90,23 +90,23 @@ function get_threshs_from_feature(
     return M1, M2
 end
 
-function debuffer_frame_overlap(speech_mask, window_length, overlap_length)
+function debuffer_frame_overlap(
+        speech_mask::BitVector, window_length::Int64, overlap_length::Int64)
+    hop_length = window_length - overlap_length
 
-    hopLength = window_length - overlap_length
+    n_shared_frames = floor(Int, window_length / hop_length)
 
-    numSharedFrames = floor(Int, window_length/hopLength)
+    nearest_nv = DSP.filt(ones(n_shared_frames), [speech_mask; zeros(n_shared_frames - 1)])
 
-    nearestNVotes = DSP.conv(ones(numSharedFrames), [speech_mask; zeros(numSharedFrames-1)])
+    begin_thr = (1:(n_shared_frames - 1)) ./ 2
+    end_thr = reverse(begin_thr)
+    mid_thr = ones(length(nearest_nv) - 2 * (n_shared_frames - 1))
 
-    beginThresh = (1:numSharedFrames-1) ./ 2
-    endThresh = reverse(beginThresh)
-    midThresh = ones(length(nearestNVotes) - 2 * (numSharedFrames - 1))
+    thresh = [begin_thr; mid_thr; end_thr]
 
-    thresh = [beginThresh; midThresh; endThresh]
+    out = nearest_nv .>= thresh
 
-    out = nearestNVotes .>= thresh
-
-    return out, hopLength
+    return out, hop_length
 end
 
 function speech_detector(
@@ -197,7 +197,8 @@ function speech_detector(
     #----------------------------------------------------------------------------------#
     # De-buffer for Frame Overlap
     if overlap_length > 0
-        unbuff_out, window_length = debuffer_frame_overlap(speech_mask, window_length, overlap_length)
+        unbuff_out, window_length = debuffer_frame_overlap(
+            speech_mask, window_length, overlap_length)
     else
         unbuff_out = speech_mask
     end
