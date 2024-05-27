@@ -274,19 +274,19 @@ end # function wt
 
 function cwt_windowing(
     cwt_spectrum::Matrix{Float64},
-    window_length::Int64
+    win_length::Int64
 )
     c_length = size(cwt_spectrum, 1)
     n_feats = size(cwt_spectrum, 2)
-    n_hops = floor(Int, c_length / window_length)
+    n_hops = floor(Int, c_length / win_length)
 
     y = zeros(Float64, n_hops, n_feats)
 
     for i = 1:n_feats
         for j = 1:n_hops
 
-                # y[j,i] = maximum(cwt_spectrum[(j-1)*window_length+1:j*window_length, i])
-                y[j,i] = mean(cwt_spectrum[(j-1)*window_length+1:j*window_length, i])
+                # y[j,i] = maximum(cwt_spectrum[(j-1)*win_length+1:j*win_length, i])
+                y[j,i] = mean(cwt_spectrum[(j-1)*win_length+1:j*win_length, i])
 
         end
     end

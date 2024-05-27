@@ -91,10 +91,10 @@ function get_threshs_from_feature(
 end
 
 function debuffer_frame_overlap(
-        speech_mask::BitVector, window_length::Int64, overlap_length::Int64)
-    hop_length = window_length - overlap_length
+        speech_mask::BitVector, win_length::Int64, overlap_length::Int64)
+    hop_length = win_length - overlap_length
 
-    n_shared_frames = floor(Int, window_length / hop_length)
+    n_shared_frames = floor(Int, win_length / hop_length)
 
     nearest_nv = DSP.filt(ones(n_shared_frames), [speech_mask; zeros(n_shared_frames - 1)])
 
@@ -112,11 +112,11 @@ end
 function speech_detector(
         x::AbstractVector{Float64},
         sr::Int64;
-        window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-        window_length::Int64 = round(Int, 0.03 * sr),
+        win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
+        win_length::Int64 = round(Int, 0.03 * sr),
         overlap_length::Int64 = 0,
         thresholds::Tuple{Float64, Float64} = (-Inf, -Inf),
-        merge_distance::Int64 = window_length * 5
+        merge_distance::Int64 = win_length * 5
 )
     # ---------------------------------------------------------------------------------- #
     #                                     parameters                                     #
@@ -138,23 +138,30 @@ function speech_detector(
     x = normalize_audio(x)
 
     # get stft
-    frames, window = _get_frames(
+    frames, win, wframes, _, _ = _get_frames(
         x,
-        window_type = window_type,
-        window_length = window_length,
+        win_type = win_type,
+        win_length = win_length,
         overlap_length = overlap_length
     )
-    s, sfreq = _get_stft(
-        frames .* window,
-        sr,
-        fft_length = 2 * window_length,
-        window = window,
-        frequency_range = (0, floor(Int, sr / 2)),
-        spectrum_type = :magnitude
+    s, _ = _get_stft(
+        wframes;
+        sr = sr,
+        win = win,
+        win_length = win_length,
+        stft_length = 2 * win_length,
+        spec_norm = :magnitude
+    )
+
+    s, sfreq, _ = _trim_freq_range(
+        s, 
+        sr = sr,
+        win_length = win_length,
+        freq_range = (0, floor(Int, sr/2))
     )
 
     # determine short term energy
-    energy = vec(window' .^ 2 * frames .^ 2)
+    energy = vec(win' .^ 2 * frames .^ 2)
 
     # filter the short term energy twice
     filtered_energy = moving_mean(
@@ -197,14 +204,14 @@ function speech_detector(
     #----------------------------------------------------------------------------------#
     # De-buffer for Frame Overlap
     if overlap_length > 0
-        unbuff_out, window_length = debuffer_frame_overlap(
-            speech_mask, window_length, overlap_length)
+        unbuff_out, win_length = debuffer_frame_overlap(
+            speech_mask, win_length, overlap_length)
     else
         unbuff_out = speech_mask
     end
 
     # change frames into data points
-    a = repeat(unbuff_out', outer = [window_length, 1])
+    a = repeat(unbuff_out', outer = [win_length, 1])
     unbuff_out_mask = [a[:]; falses(length(x) - length(a), 1)]
     difference = diff([unbuff_out_mask; false], dims = 1)
 

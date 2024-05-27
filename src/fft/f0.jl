@@ -31,14 +31,14 @@ function get_f0!(
 	data::AudioData
 )
 	len_x = size(data.x, 1)
-	hoplength = setup.window_length - setup.overlap_length
-	num_hops_final = Int(floor((len_x - setup.window_length) / hoplength)) + 1
+	hoplength = setup.win_length - setup.overlap_length
+	num_hops_final = Int(floor((len_x - setup.win_length) / hoplength)) + 1
 
 	if setup.f0_method == :srh
 		N = Int(round(0.025 * setup.sr))
 		hop_size = Int(round(0.005 * setup.sr))
 	else
-		N = setup.window_length
+		N = setup.win_length
 		hop_size = hoplength
 	end
 	num_hops = Int(ceil((len_x - N) / hop_size)) + 1

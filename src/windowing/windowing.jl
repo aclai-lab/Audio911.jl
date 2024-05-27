@@ -2,16 +2,16 @@
 
 function buffer(
         x::AbstractVector{Float64},
-        window_length::Int64,
+        win_length::Int64,
         hop_length::Int64
 )
     x_length = size(x, 1)
-    num_hops = floor(Int, (x_length - window_length) / hop_length) + 1
+    num_hops = floor(Int, (x_length - win_length) / hop_length) + 1
 
-    y = zeros(Float64, window_length, num_hops)
+    y = zeros(Float64, win_length, num_hops)
 
     for j in 1:num_hops
-        for i in 1:window_length
+        for i in 1:win_length
             y[i, j] = x[i + hop_length * (j - 1)]
         end
     end
@@ -92,71 +92,42 @@ end # function fade
 #------------------------------------------------------------------------------#
 function _get_frames(
 	x::AbstractVector{Float64};
-	window_type::Tuple{Symbol, Symbol},
-	window_length::Int64,
+	win_type::Tuple{Symbol, Symbol},
+	win_length::Int64,
 	overlap_length::Int64,
 )
-	frames = buffer(x, window_length, window_length - overlap_length)
-	window, _ = gencoswin(window_type[1], window_length, window_type[2])
+    hop_length = win_length - overlap_length
+	frames = buffer(x, win_length, hop_length)
+	win, _ = gencoswin(win_type[1], win_length, win_type[2])
 
-	return frames, window
+    n_col = div(size(x, 1) - overlap_length, hop_length)
+    col_offsets = (0:(n_col-1)) .* hop_length
+
+	return frames, win, frames .* win, n_col, col_offsets
 end
 
-function _get_frames(x::AbstractVector{Float64}, s::AudioSetup)
-	_get_frames(x, window_type = s.window_type, window_length = s.window_length, overlap_length = s.overlap_length)
+function _get_frames(x::AbstractVector{Float64}, s::StftSetup)
+	_get_frames(x, win_type = s.win_type, win_length = s.win_length, overlap_length = s.overlap_length)
+end
+
+function _get_frames(x::AbstractVector{Float64}, a::AudioSetupDev)
+	_get_frames(x, a.stft)
 end
 
 function get_frames(
 	x::AbstractVector{<:AbstractFloat},
-	window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-	window_length::Int64 = 256,
+	win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
+	win_length::Int64 = 256,
 	overlap_length::Int64 = 128,
 )
-	@assert 0 < overlap_length < window_length "Overlap length must be < window length."
+	@assert 0 < overlap_length < win_length "Overlap length must be < window length."
 
-	frames, window = _get_frames(
+	frames, win, wframes, n_col, col_offsets = _get_frames(
 		eltype(x) == Float64 ? x : Float64.(x),
-		window_type = window_type,
-		window_length = window_length,
+		win_type = win_type,
+		win_length = win_length,
 		overlap_length = overlap_length,
 	)
 end
 
 get_frames!(a::AudioObj; kwargs...) = a.data.frames, a.setup.window = get_frames(a.data.x; kwargs...)
-
-#------------------------------------------------------------------------------#
-#                                   windowing                                  #
-#------------------------------------------------------------------------------#
-function _get_frames2(
-	x::AbstractVector{Float64};
-	window_type::Tuple{Symbol, Symbol},
-	window_length::Int64,
-	overlap_length::Int64,
-)
-	frames = buffer(x, window_length, window_length - overlap_length)
-	window, _ = gencoswin(window_type[1], window_length, window_type[2])
-
-	return frames .* window
-end
-
-function _get_frames2(x::AbstractVector{Float64}, s::AudioSetup)
-	_get_frames2(x, window_type = s.window_type, window_length = s.window_length, overlap_length = s.overlap_length)
-end
-
-function get_frames2(
-	x::AbstractVector{<:AbstractFloat},
-	window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-	window_length::Int64 = 256,
-	overlap_length::Int64 = 128,
-)
-	@assert 0 < overlap_length < window_length "Overlap length must be < window length."
-
-	frames = _get_frames2(
-		eltype(x) == Float64 ? x : Float64.(x),
-		window_type = window_type,
-		window_length = window_length,
-		overlap_length = overlap_length,
-	)
-end
-
-get_frames2!(a::AudioObj; kwargs...) = a.data.frames, a.setup.window = get_frames2(a.data.x; kwargs...)

@@ -8,6 +8,8 @@ using StatsBase
 using Statistics, Roots
 using NaNStatistics
 
+using Unitful, NamedArrays
+
 using PyCall
 
 function __init__()
@@ -37,6 +39,7 @@ include("fft/fft.jl")
 include("fft/lin.jl")
 include("fft/mel.jl")
 include("fft/spectral.jl")
+include("fft/stft.jl")
 # utils
 include("utils/histogram.jl")
 include("utils/speech_detector.jl")
@@ -48,9 +51,10 @@ include("wavelet/cwt.jl")
 include("cqt/cqt.jl")
 
 # structures
+export StftSetup
 export AudioSetup, AudioData, AudioObj
 # audio features
-export audio_obj, get_features
+export audio_obj, get_features, audio_objdev
 
 # utility functions
 export speech_detector
@@ -62,9 +66,11 @@ get_fft!
 extractfeatures = 
 export extractfeatures
 
-# modular
-export get_frames, get_frames!, get_stft, get_stft!
+# ------------------------------------------------ #
+#                       modular                    #
+# ------------------------------------------------ #
+export get_frames, get_frames!
+export get_stft, get_stft!
 
-export get_frames2, get_stft2
 
 end # module Audio911

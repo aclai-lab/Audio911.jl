@@ -1,8 +1,8 @@
 """
 # optional arguments, default settings:
 # fft_length::Int64 = 256,
-# window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-# window_length::Int64 = fft_length,
+# win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
+# win_length::Int64 = fft_length,
 # overlap_length::Int64 = round(Int, fft_length / 2),
 # window_norm::Bool = false,
 
@@ -24,7 +24,7 @@
 # rectification::Symbol = :log, # available options :log, :cubic_root
 # log_energy_source::Symbol = :standard, # available options :standard (after windowing), :mfcc
 # log_energy_pos::Symbol = :none, # available options :append, :replace, :none
-# delta_window_length::Int64 = 9,
+# delta_win_length::Int64 = 9,
 # delta_matrix::Symbol = :transposed, # available options :standard, :transposed
 
 # # spectral
@@ -59,7 +59,7 @@ sr_src = 16000
 #                                 load audio                                 #
 # -------------------------------------------------------------------------- #
 
-x, sr = load_audio(wavfile, sr = sr_src)
+x, sr = load_audio(wavfile, sr_src)
 
 # -------------------------------------------------------------------------- #
 #                        audio pre process utilities                         #
@@ -163,46 +163,137 @@ bad_1 = get_features(bad_x, sr)
 #                           modular implementation                           #
 # -------------------------------------------------------------------------- #
 
-# --------------------------------- stft ----------------------------------- #
+# --------------------------- stft standalone ------------------------------ #
 # example 1:
-stft_1, stft_freq_1 = get_stft(x, sr)
-
-# example 2, with args:
-stft_2, stft_freq_2 = get_stft(
-	x,
-	sr,
-	fft_length = 512,
-	spectrum_type = :magnitude,
-	window_type = (:hamming, :symmetric),
-	frequency_range = (100, 3000),
+stft_1, freq_1 = get_stft(x, sr)
+heatmap(
+	collect(1:size(stft_1, 2)) / sr, 
+	freq_1, 
+	stft_1, 
+	xlabel="Time", 
+	ylabel="Frequency", 
+	title="Stft Example 1", color=:plasma, clims=(0, 20)
 )
 
-# example 3, modular: signal > windowing > stft
-buffer_3, win_3 = get_frames(x)
-stft_3, stft_freq_3 = get_stft(buffer_3, sr, win_3)
+# example 2.1, with args, power spectrum
+stft_2_1, freq_2_1 = get_stft(
+	x,
+	sr;
+	stft_length = sr <= 8000 ? 256 : 512,
+	win_type = (:hann, :periodic),
+	win_length = sr <= 8000 ? 256 : 512,
+	spec_norm = :power,
+	freq_range = (0, floor(Int, sr / 2))
+)
+heatmap(
+	collect(1:size(stft_2_1, 2)) / sr, 
+	freq_2_1, 
+	stft_2_1, 
+	xlabel="Time", 
+	ylabel="Frequency", 
+	title="Stft Example 1", color=:plasma, clims=(0, 20)
+)
 
-# example 4, utilizing audio_obj
-audio_4 = audio_obj(x, sr)
-get_stft!(audio_4)
-# display(audio_4.data.stft)
+# example 2.2, with args, magnitude spectrum
+stft_2_2, freq_2_2 = get_stft(
+	x,
+	sr;
+	stft_length = sr <= 8000 ? 256 : 512,
+	win_type = (:hann, :periodic),
+	win_length = sr <= 8000 ? 256 : 512,
+	spec_norm = :magnitude,
+	freq_range = (0, floor(Int, sr / 2))
+)
+heatmap(
+	collect(1:size(stft_2_2, 2)) / sr, 
+	freq_2_2, 
+	stft_2_2, 
+	xlabel="Time", 
+	ylabel="Frequency", 
+	title="Stft Example 1", color=:plasma, clims=(0, 20)
+)
 
-# example 5, utilizing audio_obj with args
-audio_5 = audio_obj(x,
-	sr,
-	fft_length = 512,
-	spectrum_type = :magnitude,
-	window_type = (:hamming, :symmetric),
-	frequency_range = (100, 3000))
-get_stft!(audio_5)
-# display(audio_5.data.stft)
+# example 2.3, with args, power spectrum, windows normalized
+stft_2_3, freq_2_3 = get_stft(
+	x,
+	sr;
+	stft_length = sr <= 8000 ? 256 : 512,
+	win_type = (:hann, :periodic),
+	win_length = sr <= 8000 ? 256 : 512,
+	spec_norm = :winpower,
+	freq_range = (0, floor(Int, sr / 2))
+)
+heatmap(
+	collect(1:size(stft_2_3, 2)) / sr, 
+	freq_2_3, 
+	stft_2_3, 
+	xlabel="Time", 
+	ylabel="Frequency", 
+	title="Stft Example 1", color=:plasma, clims=(0, 20)
+)
 
-# example 6, utilizing audio_obj modular
-audio_6 = audio_obj(x, sr)
-get_frames!(audio_6)
-get_stft!(audio_6)
-display(audio_6.data.stft)
+# example 2.4, with args, magnitude spectrum, windows normalized
+stft_2_4, freq_2_4 = get_stft(
+	x,
+	sr;
+	stft_length = sr <= 8000 ? 256 : 512,
+	win_type = (:hann, :periodic),
+	win_length = sr <= 8000 ? 256 : 512,
+	spec_norm = :winmagnitude,
+	freq_range = (0, floor(Int, sr / 2))
+)
+heatmap(
+	collect(1:size(stft_2_4, 2)) / sr, 
+	freq_2_4, 
+	stft_2_4, 
+	xlabel="Time", 
+	ylabel="Frequency", 
+	title="Stft Example 1", color=:plasma, clims=(0, 20)
+)
 
-################
-framest = get_frames2(x)
-stft1, stft_freq1 = get_stft2(framest, sr)
-fft22 = get_features(x, sr, :fft)
+# example 3, with stft larger than window frames length, for a better frequency resolution
+stft_3, freq_3 = get_stft(
+	x,
+	sr;
+	stft_length = sr <= 8000 ? 2048 : 4096,
+	win_length = sr <= 8000 ? 256 : 512,
+	spec_norm = :power,
+)
+heatmap(
+	collect(1:size(stft_3, 2)) / sr, 
+	freq_3, 
+	stft_3, 
+	xlabel="Time", 
+	ylabel="Frequency", 
+	title="Stft Example 1", color=:plasma, clims=(0, 20)
+)
+
+# --------------------------- stft standalone ------------------------------ #
+
+# # # example 3, modular: signal > windowing > stft
+# # buffer_3, win_3, _, _, _ = get_frames(x)
+# # stft_3, stft_freq_3 = get_stft(buffer_3, sr, win_3)
+
+# # example 4, utilizing audio_obj
+# audio_4 = audio_objdev(x, sr)
+# get_stft!(audio_4)
+
+# # example 5, utilizing audio_obj with args
+# audio_5 = audio_obj(x,
+# 	sr,
+# 	stft_length = 512,
+# 	spec_norm = :magnitude,
+# 	win_type = (:hamming, :symmetric),
+# 	freq_range = (100, 3000))
+# get_stft!(audio_5)
+
+# # example 6, utilizing audio_obj modular
+# audio_6 = audio_obj(x, sr)
+# get_frames!(audio_6)
+# get_stft!(audio_6)
+# display(audio_6.data.stft)
+
+# ################
+# framest = get_frames2(x)
+# stft1, stft_freq1 = get_stft2(framest, sr)
+# fft22 = get_features(x, sr, :fft)

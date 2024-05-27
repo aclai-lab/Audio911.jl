@@ -193,8 +193,8 @@ function design_filterbank(data::AudioData, setup::AudioSetup)
 	filterbank = filterbank[:, range]
 	# manca la parte relativa a :erb e :bark
 
-	# setta fattore di normalizzazione
-	if setup.window_norm
+	# setta fattore di normalizzazione #INSERITO in STFT! CANCELLA!!! e verifica
+	if setup.win_norm
 		win_norm_factor = get_mel_norm_factor(setup.spectrum_type, data.fft_window)
 		filterbank = filterbank * win_norm_factor
 	end
@@ -211,8 +211,8 @@ function get_mel_spec!(
 )
 	filterbank = design_filterbank(data, setup)
 
-	hop_length = setup.window_length - setup.overlap_length
-	num_hops = Int(floor((size(data.x, 1) - setup.window_length) / hop_length) + 1)
+	hop_length = setup.win_length - setup.overlap_length
+	num_hops = Int(floor((size(data.x, 1) - setup.win_length) / hop_length) + 1)
 
 	# apply filterbank
 	# if (setup.spectrum_type == :power)
@@ -274,12 +274,12 @@ end
 
 function audioDelta(
 	x::AbstractMatrix{T},
-	window_length::Int64,
+	win_length::Int64,
 	source::Symbol = :standard,
 ) where {T <: AbstractFloat}
 
 	# define window shape
-	m = Int(floor(window_length / 2))
+	m = Int(floor(win_length / 2))
 	b = collect(m:-1:(-m)) ./ sum((1:m) .^ 2)
 
 	if source == :transposed
@@ -347,7 +347,7 @@ function get_mfcc_deltas!(
 	data::AudioData,
 )
 	data.mfcc_delta = audioDelta(
-		data.mfcc_coeffs, setup.delta_window_length, setup.delta_matrix)
+		data.mfcc_coeffs, setup.delta_win_length, setup.delta_matrix)
 	data.mfcc_deltadelta = audioDelta(
-		data.mfcc_delta, setup.delta_window_length, setup.delta_matrix)
+		data.mfcc_delta, setup.delta_win_length, setup.delta_matrix)
 end
