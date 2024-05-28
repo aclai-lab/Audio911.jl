@@ -25,7 +25,7 @@ TODO documentation
     vpo::Int64 = 10 # voices per octave
     boundary::Symbol = :reflection # :reflection, :periodic
     signal_pad::Int64 = 0
-    frequency_range::Tuple{Int64, Int64} = (0, 0)
+    freq_range::Tuple{Int64, Int64} = (0, 0)
     center_freq::Float64 = 0.0
     omega::Vector{Float64} = []
     frequencies::Vector{Float64} = []
@@ -128,9 +128,9 @@ function get_freq_cutoff_bump(cutoff::Int64, cf::Float64)
 end
 
 function freq2scales(
-        sr::Int64, frequency_range::Tuple{Int64, Int64}, vpo::Int64, center_freq::Float64)
+        sr::Int64, freq_range::Tuple{Int64, Int64}, vpo::Int64, center_freq::Float64)
     # convert frequencies in Hz to radians/sample
-    wrange = frequency_range .* (1 / sr * 2 .* pi)
+    wrange = freq_range .* (1 / sr * 2 .* pi)
     a0 = 2^(1 / vpo)
     s0 = center_freq / wrange[2]
     smax = center_freq / wrange[1]
@@ -194,8 +194,8 @@ function cwtfilterbank!(fb_setup::FbSetup)
         minperiod = 2 * t
     end
 
-    if fb_setup.frequency_range[1] < minfreq
-        fb_setup.frequency_range[1] = minfreq
+    if fb_setup.freq_range[1] < minfreq
+        fb_setup.freq_range[1] = minfreq
     end
 
     ###########################################################################
@@ -208,7 +208,7 @@ function cwtfilterbank!(fb_setup::FbSetup)
     fb_setup.frequencies = fb_setup.sr * fb_setup.omega ./ (2 * pi)
 
     fb_setup.scales = freq2scales(
-        fb_setup.sr, fb_setup.frequency_range, fb_setup.vpo, fb_setup.center_freq)
+        fb_setup.sr, fb_setup.freq_range, fb_setup.vpo, fb_setup.center_freq)
 
     somega = fb_setup.scales * fb_setup.omega'
 
@@ -300,7 +300,7 @@ function cwt(
         wavelet::Symbol = :morse,
         ga::Int64 = 3,
         be::Int64 = 20,
-        frequency_range::Tuple{Int64, Int64} = (0, round(Int, sr / 2)),
+        freq_range::Tuple{Int64, Int64} = (0, round(Int, sr / 2)),
         vpo::Int64 = 10, # VoicesPerOctave
         boundary::Symbol = :reflection
 )
@@ -315,7 +315,7 @@ function cwt(
         time_bandwidth = ga * be,
         vpo = vpo,
         boundary = boundary,
-        frequency_range = frequency_range
+        freq_range = freq_range
     )
 
     cwtfilterbank!(fb_setup)

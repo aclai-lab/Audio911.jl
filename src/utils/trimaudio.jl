@@ -27,12 +27,12 @@ end
 
 function trim_audio(
 	x::AbstractVector{Float64};
-	fft_length::Int64 = 1024,
+	stft_length::Int64 = 1024,
 	threshold::Real = 60,
 )
 
 	# crea la matrice delle finestre: le righe sono le finestre.
-	y = windowing(x, fft_length, :rect, :symmetric, false)
+	y = windowing(x, stft_length, :rect, :symmetric, false)
 
 	# converte l'audio in rms e poi in db
 	db = signal_to_db(signal_to_rms(y))
@@ -45,11 +45,11 @@ function trim_audio(
 	for i in eachindex(framesValidated)
 		# case 1: starting signal portion
 		if (framesValidated[i] && (flag == :silence || flag == :start))
-			fade_y = fade(y[i, :], fft_length, :in)
+			fade_y = fade(y[i, :], stft_length, :in)
 			signal = vcat(signal, y[i, :])
 
 			if (flag == :silence)
-				silence = fade(silence, fft_length, :out)
+				silence = fade(silence, stft_length, :out)
 			end
 
 			flag = :signal
@@ -60,11 +60,11 @@ function trim_audio(
 
 			# case 3: starting silence portion
 		elseif (!framesValidated[i] && (flag == :signal || flag == :start))
-			fade_y = fade(y[i, :], fft_length, :in)
+			fade_y = fade(y[i, :], stft_length, :in)
 			silence = vcat(silence, y[i, :])
 
 			if (flag == :signal)
-				signal = fade(signal, fft_length, :out)
+				signal = fade(signal, stft_length, :out)
 			end
 
 			flag = :silence
@@ -76,9 +76,9 @@ function trim_audio(
 
 		# ending with fade out
 		if (flag == :silence)
-			silence = fade(silence, fft_length, :out)
+			silence = fade(silence, stft_length, :out)
 		else
-			signal = fade(signal, fft_length, :out)
+			signal = fade(signal, stft_length, :out)
 		end
 	end
 
@@ -87,11 +87,11 @@ end
 
 function trim_audio(
 	x::AbstractVector{T};
-	fft_length::Int64 = 1024,
+	stft_length::Int64 = 1024,
 	threshold::Real = 60,
 ) where {T <: AbstractFloat}
 	x_type = eltype(x)
-	signal, silence = trim_audio(Float64.(x), fft_length = fft_length, threshold = threshold)
+	signal, silence = trim_audio(Float64.(x), stft_length = stft_length, threshold = threshold)
 	# x_type.(signal), x_type.(silence)
 end
 

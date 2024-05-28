@@ -1,13 +1,13 @@
 """
 # optional arguments, default settings:
-# fft_length::Int64 = 256,
+# stft_length::Int64 = 256,
 # win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-# win_length::Int64 = fft_length,
-# overlap_length::Int64 = round(Int, fft_length / 2),
+# win_length::Int64 = stft_length,
+# overlap_length::Int64 = round(Int, stft_length / 2),
 # window_norm::Bool = false,
 
 # # spectrum
-# frequency_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
+# freq_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
 # spectrum_type::Symbol = :power,  # available options :power, :magnitude
 
 # # mel
@@ -18,7 +18,7 @@
 # frequency_scale::Symbol = :mel, # TODO :mel, :bark, :erb
 
 # # mfcc
-# num_coeffs::Int64 = 13,
+# mfcc_coeffs::Int64 = 13,
 # normalization_type::Symbol = :dithered, # available options :standard, :dithered
 # use_dct::Bool = true
 # rectification::Symbol = :log, # available options :log, :cubic_root
@@ -93,9 +93,9 @@ cqt_1 = get_features(audio_1, :cqt)
 custom_1 = audio_obj(
 	x,
 	sr,
-	fft_length = 1024,
+	stft_length = 1024,
 	spectral_spectrum = :mel,
-	frequency_range = (50, 1000),
+	freq_range = (50, 1000),
 	mel_style = :slaney,
 )
 # -------------------------------------------------------------------------- #
@@ -121,9 +121,9 @@ custom_2 = get_features(
 	x,
 	sr,
 	:full,
-	fft_length = 1024,
+	stft_length = 1024,
 	spectral_spectrum = :mel,
-	frequency_range = (50, 1000),
+	freq_range = (50, 1000),
 	mel_style = :slaney,
 	mel_bands = 40,
 )
@@ -268,15 +268,10 @@ heatmap(
 	title="Stft Example 1", color=:plasma, clims=(0, 20)
 )
 
-# --------------------------- stft standalone ------------------------------ #
-
-# # # example 3, modular: signal > windowing > stft
-# # buffer_3, win_3, _, _, _ = get_frames(x)
-# # stft_3, stft_freq_3 = get_stft(buffer_3, sr, win_3)
-
-# # example 4, utilizing audio_obj
-# audio_4 = audio_objdev(x, sr)
-# get_stft!(audio_4)
+# --------------------------- stft audio object ------------------------------ #
+# example 4, utilizing audio_obj
+audio_1 = audio_objdev(x, sr)
+get_stft!(audio_1)
 
 # # example 5, utilizing audio_obj with args
 # audio_5 = audio_obj(x,

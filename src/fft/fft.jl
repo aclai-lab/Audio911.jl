@@ -1,8 +1,8 @@
-function get_onesided_fft_range(fft_length::Int64)
-	if mod(fft_length, 2) == 0
-		return collect(1:Int(fft_length / 2 + 1))   # EVEN
+function get_onesided_fft_range(stft_length::Int64)
+	if mod(stft_length, 2) == 0
+		return collect(1:Int(stft_length / 2 + 1))   # EVEN
 	else
-		return collect(1:Int((fft_length + 1) / 2))  # ODD
+		return collect(1:Int((stft_length + 1) / 2))  # ODD
 	end
 end # get_onesided_fft_range
 
@@ -22,8 +22,8 @@ function _get_fft(x::AbstractArray{Float64}, setup::AudioSetup)
 	Z = fft(y .* setup.win, (1,))
 
 	# take one side
-	logical_ossb = falses(setup.fft_length)
-	logical_ossb[get_onesided_fft_range(setup.fft_length)] .= true
+	logical_ossb = falses(setup.stft_length)
+	logical_ossb[get_onesided_fft_range(setup.stft_length)] .= true
 	Z = Z[logical_ossb, :]
 
 	# log energy

@@ -40,12 +40,12 @@ paramentri addizionali
 sia per l'oggetto audio, che per la chiamata a feature singola
 
 # fft
-fft_length::Int64 = 256,
+stft_length::Int64 = 256,
 dimensione finestra fft, valori consigliati: 256, 512, 1024
 
 win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-win_length::Int64 = fft_length,
-overlap_length::Int64 = round(Int, fft_length * 0.500),
+win_length::Int64 = stft_length,
+overlap_length::Int64 = round(Int, stft_length * 0.500),
 parametri relativi alla finestrazione della fft
 di default audio911 usa una finestra di tipo hann, anzichè hamming
 con una finestra della stessa dimensione della finestra fft
@@ -58,7 +58,7 @@ i valori standard sarebbero questi
 window_norm::Bool = false, normalizzazione delle finestre
 
 # spectrum
-frequency_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
+freq_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
 limiti banda, importantissimi per isolare la porzione di spettro dove si prevede di recuperare l'informazione
 
 spectrum_type::Symbol = :power, # :power, :magnitude
@@ -83,7 +83,7 @@ frequency_scale::Symbol = :mel,
 l'implementazione corretta di questi paramentri è da completare
 
 # mfcc
-num_coeffs::Int64 = 13,
+mfcc_coeffs::Int64 = 13,
 numero delle bande mfcc, vedi sopra
 
 normalization_type::Symbol = :dithered, # :standard, :dithered
@@ -129,8 +129,8 @@ function audio_setupdev(
 	stft_length::Int64 = sr <= 8000 ? 256 : 512,
 	win::AbstractVector{Float64} = Float64[],
 	win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-	win_length::Int64 = fft_length, 					# standard setting: round(Int, 0.03 * sr)
-	overlap_length::Int64 = round(Int, fft_length / 2), # standard setting: round(Int, 0.02 * sr)
+	win_length::Int64 = stft_length, 					# standard setting: round(Int, 0.03 * sr)
+	overlap_length::Int64 = round(Int, stft_length / 2), # standard setting: round(Int, 0.02 * sr)
 	spec_norm::Symbol = :power, #:power, :magnitude, :winpower, :winmagnitude
 	freq_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
 
@@ -149,7 +149,7 @@ function audio_setupdev(
 	# gaussian_sd::Int64 = 1,
 
 	# # mfcc
-	# num_coeffs::Int64 = 13,
+	# mfcc_coeffs::Int64 = 13,
 	# normalization_type::Symbol = :dithered, 			# :standard, :dithered
 	# rectification::Symbol = :log, 						# :log, :cubic_root
 	# log_energy_source::Symbol = :standard, 				# :standard (after windowing), :mfcc
@@ -198,7 +198,7 @@ function audio_setupdev(
 		# gaussian_sd = gaussian_sd,
 
 		# # mfcc
-		# num_coeffs = num_coeffs,
+		# mfcc_coeffs = mfcc_coeffs,
 		# normalization_type = normalization_type,
 		# rectification = rectification,
 		# log_energy_source = log_energy_source,
@@ -243,8 +243,8 @@ function audio_objdev(
 	if length(x) == 0
 		@warn("Sample is empty, skipped.")
 		return nothing
-	elseif length(x) < setup.fft_length
-		@warn("length of sample is < than fft windows, skipped.")
+	elseif length(x) < setup.stft.stft_length
+		@warn("length of sample is < than stft windows, skipped.")
 		return nothing
 	else
 		data = AudioDataDev(x = x)
@@ -271,7 +271,7 @@ function audio_objdev(
 )
 	x, sr = load_audio(filepath, sr)
 	x = normalize_audio(x)
-	audio_obj(Float64.(x), sr; preemphasis, kwargs...)
+	audio_objdev(Float64.(x), sr; preemphasis, kwargs...)
 end
 
 # #------------------------------------------------------------------------------#
@@ -525,16 +525,16 @@ function audio_setup(
 	sr::Int64;
 
 	# fft
-	fft_length::Int64 = sr <= 8000 ? 256 : 512,
+	stft_length::Int64 = sr <= 8000 ? 256 : 512,
 	win::AbstractVector{Float64} = Float64[],
 	win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-	win_length::Int64 = fft_length, 					# standard setting: round(Int, 0.03 * sr)
-	overlap_length::Int64 = round(Int, fft_length / 2), # standard setting: round(Int, 0.02 * sr)
+	win_length::Int64 = stft_length, 					# standard setting: round(Int, 0.03 * sr)
+	overlap_length::Int64 = round(Int, stft_length / 2), # standard setting: round(Int, 0.02 * sr)
 	win_norm::Bool = false,
 	spec_norm::Symbol = :power, #:power, :magnitude, :winpower, :winmagnitude
 
 	# spectrum
-	frequency_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
+	freq_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
 	spectrum_type::Symbol = :power, 					# :power, :magnitude
 
 	# mel
@@ -551,7 +551,7 @@ function audio_setup(
 	gaussian_sd::Int64 = 1,
 
 	# mfcc
-	num_coeffs::Int64 = 13,
+	mfcc_coeffs::Int64 = 13,
 	normalization_type::Symbol = :dithered, 			# :standard, :dithered
 	rectification::Symbol = :log, 						# :log, :cubic_root
 	log_energy_source::Symbol = :standard, 				# :standard (after windowing), :mfcc
@@ -577,7 +577,7 @@ function audio_setup(
 		sr = sr,
 
 		# fft
-		fft_length = fft_length,
+		stft_length = stft_length,
 		win = win,
 		win_type = win_type,
 		win_length = win_length,
@@ -586,7 +586,7 @@ function audio_setup(
 		spec_norm = spec_norm,
 
 		# spectrum
-		frequency_range = frequency_range,
+		freq_range = freq_range,
 		spectrum_type = spectrum_type,
 
 		# mel
@@ -603,7 +603,7 @@ function audio_setup(
 		gaussian_sd = gaussian_sd,
 
 		# mfcc
-		num_coeffs = num_coeffs,
+		mfcc_coeffs = mfcc_coeffs,
 		normalization_type = normalization_type,
 		rectification = rectification,
 		log_energy_source = log_energy_source,
@@ -648,7 +648,7 @@ function audio_obj(
 	if length(x) == 0
 		@warn("Sample is empty, skipped.")
 		return nothing
-	elseif length(x) < setup.fft_length
+	elseif length(x) < setup.stft_length
 		@warn("length of sample is < than fft windows, skipped.")
 		return nothing
 	else

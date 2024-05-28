@@ -52,7 +52,7 @@ include("cqt/cqt.jl")
 
 # structures
 export StftSetup
-export AudioSetup, AudioData, AudioObj
+export AudioSetup, AudioData, AudioObj, AudioSetupDev, AudioDataDev, AudioObjDev
 # audio features
 export audio_obj, get_features, audio_objdev
 

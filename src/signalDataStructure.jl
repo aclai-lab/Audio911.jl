@@ -16,8 +16,6 @@
 	# spectrum
 	spec_norm::Symbol # :none, :power, :magnitude, :winpower, :winmagnitude
 	freq_range::Tuple{Int64, Int64}
-	# col_offsets::AbstractVector{Int64} = []
-	# stft_freq::AbstractVector{Float64} = []
 	# apply_log::Bool
 end
 
@@ -30,10 +28,10 @@ end
 @with_kw mutable struct AudioSetupDev
 	sr::Int64
 
-	stft::Union{StftSetup, Nothing} = Nothing
+	stft::StftSetup
 
 	# # fft
-	# fft_length::Int64
+	# stft_length::Int64
 
 	# # windowing
 	# win::AbstractVector{Float64} = []
@@ -44,7 +42,7 @@ end
 
 	# # spectrum
 	# spec_norm::Symbol # :none, :power, :magnitude, :winpower, :winmagnitude
-	# frequency_range::Tuple{Int64, Int64}
+	# freq_range::Tuple{Int64, Int64}
 	# spectrum_type::Symbol
 
 	# # mel
@@ -61,7 +59,7 @@ end
 	# gaussian_sd::Int64
 
 	# # mfcc
-	# num_coeffs::Int64
+	# mfcc_coeffs::Int64
 	# normalization_type::Symbol
 	# rectification::Symbol
 	# log_energy_source::Symbol
@@ -86,7 +84,7 @@ end
 @with_kw mutable struct AudioDataDev
 	x::AbstractVector{Float64}
 	
-	stft::Union{StftData, Nothing} = Nothing
+	stft::StftData = StftData
 
 	# # linear spectrum
 	# lin_frequencies::AbstractVector{Float64} = []
@@ -134,7 +132,7 @@ end
 	sr::Int64
 
 	# fft
-	fft_length::Int64
+	stft_length::Int64
 
 	# windowing
 	win::AbstractVector{Float64} = []
@@ -145,7 +143,7 @@ end
 
 	# spectrum
 	spec_norm::Symbol # :none, :power, :magnitude, :winpower, :winmagnitude
-	frequency_range::Tuple{Int64, Int64}
+	freq_range::Tuple{Int64, Int64}
 	spectrum_type::Symbol
 
 	# mel
@@ -162,7 +160,7 @@ end
 	gaussian_sd::Int64
 
 	# mfcc
-	num_coeffs::Int64
+	mfcc_coeffs::Int64
 	normalization_type::Symbol
 	rectification::Symbol
 	log_energy_source::Symbol

@@ -34,10 +34,10 @@ end
 #                                     stft                                     #
 #------------------------------------------------------------------------------#
 """
-Note on choose win_length and fft_length values
+Note on choose win_length and stft_length values
 
 When you apply a Fast Fourier Transform (FFT), you're transforming your data from the time domain to the frequency domain.
-The length of the FFT, here called fft_length, determines the resolution of the frequency domain output.
+The length of the FFT, here called stft_length, determines the resolution of the frequency domain output.
 If the window length (the length of the data segment you're analyzing) is greater than the FFT length, 
 you have to somehow reduce the amount of data to fit into the FFT. One common way to do this is by "wrapping" the data.
 
