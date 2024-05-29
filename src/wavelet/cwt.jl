@@ -194,8 +194,8 @@ function cwtfilterbank!(fb_setup::FbSetup)
         minperiod = 2 * t
     end
 
-    if fb_setup.freq_range[1] < minfreq
-        fb_setup.freq_range[1] = minfreq
+    if fb_setup.stft.freq_range[1] < minfreq
+        fb_setup.stft.freq_range[1] = minfreq
     end
 
     ###########################################################################
@@ -208,7 +208,7 @@ function cwtfilterbank!(fb_setup::FbSetup)
     fb_setup.frequencies = fb_setup.sr * fb_setup.omega ./ (2 * pi)
 
     fb_setup.scales = freq2scales(
-        fb_setup.sr, fb_setup.freq_range, fb_setup.vpo, fb_setup.center_freq)
+        fb_setup.sr, fb_setup.stft.freq_range, fb_setup.vpo, fb_setup.center_freq)
 
     somega = fb_setup.scales * fb_setup.omega'
 

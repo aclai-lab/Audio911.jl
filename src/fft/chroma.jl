@@ -45,7 +45,7 @@ function design_chroma_filterbank(setup::AudioSetup, data::AudioData)
 	#     base_c::Bool = true,
 	# )
 	# sr > setup.sr
-	# n_fft > setup.stft_length
+	# n_fft > setup.stft.stft_length
 	# n_chroma > setup.bins_octave
 	# tuning::Float64 = 0.0, deviazione da 440 da eliminare
 	# ctroct::Float64 = 5.0, centroid frequency
@@ -53,7 +53,7 @@ function design_chroma_filterbank(setup::AudioSetup, data::AudioData)
 	# norm::Union{Float64, Nothing} = 2.0, fattore di normalizzazione
 	# base_c::Bool = true, parte da C, false parte da A
 
-	wts = zeros(setup.bins_octave, setup.stft_length)
+	wts = zeros(setup.bins_octave, setup.stft.stft_length)
 
 	# Get the FFT bins, not counting the DC component
 	frequencies = range(0, sr, length = n_fft + 1)[2:end]

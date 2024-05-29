@@ -1,11 +1,11 @@
 function get_spectrum(setup::AudioSetup, data::AudioData)
 	setup.spectral_spectrum == :mel && return data.mel_spectrogram', data.mel_frequencies
-	setup.spectral_spectrum == :lin && return data.lin_spectrogram', data.lin_frequencies
+	setup.spectral_spectrum == :lin && return data.stft.stft, data.stft.freq
 	error("Unknown spectral spectrum")
 end
 
 function spectral_crest(
-	s::Union{AbstractArray{Float64}, NamedArray{Float64}},
+	s::AbstractArray{Float64},
 	data::AudioData,
 	sum_x1::Vector{Float64},
 	arithmetic_mean::Vector{Float64},
@@ -18,13 +18,13 @@ function spectral_crest(
 	data.spectral_crest = vec(peak ./ arithmetic_mean')
 end
 
-function spectral_decrease(s::Union{AbstractArray{Float64}, NamedArray{Float64}}, data::AudioData)
+function spectral_decrease(s::AbstractArray{Float64}, data::AudioData)
 	# calculate decrease
 	data.spectral_decrease = vec(real(sum((s[2:end, :] .- s[1, :]') ./ (1:size(s, 1)-1), dims = 1) ./ sum(s[2:end, :], dims = 1)))
 end
 
 function spectral_entropy(
-	s::Union{AbstractArray{Float64}, NamedArray{Float64}},
+	s::AbstractArray{Float64},
 	data::AudioData,
 	sum_x1::Vector{Float64},
 )
@@ -35,7 +35,7 @@ function spectral_entropy(
 end
 
 function spectral_flatness(
-	s::Union{AbstractArray{Float64}, NamedArray{Float64}},
+	s::AbstractArray{Float64},
 	data::AudioData,
 	sum_x1::Vector{Float64},
 	arithmetic_mean::Vector{Float64},
@@ -45,7 +45,7 @@ function spectral_flatness(
 	data.spectral_flatness = vec(geometric_mean ./ arithmetic_mean')
 end
 
-function spectral_flux(s::Union{AbstractArray{Float64}, NamedArray{Float64}}, data::AudioData)
+function spectral_flux(s::AbstractArray{Float64}, data::AudioData)
 	initial_condition = s[:, 1]
 	# calculate flux
 	temp = diff(hcat(initial_condition, s), dims = 2)
@@ -57,7 +57,7 @@ function spectral_flux(s::Union{AbstractArray{Float64}, NamedArray{Float64}}, da
 end
 
 function spectral_kurtosis(
-	s::Union{AbstractArray{Float64}, NamedArray{Float64}},
+	s::AbstractArray{Float64},
 	data::AudioData,
 	# sum_x1::Vector{Float64},
 	# centroid::Vector{Float64},
@@ -75,7 +75,7 @@ function spectral_kurtosis(
 	data.spectral_kurtosis = vec(sum(higher_momement_num .* higher_moment_tmp, dims = 1) ./ (higher_moment_denom .* data.spectral_spread)')
 end
 
-function spectral_rolloff(s::Union{AbstractArray{Float64}, NamedArray{Float64}}, data::AudioData, fft_frequencies::Vector{Float64})
+function spectral_rolloff(s::AbstractArray{Float64}, data::AudioData, fft_frequencies::AbstractVector{Float64})
 	# calculate rolloff point
 	threshold = 0.95
 	c = cumsum(s, dims = 1)
@@ -88,7 +88,7 @@ function spectral_rolloff(s::Union{AbstractArray{Float64}, NamedArray{Float64}},
 end
 
 function spectral_skewness(
-	s::Union{AbstractArray{Float64}, NamedArray{Float64}},
+	s::AbstractArray{Float64},
 	data::AudioData,
 	sum_x1::Vector{Float64},
 	centroid::Vector{Float64},
@@ -106,11 +106,11 @@ function spectral_skewness(
 end
 
 function spectral_slope(
-	s::Union{AbstractArray{Float64}, NamedArray{Float64}},
+	s::AbstractArray{Float64},
 	data::AudioData,
 	sum_x1::Vector{Float64},
-	arithmetic_mean::Vector{Float64},
-	fft_frequencies::Vector{Float64},
+	arithmetic_mean::AbstractVector{Float64},
+	fft_frequencies::AbstractVector{Float64},
 )
 	# calculate slope
 	f_minus_mu_f = fft_frequencies .- sum(fft_frequencies, dims = 1) ./ size(s, 1)
@@ -164,7 +164,7 @@ sum_sfreq = (s, sfreq) -> sum(s .* sfreq, dims = 1)
 #                                  spectral centroid                                 #
 # ---------------------------------------------------------------------------------- #
 function _get_spec_centroid(
-	s::Union{AbstractArray{Float64}, NamedArray{Float64}},
+	s::AbstractArray{Float64},
 	sfreq::AbstractVector{Float64},
 )
 	vec(sum_sfreq(s, sfreq) ./ sum_s(s))
@@ -174,7 +174,7 @@ end
 #                                  spectral spread                                   #
 # ---------------------------------------------------------------------------------- #
 function _get_spec_spread(
-	s::Union{AbstractArray{Float64}, NamedArray{Float64}},
+	s::AbstractArray{Float64},
 	sfreq::AbstractVector{Float64},
 )
 	centroid = _get_spec_centroid(s, sfreq)

@@ -8,8 +8,6 @@ using StatsBase
 using Statistics, Roots
 using NaNStatistics
 
-using Unitful, NamedArrays
-
 using PyCall
 
 function __init__()
@@ -51,26 +49,18 @@ include("wavelet/cwt.jl")
 include("cqt/cqt.jl")
 
 # structures
-export StftSetup
-export AudioSetup, AudioData, AudioObj, AudioSetupDev, AudioDataDev, AudioObjDev
+export AudioObj
 # audio features
-export audio_obj, get_features, audio_objdev
+export audio_obj, get_features
 
 # utility functions
 export speech_detector
 export load_audio, save_audio, trim_audio, normalize_audio
 # wavelets
 export cwt, cwt_windowing
-get_fft!
+get_stft!
 # TODO patch
 extractfeatures = 
 export extractfeatures
-
-# ------------------------------------------------ #
-#                       modular                    #
-# ------------------------------------------------ #
-export get_frames, get_frames!
-export get_stft, get_stft!
-
 
 end # module Audio911

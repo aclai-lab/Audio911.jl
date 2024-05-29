@@ -91,14 +91,14 @@ function design_filterbank(data::AudioData, setup::AudioSetup)
 			lin_spectrogram!(setup, data)
 		end
 		_, loudest_index = catch_loudest_index(data.lin_spectrogram, data.lin_frequencies, setup.st_peak_range)
-		melRange = hz2mel((round(Int, data.lin_frequencies[loudest_index]), setup.freq_range[2]), :htk)
+		melRange = hz2mel((round(Int, data.lin_frequencies[loudest_index]), setup.stft.freq_range[2]), :htk)
 	else
-		melRange = hz2mel(setup.freq_range, setup.mel_style)
+		melRange = hz2mel(setup.stft.freq_range, setup.mel_style)
 	end
 
 	# mimic audioflux linear mel_style
 	if setup.mel_style == :linear
-		lin_fq = collect(0:(setup.stft_length-1)) / setup.stft_length * setup.sr
+		lin_fq = collect(0:(setup.stft.stft_length-1)) / setup.stft.stft_length * setup.sr
 		band_edges = lin_fq[1:(setup.mel_bands+2)]
 	elseif setup.mel_style == :htk || setup.mel_style == :slaney
 		band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
@@ -117,7 +117,7 @@ function design_filterbank(data::AudioData, setup::AudioSetup)
 	valid_num_bands = valid_num_edges - 2
 
 	# preallocate the filter bank
-	filterbank = zeros(Float64, setup.stft_length, setup.mel_bands)
+	filterbank = zeros(Float64, setup.stft.stft_length, setup.mel_bands)
 	data.mel_frequencies = band_edges[2:(end-1)]
 
 	# Set this flag to true if the number of FFT length is insufficient to
@@ -125,7 +125,7 @@ function design_filterbank(data::AudioData, setup::AudioSetup)
 	FFTLengthTooSmall = false
 
 	# if :hz 
-	linFq = collect(0:(setup.stft_length-1)) / setup.stft_length * setup.sr
+	linFq = collect(0:(setup.stft.stft_length-1)) / setup.stft.stft_length * setup.sr
 
 	# Determine inflection points
 	@assert(valid_num_edges <= num_edges)
@@ -162,7 +162,7 @@ function design_filterbank(data::AudioData, setup::AudioSetup)
 	end
 
 	# mirror two sided
-	range = get_onesided_fft_range(setup.stft_length)
+	range = get_onesided_fft_range(setup.stft.stft_length)
 	range = range[2:end]
 	filterbank[end:-1:(end-length(range)+1), :] = filterbank[range, :]
 
@@ -189,15 +189,15 @@ function design_filterbank(data::AudioData, setup::AudioSetup)
 	end
 
 	# get one side
-	range = get_onesided_fft_range(setup.stft_length)
+	range = get_onesided_fft_range(setup.stft.stft_length)
 	filterbank = filterbank[:, range]
 	# manca la parte relativa a :erb e :bark
 
 	# setta fattore di normalizzazione #INSERITO in STFT! CANCELLA!!! e verifica
-	if setup.win_norm
-		win_norm_factor = get_mel_norm_factor(setup.spectrum_type, data.fft_window)
-		filterbank = filterbank * win_norm_factor
-	end
+	# if setup.stft.win_norm
+	# 	win_norm_factor = get_mel_norm_factor(setup.spectrum_type, data.stft.stft_window)
+	# 	filterbank = filterbank * win_norm_factor
+	# end
 
 	return filterbank
 end # function design_filterbank
@@ -211,13 +211,13 @@ function get_mel_spec!(
 )
 	filterbank = design_filterbank(data, setup)
 
-	hop_length = setup.win_length - setup.overlap_length
-	num_hops = Int(floor((size(data.x, 1) - setup.win_length) / hop_length) + 1)
+	hop_length = setup.stft.win_length - setup.stft.overlap_length
+	num_hops = Int(floor((size(data.x, 1) - setup.stft.win_length) / hop_length) + 1)
 
 	# apply filterbank
 	# if (setup.spectrum_type == :power)
 	data.mel_spectrogram = reshape(
-		filterbank * data.fft, setup.mel_bands, num_hops)
+		filterbank * data.stft.stft, setup.mel_bands, num_hops)
 	# else
 	#     #TODO
 	#     error("magnitude not yet implemented.")

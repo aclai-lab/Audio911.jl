@@ -29,7 +29,7 @@ function _trim_freq_range(x::AbstractArray{Float64}, sr::Int64, s::StftSetup)
     _trim_freq_range(x; sr=sr, win_length=s.stft_length, freq_range=s.freq_range)
 end
 
-function _trim_freq_range(x::AbstractArray{Float64}, a::AudioSetupDev)
+function _trim_freq_range(x::AbstractArray{Float64}, a::AudioSetup)
     _trim_freq_range(x, a.sr, a.stft)  
 end
 
@@ -111,46 +111,46 @@ function _get_stft(wframes::AbstractArray{Float64}, sr::Int64, s::StftSetup)
         spec_norm=s.spec_norm)
 end
 
-function get_stft(
-        x::AbstractVector{Float64},
-        sr::Int64;
-        stft_length::Int64 = sr <= 8000 ? 256 : 512,
-        win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-        win_length::Int64 = stft_length,
-        overlap_length::Int64 = round(Int, win_length / 2),
-        spec_norm::Symbol = :power, # :none, :power, :magnitude, :winpower, :winmagnitude
-        freq_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
-        # apply_log::Bool = false
-)
-    # create stft setup object
-    stft_setup = StftSetup(
-        stft_length=stft_length,
-        win_type=win_type,
-        win_length=win_length,
-        overlap_length=overlap_length,
-        spec_norm=spec_norm,
-        freq_range=freq_range,
-        # apply_log=apply_log
-    )
+# function get_stft(
+#         x::AbstractVector{Float64},
+#         sr::Int64;
+#         stft_length::Int64 = sr <= 8000 ? 256 : 512,
+#         win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
+#         win_length::Int64 = stft_length,
+#         overlap_length::Int64 = round(Int, win_length / 2),
+#         spec_norm::Symbol = :power, # :none, :power, :magnitude, :winpower, :winmagnitude
+#         freq_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
+#         # apply_log::Bool = false
+# )
+#     # create stft setup object
+#     stft_setup = StftSetup(
+#         stft_length=stft_length,
+#         win_type=win_type,
+#         win_length=win_length,
+#         overlap_length=overlap_length,
+#         spec_norm=spec_norm,
+#         freq_range=freq_range,
+#         # apply_log=apply_log
+#     )
 
-    stft_data = StftData()
+#     stft_data = StftData()
 
-    # get partitioned signal into frames, and window coefficients
-    stft_data.frames, stft_setup.win, wframes, _, _ = _get_frames(x, stft_setup)
+#     # get partitioned signal into frames, and window coefficients
+#     stft_data.stft.frames, stft_setup.stft.win, wframes, _, _ = _get_frames(x, stft_setup)
 
-    # get stft
-    stft_spec, _ = _get_stft(wframes, sr, stft_setup)
+#     # get stft
+#     stft_spec, _ = _get_stft(wframes, sr, stft_setup)
 
-    stft_spec, freq_vec, _ = _trim_freq_range(stft_spec, sr, stft_setup)
+#     stft_spec, freq_vec, _ = _trim_freq_range(stft_spec, sr, stft_setup)
 
-    return stft_spec, freq_vec
-end
+#     return stft_spec, freq_vec
+# end
 
-function get_stft(x::AbstractVector{<:AbstractFloat}, sr::Int64; kwargs...)
-    get_stft(Float64.(x), sr; kwargs...)
-end
+# function get_stft(x::AbstractVector{<:AbstractFloat}, sr::Int64; kwargs...)
+#     get_stft(Float64.(x), sr; kwargs...)
+# end
 
-function get_stft!(a::AudioObjDev)
+function get_stft!(a::AudioObj)
     if isnothing(a.data.stft)
         a.data.stft = StftData()
     end
@@ -159,9 +159,9 @@ function get_stft!(a::AudioObjDev)
         a.data.stft.frames, a.setup.stft.win, _, _, _ = _get_frames(a.data.x, a.setup.stft)
     end
 
-	a.data.stft.stft, a.data.stft.freq = _get_stft(a.data.frames .* a.data.win, a.setup.sr, a.setup.stft)
+	a.data.stft.stft, a.data.stft.freq = _get_stft(a.data.stft.frames .* a.setup.stft.win, a.setup.sr, a.setup.stft)
 
-    if a.data.stft.freq_range != (0, floor(Int, a.sr / 2))
+    if a.setup.stft.freq_range != (0, floor(Int, a.setup.sr / 2))
         a.data.stft, a.data.freq, _ = _trim_freq_range(a.data.stft.stft, a.setup.sr, a.setup.stft)
     end
 end

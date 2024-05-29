@@ -9,21 +9,21 @@ end # get_onesided_fft_range
 #------------------------------------------------------------------------------#
 #              fft version 1 as used in audio features extraction              #
 #------------------------------------------------------------------------------#
-function _get_fft(x::AbstractArray{Float64}, setup::AudioSetup)
-	hop_length = setup.win_length - setup.overlap_length
-	if isempty(setup.win)
-		setup.win, _ = gencoswin(setup.win_type[1], setup.win_length, setup.win_type[2])
+function _get_stft(x::AbstractArray{Float64}, setup::AudioSetup)
+	hop_length = setup.stft.win_length - setup.stft.overlap_length
+	if isempty(setup.stft.win)
+		setup.stft.win, _ = gencoswin(setup.stft.win_type[1], setup.stft.win_length, setup.stft.win_type[2])
 	end
 
 	# split in windows
-	y = buffer(x, setup.win_length, setup.win_length - setup.overlap_length)
+	y = buffer(x, setup.stft.win_length, setup.stft.win_length - setup.stft.overlap_length)
 
 	# apply window and take fft
-	Z = fft(y .* setup.win, (1,))
+	Z = fft(y .* setup.stft.win, (1,))
 
 	# take one side
-	logical_ossb = falses(setup.stft_length)
-	logical_ossb[get_onesided_fft_range(setup.stft_length)] .= true
+	logical_ossb = falses(setup.stft.stft_length)
+	logical_ossb[get_onesided_fft_range(setup.stft.stft_length)] .= true
 	Z = Z[logical_ossb, :]
 
 	# log energy
@@ -51,4 +51,4 @@ function _get_fft(x::AbstractArray{Float64}, setup::AudioSetup)
 	end
 end
 
-get_fft!(setup::AudioSetup, data::AudioData) = data.fft, data.log_energy = _get_fft(data.x, setup)
+get_stft!(setup::AudioSetup, data::AudioData) = data.stft.stft, data.log_energy = _get_stft(data.x, setup)

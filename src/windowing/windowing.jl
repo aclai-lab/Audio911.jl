@@ -110,7 +110,7 @@ function _get_frames(x::AbstractVector{Float64}, s::StftSetup)
 	_get_frames(x, win_type = s.win_type, win_length = s.win_length, overlap_length = s.overlap_length)
 end
 
-function _get_frames(x::AbstractVector{Float64}, a::AudioSetupDev)
+function _get_frames(x::AbstractVector{Float64}, a::AudioSetup)
 	_get_frames(x, a.stft)
 end
 
@@ -130,4 +130,4 @@ function get_frames(
 	)
 end
 
-get_frames!(a::AudioObj; kwargs...) = a.data.frames, a.setup.window = get_frames(a.data.x; kwargs...)
+get_frames!(a::AudioObj; kwargs...) = a.data.frames, a.setup.stft.window = get_frames(a.data.x; kwargs...)
