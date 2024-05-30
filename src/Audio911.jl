@@ -44,7 +44,12 @@ include("utils/speech_detector.jl")
 include("utils/in_out.jl")
 include("utils/trimaudio.jl")
 # wavelets
+include("wavelet/wavelets_data_structures.jl")
+include("wavelet/waveletData.jl")
 include("wavelet/cwt.jl")
+include("wavelet/expand.jl")
+include("wavelet/wpdec.jl")
+include("wavelet/wpspectrum.jl")
 # constant-q transform
 include("cqt/cqt.jl")
 
@@ -57,7 +62,7 @@ export audio_obj, get_features
 export speech_detector
 export load_audio, save_audio, trim_audio, normalize_audio
 # wavelets
-export cwt, cwt_windowing
+export cwt, cwt_windowing, wpspectrum
 get_stft!
 # TODO patch
 extractfeatures = 

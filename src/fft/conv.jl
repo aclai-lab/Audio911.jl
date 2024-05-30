@@ -22,7 +22,7 @@ nextfastfft(n) = nextprod(fast_fft_sizes, n)
 nextfastfft(ns::Tuple) = nextfastfft.(ns)
 nextfastfft(ns...) = nextfastfft(ns)
 
-function conv(
+function wconv(
     u::Union{AbstractVector{T},AbstractArray{T}},
     v::Union{AbstractVector{T},AbstractArray{T}},
     shape::Symbol

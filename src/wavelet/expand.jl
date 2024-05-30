@@ -1,12 +1,4 @@
-include("../fft/conv.jl")
-
-if (!@isdefined(dwtAttr))
-    struct dwtAttr{T<:Real}
-        extMode::Symbol
-        shift1D::Union{Int64,Float64}
-        shift2D::AbstractVector{T}
-    end
-end # dwtAttr
+# include("../fft/conv.jl")
 
 function findactn(
     t::waveletPacketTree
@@ -34,18 +26,18 @@ function findactn(
     return tnrank, nodes
 end # function findactn
 
-function nbnodes(
-    order::Int64,
-    depth::Int64,
-)
-    if (order == 0)
-        return 0
-    elseif (order == 1)
-        return depth
-    else
-        return (order^(depth + 1) - 1) / (order - 1)
-    end
-end # function nbnodes
+# function nbnodes(
+#     order::Int64,
+#     depth::Int64,
+# )
+#     if (order == 0)
+#         return 0
+#     elseif (order == 1)
+#         return depth
+#     else
+#         return (order^(depth + 1) - 1) / (order - 1)
+#     end
+# end # function nbnodes
 
 function wentropy(
     x::Union{AbstractVector{T},AbstractArray{T}},
@@ -163,10 +155,10 @@ function dwt(
 
     y = wextend(x, :oneD, dwtEXTM, lenEXT)
     # compute coefficients of approximation
-    z = conv(y, lo_D, :valid)
+    z = wconv(y, lo_D, :valid)
     a = z[f:2:l]
     # compute coefficients of detail
-    z = conv(y, hi_D, :valid)
+    z = wconv(y, hi_D, :valid)
     d = z[f:2:l]
 
     return a, d
