@@ -71,6 +71,10 @@ end
 
 	stft::StftData = StftData()
 
+	# lin_spectrum
+	lin_freq::AbstractVector{Float64} = []
+	lin_spec::AbstractArray{Float64} = []
+
 	# mel_spectrum
 	mel_frequencies::AbstractVector{Float64} = []
 	mel_spectrogram::AbstractArray{Float64} = []

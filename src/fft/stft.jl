@@ -161,7 +161,10 @@ function get_stft!(a::AudioObj)
 
 	a.data.stft.stft, a.data.stft.freq = _get_stft(a.data.stft.frames .* a.setup.stft.win, a.setup.sr, a.setup.stft)
 
-    if a.setup.stft.freq_range != (0, floor(Int, a.setup.sr / 2))
-        a.data.stft, a.data.freq, _ = _trim_freq_range(a.data.stft.stft, a.setup.sr, a.setup.stft)
+    if a.setup.stft.freq_range == (0, floor(Int, a.setup.sr / 2))
+        a.data.lin_spec = a.data.stft.stft
+        a.data.lin_freq = a.data.stft.freq
+    else
+        a.data.lin_spec, a.data.lin_freq, _ = _trim_freq_range(a.data.stft.stft, a.setup.sr, a.setup.stft)
     end
 end

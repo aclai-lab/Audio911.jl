@@ -15,15 +15,17 @@ sr_src = 16000
 x, sr = load_audio(wavfile, sr_src)
 x = Float64.(x)
 
+include("/home/paso/.julia/dev/Audio911.jl/src/signalDataStructure.jl")
 include("/home/paso/.julia/dev/Audio911.jl/src/windowing/windows.jl")
 include("/home/paso/.julia/dev/Audio911.jl/src/windowing/windowing.jl")
+include("/home/paso/.julia/dev/Audio911.jl/src/fft/stft.jl")
 # extra parameters:
-stft_length = round(Int, 0.05 * sr)
+stft_length = sr <= 8000 ? 256 : 512
 win_type = (:hann, :periodic)
-win_length = round(Int, 0.03 * sr)
-overlap_length = round(Int, 0.02 * sr)
-freq_range = (100, 500)
-spec_norm = :winpower
+win_length = stft_length
+overlap_length = round(Int, stft_length / 2)
+freq_range = (300, floor(Int, sr / 2))
+spec_norm = :power
 apply_log = false
 thresh = -1000
 
