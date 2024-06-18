@@ -14,14 +14,23 @@
 	win_length::Int64
 	overlap_length::Int64
 	# spectrum
-	spec_norm::Symbol # :none, :power, :magnitude, :winpower, :winmagnitude
-	freq_range::Tuple{Int64, Int64}
-	# apply_log::Bool
+	spec_norm::Symbol # :none, :power, :magnitude, :pow2mag
 end
 
 @with_kw mutable struct StftData
 	frames::AbstractArray{Float64} = []
 	stft::AbstractArray{Float64} = []
+	freq::AbstractVector{Float64} = []
+end
+
+@with_kw mutable struct LinSetup
+	win_norm::Symbol # :none, :power, :magnitude
+	freq_range::Tuple{Int64, Int64}
+	apply_log::Bool
+end
+
+@with_kw mutable struct LinData
+	spec::AbstractArray{Float64} = []
 	freq::AbstractVector{Float64} = []
 end
 

@@ -10,8 +10,12 @@ function audio_setup(
 	win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
 	win_length::Int64 = stft_length, 					# standard setting: round(Int, 0.03 * sr)
 	overlap_length::Int64 = round(Int, stft_length / 2), # standard setting: round(Int, 0.02 * sr)
-	spec_norm::Symbol = :power, #:power, :magnitude, :winpower, :winmagnitude
+	spec_norm::Symbol = :power, # :none, :power, :magnitude, :pow2mag
+
+	# lin
+	win_norm::Symbol = :none, # :none, :power, :magnitude
 	freq_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
+	apply_log::Bool = false,
 
 	# mel
 	mel_style::Symbol = :htk, 							# :htk, :slaney, :tuned
@@ -59,7 +63,12 @@ function audio_setup(
 			win_length = win_length,
 			overlap_length = overlap_length,
 			spec_norm = spec_norm,
+		),
+
+		lin_spec = LinSetup(
+			win_norm = win_norm,
 			freq_range = freq_range,
+			apply_log = apply_log
 		),
 
 		# mel
