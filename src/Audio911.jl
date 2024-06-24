@@ -7,6 +7,7 @@ using SpecialFunctions
 using StatsBase
 using Statistics, Roots
 using NaNStatistics
+using Polynomials
 
 using PyCall
 
@@ -38,6 +39,7 @@ include("fft/lin.jl")
 include("fft/mel.jl")
 include("fft/spectral.jl")
 include("fft/stft.jl")
+include("fft/filterbanks.jl")
 # utils
 include("utils/histogram.jl")
 include("utils/speech_detector.jl")

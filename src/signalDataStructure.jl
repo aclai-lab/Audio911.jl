@@ -25,8 +25,7 @@ end
 
 @with_kw mutable struct LinSetup
 	win_norm::Symbol # :none, :power, :magnitude
-	freq_range::Tuple{Int64, Int64}
-	apply_log::Bool
+	db_scale::Bool
 end
 
 @with_kw mutable struct LinData
@@ -34,16 +33,29 @@ end
 	freq::AbstractVector{Float64} = []
 end
 
+# @with_kw mutable struct FbSetup
+# 	n_bands::Int64
+# 	design_domain::Symbol, # :linear, :mel, :erb, :bark
+# 	mel_style::Symbol
+# end
+
+# @with_kw mutable struct FbData
+
+# end
+
 @with_kw mutable struct AudioSetup
 	sr::Int64
+	freq_range::Tuple{Int64, Int64}
 
 	stft::StftSetup
+	lin::LinSetup
 
 	# mel
+	
 	mel_style::Symbol
 	mel_bands::Int64
-	filterbank_design_domain::Symbol
-	filterbank_normalization::Symbol
+	design_domain::Symbol
+	fb_norm::Symbol
 	frequency_scale::Symbol
 	st_peak_range::Tuple{Int64, Int64}
 
@@ -79,10 +91,7 @@ end
 	x::AbstractVector{Float64}
 
 	stft::StftData = StftData()
-
-	# lin_spectrum
-	lin_freq::AbstractVector{Float64} = []
-	lin_spec::AbstractArray{Float64} = []
+	lin::LinData = LinData()
 
 	# mel_spectrum
 	mel_frequencies::AbstractVector{Float64} = []

@@ -1,46 +1,46 @@
 # ---------------------------------------------------------------------------- #
 #                         mel scale utility functions                          #
 # ---------------------------------------------------------------------------- #
-function hz2mel(
-	hz::Tuple{Int64, Int64},
-	mel_style::Symbol = :htk, # :htk, :slaney
-)
-	if mel_style == :htk
-		mel = 2595 * log10.(1 .+ reduce(vcat, getindex.(hz)) / 700)
-	else # slaney
-		hz = reduce(vcat, getindex.(hz))
-		linStep = 200 / 3
-		logStep = log(6.4) / 27
-		changePoint = 1000
-		changePoint_mel = changePoint / linStep
-		isLinearRegion = hz .< changePoint
-		mel = Float64.(hz)
-		mel[isLinearRegion] .= hz[isLinearRegion] / linStep
-		mel[.!isLinearRegion] .= changePoint_mel .+
-								 log.(hz[.!isLinearRegion] / changePoint) / logStep
-	end
-	return mel
-end # hz2mel
+# function hz2mel(
+# 	hz::Tuple{Int64, Int64},
+# 	mel_style::Symbol = :htk, # :htk, :slaney
+# )
+# 	if mel_style == :htk
+# 		mel = 2595 * log10.(1 .+ reduce(vcat, getindex.(hz)) / 700)
+# 	else # slaney
+# 		hz = reduce(vcat, getindex.(hz))
+# 		linStep = 200 / 3
+# 		logStep = log(6.4) / 27
+# 		changePoint = 1000
+# 		changePoint_mel = changePoint / linStep
+# 		isLinearRegion = hz .< changePoint
+# 		mel = Float64.(hz)
+# 		mel[isLinearRegion] .= hz[isLinearRegion] / linStep
+# 		mel[.!isLinearRegion] .= changePoint_mel .+
+# 								 log.(hz[.!isLinearRegion] / changePoint) / logStep
+# 	end
+# 	return mel
+# end # hz2mel
 
-function mel2hz(
-	mel::LinRange{Float64, Int64},
-	mel_style::Symbol = :htk, # :htk, :slaney
-)
-	if mel_style == :htk
-		hz = 700 * (exp10.(mel / 2595) .- 1)
-	else
-		linStep = 200 / 3
-		logStep = log(6.4) / 27
-		changePoint = 1000
-		changePoint_mel = changePoint / linStep
-		isLinearRegion = mel .< changePoint_mel
-		hz = [mel;]
-		hz[isLinearRegion] .= hz[isLinearRegion] * linStep
-		hz[.!isLinearRegion] .= changePoint *
-								exp.(logStep * (mel[.!isLinearRegion] .- changePoint_mel))
-	end
-	return hz
-end # mel2hz
+# function mel2hz(
+# 	mel::LinRange{Float64, Int64},
+# 	mel_style::Symbol = :htk, # :htk, :slaney
+# )
+# 	if mel_style == :htk
+# 		hz = 700 * (exp10.(mel / 2595) .- 1)
+# 	else
+# 		linStep = 200 / 3
+# 		logStep = log(6.4) / 27
+# 		changePoint = 1000
+# 		changePoint_mel = changePoint / linStep
+# 		isLinearRegion = mel .< changePoint_mel
+# 		hz = [mel;]
+# 		hz[isLinearRegion] .= hz[isLinearRegion] * linStep
+# 		hz[.!isLinearRegion] .= changePoint *
+# 								exp.(logStep * (mel[.!isLinearRegion] .- changePoint_mel))
+# 	end
+# 	return hz
+# end # mel2hz
 
 function get_mel_norm_factor(spectrum_type::Symbol, fft_window::Vector{Float64})
 	if spectrum_type == :power
@@ -78,129 +78,129 @@ end
 ### da generalizzare per 
 ### frequency_scale :mel, :bark, :erb
 ### filterbanl_design_domain :linear, :warped (da verificare se serve)
-function design_filterbank(data::AudioData, setup::AudioSetup)
-	# set the design domain ### da implementare in futuro
-	setup.filterbank_design_domain == :linear ? design_domain = :linear :
-	design_domain = setup.frequency_scale
+# function design_filterbank(data::AudioData, setup::AudioSetup)
+# 	# set the design domain ### da implementare in futuro
+# 	setup.filterbank_design_domain == :linear ? design_domain = :linear :
+# 	design_domain = setup.frequency_scale
 
-	# compute band edges
-	# TODO da inserire il caso :erb e :bark
+# 	# compute band edges
+# 	# TODO da inserire il caso :erb e :bark
 
-	if setup.mel_style == :tuned
-		if isempty(data.lin_spectrogram)
-			lin_spectrogram!(setup, data)
-		end
-		_, loudest_index = catch_loudest_index(data.lin_spectrogram, data.lin_frequencies, setup.st_peak_range)
-		melRange = hz2mel((round(Int, data.lin_frequencies[loudest_index]), setup.stft.freq_range[2]), :htk)
-	else
-		melRange = hz2mel(setup.stft.freq_range, setup.mel_style)
-	end
+# 	if setup.mel_style == :tuned
+# 		if isempty(data.lin_spectrogram)
+# 			lin_spectrogram!(setup, data)
+# 		end
+# 		_, loudest_index = catch_loudest_index(data.lin_spectrogram, data.lin_frequencies, setup.st_peak_range)
+# 		melRange = hz2mel((round(Int, data.lin_frequencies[loudest_index]), setup.stft.freq_range[2]), :htk)
+# 	else
+# 		melRange = hz2mel(setup.stft.freq_range, setup.mel_style)
+# 	end
 
-	# mimic audioflux linear mel_style
-	if setup.mel_style == :linear
-		lin_fq = collect(0:(setup.stft.stft_length-1)) / setup.stft.stft_length * setup.sr
-		band_edges = lin_fq[1:(setup.mel_bands+2)]
-	elseif setup.mel_style == :htk || setup.mel_style == :slaney
-		band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
-	elseif setup.mel_style == :tuned
-		band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), :htk)
-	else
-		error("Unknown mel_style $(setup.mel_style).")
-	end
+# 	# mimic audioflux linear mel_style
+# 	if setup.mel_style == :linear
+# 		lin_fq = collect(0:(setup.stft.stft_length-1)) / setup.stft.stft_length * setup.sr
+# 		band_edges = lin_fq[1:(setup.mel_bands+2)]
+# 	elseif setup.mel_style == :htk || setup.mel_style == :slaney
+# 		band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), setup.mel_style)
+# 	elseif setup.mel_style == :tuned
+# 		band_edges = mel2hz(LinRange(melRange[1], melRange[end], setup.mel_bands + 2), :htk)
+# 	else
+# 		error("Unknown mel_style $(setup.mel_style).")
+# 	end
 
-	### parte esclusiva per mel filterbank si passa a file designmelfilterbank.m
-	# determine the number of bands
-	num_edges = length(band_edges)
+# 	### parte esclusiva per mel filterbank si passa a file designmelfilterbank.m
+# 	# determine the number of bands
+# 	num_edges = length(band_edges)
 
-	# determine the number of valid bands
-	valid_num_edges = sum((band_edges .- (setup.sr / 2)) .< sqrt(eps(Float64)))
-	valid_num_bands = valid_num_edges - 2
+# 	# determine the number of valid bands
+# 	valid_num_edges = sum((band_edges .- (setup.sr / 2)) .< sqrt(eps(Float64)))
+# 	valid_num_bands = valid_num_edges - 2
 
-	# preallocate the filter bank
-	filterbank = zeros(Float64, setup.stft.stft_length, setup.mel_bands)
-	data.mel_frequencies = band_edges[2:(end-1)]
+# 	# preallocate the filter bank
+# 	filterbank = zeros(Float64, setup.stft.stft_length, setup.mel_bands)
+# 	data.mel_frequencies = band_edges[2:(end-1)]
 
-	# Set this flag to true if the number of FFT length is insufficient to
-	# compute the specified number of mel bands
-	FFTLengthTooSmall = false
+# 	# Set this flag to true if the number of FFT length is insufficient to
+# 	# compute the specified number of mel bands
+# 	FFTLengthTooSmall = false
 
-	# if :hz 
-	linFq = collect(0:(setup.stft.stft_length-1)) / setup.stft.stft_length * setup.sr
+# 	# if :hz 
+# 	linFq = collect(0:(setup.stft.stft_length-1)) / setup.stft.stft_length * setup.sr
 
-	# Determine inflection points
-	@assert(valid_num_edges <= num_edges)
-	p = zeros(Float64, valid_num_edges, 1)
+# 	# Determine inflection points
+# 	@assert(valid_num_edges <= num_edges)
+# 	p = zeros(Float64, valid_num_edges, 1)
 
-	for edge_n in 1:valid_num_edges
-		for index in eachindex(linFq)
-			if linFq[index] > band_edges[edge_n]
-				p[edge_n] = index
-				break
-			end
-		end
-	end
+# 	for edge_n in 1:valid_num_edges
+# 		for index in eachindex(linFq)
+# 			if linFq[index] > band_edges[edge_n]
+# 				p[edge_n] = index
+# 				break
+# 			end
+# 		end
+# 	end
 
-	FqMod = linFq
+# 	FqMod = linFq
 
-	# Create triangular filters for each band
-	bw = diff(band_edges)
+# 	# Create triangular filters for each band
+# 	bw = diff(band_edges)
 
-	for k in 1:Int(valid_num_bands)
-		# Rising side of triangle
-		for j in Int(p[k]):(Int(p[k+1])-1)
-			filterbank[j, k] = (FqMod[j] - band_edges[k]) / bw[k]
-		end
-		# Falling side of triangle
-		for j in Int(p[k+1]):(Int(p[k+2])-1)
-			filterbank[j, k] = (band_edges[k+2] - FqMod[j]) / bw[k+1]
-		end
-		emptyRange1 = p[k] .> p[k+1] - 1
-		emptyRange2 = p[k+1] .> p[k+2] - 1
-		if (!FFTLengthTooSmall && (emptyRange1 || emptyRange2))
-			FFTLengthTooSmall = true
-		end
-	end
+# 	for k in 1:Int(valid_num_bands)
+# 		# Rising side of triangle
+# 		for j in Int(p[k]):(Int(p[k+1])-1)
+# 			filterbank[j, k] = (FqMod[j] - band_edges[k]) / bw[k]
+# 		end
+# 		# Falling side of triangle
+# 		for j in Int(p[k+1]):(Int(p[k+2])-1)
+# 			filterbank[j, k] = (band_edges[k+2] - FqMod[j]) / bw[k+1]
+# 		end
+# 		emptyRange1 = p[k] .> p[k+1] - 1
+# 		emptyRange2 = p[k+1] .> p[k+2] - 1
+# 		if (!FFTLengthTooSmall && (emptyRange1 || emptyRange2))
+# 			FFTLengthTooSmall = true
+# 		end
+# 	end
 
-	# mirror two sided
-	range = get_onesided_fft_range(setup.stft.stft_length)
-	range = range[2:end]
-	filterbank[end:-1:(end-length(range)+1), :] = filterbank[range, :]
+# 	# mirror two sided
+# 	range = get_onesided_fft_range(setup.stft.stft_length)
+# 	range = range[2:end]
+# 	filterbank[end:-1:(end-length(range)+1), :] = filterbank[range, :]
 
-	filterbank = filterbank'
+# 	filterbank = filterbank'
 
-	# normalizzazione    
-	BW = band_edges[3:end] - band_edges[1:(end-2)]
+# 	# normalizzazione    
+# 	BW = band_edges[3:end] - band_edges[1:(end-2)]
 
-	if (setup.filterbank_normalization == :area)
-		weight_per_band = sum(filterbank, dims = 2)
-		if setup.frequency_scale != :erb
-			weight_per_band = weight_per_band / 2
-		end
-	elseif (setup.filterbank_normalization == :bandwidth)
-		weight_per_band = BW / 2
-	else
-		weight_per_band = ones(1, setup.mel_bands)
-	end
+# 	if (setup.filterbank_normalization == :area)
+# 		weight_per_band = sum(filterbank, dims = 2)
+# 		if setup.frequency_scale != :erb
+# 			weight_per_band = weight_per_band / 2
+# 		end
+# 	elseif (setup.filterbank_normalization == :bandwidth)
+# 		weight_per_band = BW / 2
+# 	else
+# 		weight_per_band = ones(1, setup.mel_bands)
+# 	end
 
-	for i in 1:(setup.mel_bands)
-		if (weight_per_band[i] != 0)
-			filterbank[i, :] = filterbank[i, :] ./ weight_per_band[i]
-		end
-	end
+# 	for i in 1:(setup.mel_bands)
+# 		if (weight_per_band[i] != 0)
+# 			filterbank[i, :] = filterbank[i, :] ./ weight_per_band[i]
+# 		end
+# 	end
 
-	# get one side
-	range = get_onesided_fft_range(setup.stft.stft_length)
-	filterbank = filterbank[:, range]
-	# manca la parte relativa a :erb e :bark
+# 	# get one side
+# 	range = get_onesided_fft_range(setup.stft.stft_length)
+# 	filterbank = filterbank[:, range]
+# 	# manca la parte relativa a :erb e :bark
 
-	# setta fattore di normalizzazione #INSERITO in STFT! CANCELLA!!! e verifica
-	# if setup.stft.win_norm
-	# 	win_norm_factor = get_mel_norm_factor(setup.spectrum_type, data.stft.stft_window)
-	# 	filterbank = filterbank * win_norm_factor
-	# end
+# 	# setta fattore di normalizzazione #INSERITO in STFT! CANCELLA!!! e verifica
+# 	# if setup.stft.win_norm
+# 	# 	win_norm_factor = get_mel_norm_factor(setup.spectrum_type, data.stft.stft_window)
+# 	# 	filterbank = filterbank * win_norm_factor
+# 	# end
 
-	return filterbank
-end # function design_filterbank
+# 	return filterbank
+# end # function design_filterbank
 
 # ---------------------------------------------------------------------------- #
 #                               mel spectrogram                                #

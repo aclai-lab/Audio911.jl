@@ -3,6 +3,7 @@
 #------------------------------------------------------------------------------#
 function audio_setup(
 	sr::Int64;
+	freq_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
 
 	# stft
 	stft_length::Int64 = sr <= 8000 ? 256 : 512,
@@ -14,14 +15,13 @@ function audio_setup(
 
 	# lin
 	win_norm::Symbol = :none, # :none, :power, :magnitude
-	freq_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
-	apply_log::Bool = false,
+	db_scale::Bool = false,
 
 	# mel
 	mel_style::Symbol = :htk, 							# :htk, :slaney, :tuned
 	mel_bands::Int64 = 26,
-	filterbank_design_domain::Symbol = :linear,
-	filterbank_normalization::Symbol = :bandwidth, 		# :bandwidth, :area, :none
+	design_domain::Symbol = :linear,
+	fb_norm::Symbol = :bandwidth, 		# :bandwidth, :area, :none
 	frequency_scale::Symbol = :mel, 					# TODO :mel, :bark, :erb
 	st_peak_range::Tuple{Int64, Int64} = (200, 700),
 
@@ -54,7 +54,8 @@ function audio_setup(
 	# TODO metti warning ed errori
 
 	AudioSetup(
-		sr = sr,
+		sr = sr;
+		freq_range = freq_range,
 
 		stft = StftSetup(
 			stft_length = stft_length,
@@ -65,17 +66,16 @@ function audio_setup(
 			spec_norm = spec_norm,
 		),
 
-		lin_spec = LinSetup(
+		lin = LinSetup(
 			win_norm = win_norm,
-			freq_range = freq_range,
-			apply_log = apply_log
+			db_scale = db_scale
 		),
 
 		# mel
 		mel_style = mel_style,
 		mel_bands = mel_bands,
-		filterbank_design_domain = filterbank_design_domain,
-		filterbank_normalization = filterbank_normalization,
+		design_domain = design_domain,
+		fb_norm = fb_norm,
 		frequency_scale = frequency_scale,
 		st_peak_range = st_peak_range,
 

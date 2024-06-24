@@ -1,41 +1,3 @@
-#------------------------------------------------------------------------------#
-#                                  utilities                                   #
-#------------------------------------------------------------------------------#
-no_zero =  x -> x == 0 ? floatmin(Float64) : x
-
-function _trim_freq_range(
-        x::AbstractArray{Float64};
-        sr::Int64,
-        win_length::Int64,
-        freq_range::Tuple{Int64, Int64}
-)
-    # trim to desired range
-    bin_low = ceil(Int, freq_range[1] * win_length / sr + 1)
-    bin_high = floor(Int, freq_range[2] * win_length / sr + 1)
-    bins = bin_low:bin_high
-
-    # create frequency vector
-    freq_vec = (sr / win_length) .* (collect(bins) .- 1)
-
-    # shift final bin if fftLength is odd and the final range is full to sr/2.
-    if (rem(win_length, 2) == 1 && bin_high == floor(win_length / 2 + 1))
-        freq_vec[end] = floor(Int, sr * (win_length - 1) / (2 * win_length))
-    end
-
-    return x[bins, :], freq_vec, bins
-end
-
-function _trim_freq_range(x::AbstractArray{Float64}, sr::Int64, s::StftSetup)
-    _trim_freq_range(x; sr = sr, win_length = s.stft_length, freq_range = s.freq_range)
-end
-
-function _trim_freq_range(x::AbstractArray{Float64}, a::AudioSetup)
-    _trim_freq_range(x, a.sr, a.stft)
-end
-
-#------------------------------------------------------------------------------#
-#                                     stft                                     #
-#------------------------------------------------------------------------------#
 """
 Note on choose win_length and stft_length values
 
@@ -58,6 +20,10 @@ If the FFT window is larger than the window, the audio data will be zero-padded 
 This zero-padding in the time domain results in an interpolation in the frequency domain, 
 which can provide a more detailed view of the spectral content of the signal.
 """
+
+#------------------------------------------------------------------------------#
+#                                     stft                                     #
+#------------------------------------------------------------------------------#
 function _get_stft(
         wframes::AbstractArray{Float64};
         sr::Int64,
@@ -97,6 +63,7 @@ function _get_stft(
     return stft_spec, stft_freq
 end
 
+#------------------------------------------------------------------------------#
 function _get_stft(wframes::AbstractArray{Float64}, sr::Int64, s::StftSetup)
     _get_stft(
         wframes;
@@ -118,34 +85,32 @@ function get_stft!(a::AudioObj)
     a.data.stft.stft, a.data.stft.freq = _get_stft(
         a.data.stft.frames .* a.setup.stft.win, a.setup.sr, a.setup.stft)
 
-    if a.setup.stft.freq_range == (0, floor(Int, a.setup.sr / 2))
-        a.data.lin_spec = a.data.stft.stft
-        a.data.lin_freq = a.data.stft.freq
-    else
-        a.data.lin_spec, a.data.lin_freq, _ = _trim_freq_range(
-            a.data.stft.stft, a.setup.sr, a.setup.stft)
-    end
+    # if a.setup.freq_range == (0, floor(Int, a.setup.sr / 2))
+    #     a.data.lin_spec = a.data.stft.stft
+    #     a.data.lin_freq = a.data.stft.freq
+    # else
+    #     a.data.lin_spec, a.data.lin_freq, _ = _trim_freq_range(
+    #         a.data.stft.stft, a.setup.sr, a.setup.stft)
+    # end
 end
 
 #------------------------------------------------------------------------------#
 #                            linear spectrogram                                #
 #------------------------------------------------------------------------------#
+no_zero =  x -> x == 0 ? floatmin(Float64) : x
+
 function _get_lin_spec(
     x::AbstractArray{Float64};
-    sr::Int64,
     win::AbstractVector{Float64},
-    stft_length::Int64,
+    x_freq::StepRangeLen{Float64},
     freq_range::Tuple{Int64, Int64},
-    apply_log::Bool
+    db_scale::Bool
 )
     # trim to desired range
-    bin_low = ceil(Int, freq_range[1] * stft_length / sr + 1)
-    bin_high = floor(Int, freq_range[2] * stft_length / sr + 1)
-    x = x[bin_low:bin_high, :]
+    x_range = findall(freq_range[1] .<= x_freq .<= freq_range[2])
+    lin_spec, lin_freq = x[x_range, :], x_freq[x_range]
 
-    # create frequency vector
-    lin_freq = ((sr / stft_length) .* (collect(bin_low:bin_high) .- 1))
-
+    # normalize
     norm_funcs = Dict(
         :none => x -> x,
         :power => x -> x / sum(win)^2,
@@ -153,9 +118,13 @@ function _get_lin_spec(
     )
     # check if spectrum_type is valid
     @assert haskey(norm_funcs, win_norm) "Unknown spectrum_type: $spec_norm."
-    x = norm_funcs[win_norm](x * 2)
+    lin_spec = norm_funcs[win_norm](x * 2)
 
-    if apply_log
-        x = log10.(no_zero.(x))
+    if db_scale
+        lin_spec = log10.(no_zero.(lin_spec))
     end
+
+    return lin_spec, lin_freq
 end
+
+#------------------------------------------------------------------------------#
