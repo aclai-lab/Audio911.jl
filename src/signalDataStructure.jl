@@ -6,58 +6,65 @@
 	AudioSetup stores all datas that has to be shared in Audio911 module
 	AudioData stores all results from signal analysis
 """
-@with_kw mutable struct StftSetup
+# ---------------------------------------------------------------------------- #
+#                                 raw audio                                    #
+# ---------------------------------------------------------------------------- #
+@with_kw mutable struct Audio
+	audio::AbstractVector{Float64} = Float64[]
+	sr::Int64
+end
+
+# ---------------------------------------------------------------------------- #
+#                                    stft                                      #
+# ---------------------------------------------------------------------------- #
+@with_kw mutable struct Stft
+	# setup
 	stft_length::Int64
-	# windowing
-	win::AbstractVector{Float64} = []
+	win::AbstractVector{Float64} = Float64[]
 	win_type::Tuple{Symbol, Symbol}
 	win_length::Int64
 	overlap_length::Int64
-	# spectrum
-	spec_norm::Symbol # :none, :power, :magnitude, :pow2mag
+	norm::Symbol # :none, :power, :magnitude, :pow2mag
+	# data
+	frames::AbstractArray{Float64} = Float64[]
+	stft::AbstractArray{Float64} = Float64[]
+	freq::AbstractVector{Float64} = Float64[]
 end
 
-@with_kw mutable struct StftData
-	frames::AbstractArray{Float64} = []
-	stft::AbstractArray{Float64} = []
-	freq::AbstractVector{Float64} = []
-end
-
-@with_kw mutable struct LinSetup
+# ---------------------------------------------------------------------------- #
+#                             linear spectrogram                               #
+# ---------------------------------------------------------------------------- #
+@with_kw mutable struct LinSpec
+	# setp
 	win_norm::Symbol # :none, :power, :magnitude
 	db_scale::Bool
+	# data
+	spec::AbstractArray{Float64} = Float64[]
+	freq::AbstractVector{Float64} = Float64[]
 end
 
-@with_kw mutable struct LinData
-	spec::AbstractArray{Float64} = []
+# ---------------------------------------------------------------------------- #
+#                                 filterbank                                   #
+# ---------------------------------------------------------------------------- #
+@with_kw mutable struct Fbank
+	# setup
+    bands::Int64
+    scale::Symbol # :mel, :erb, :bark
+    norm::Symbol # :bandwidth, :area, :none
+    mel_style::Symbol # :htk, :slaney
+	# data
+	fbank::AbstractArray{Float64} = []
 	freq::AbstractVector{Float64} = []
 end
 
-# @with_kw mutable struct FbSetup
-# 	n_bands::Int64
-# 	design_domain::Symbol, # :linear, :mel, :erb, :bark
-# 	mel_style::Symbol
-# end
-
-# @with_kw mutable struct FbData
-
-# end
-
-@with_kw mutable struct AudioSetup
-	sr::Int64
-	freq_range::Tuple{Int64, Int64}
-
-	stft::StftSetup
-	lin::LinSetup
-
-	# mel
-	
-	mel_style::Symbol
-	mel_bands::Int64
-	design_domain::Symbol
-	fb_norm::Symbol
-	frequency_scale::Symbol
-	st_peak_range::Tuple{Int64, Int64}
+# ---------------------------------------------------------------------------- #
+#                                audio object                                  #
+# ---------------------------------------------------------------------------- #
+@with_kw mutable struct AudioObj
+	audio::Audio
+	stft::Stft
+	lin::LinSpec
+	fb::Fbank
 
 	# chroma
 	bins_octave::Int64 # shared with constant-q transform
@@ -87,46 +94,42 @@ end
 	transform_type::Symbol
 end
 
-@with_kw mutable struct AudioData
-	x::AbstractVector{Float64}
+# @with_kw mutable struct AudioData
+# 	x::AbstractVector{Float64}
 
-	stft::StftData = StftData()
-	lin::LinData = LinData()
+# 	stft::StftData = StftData()
+# 	lin::LinData = LinData()
+# 	fb::FbData = FbData()
 
-	# mel_spectrum
-	mel_frequencies::AbstractVector{Float64} = []
-	mel_spectrogram::AbstractArray{Float64} = []
+# 	# mel_spectrum
+# 	mel_frequencies::AbstractVector{Float64} = []
+# 	mel_spectrogram::AbstractArray{Float64} = []
 
-	# logaritmic mel
-	log_mel::AbstractArray{Float64} = []
+# 	# logaritmic mel
+# 	log_mel::AbstractArray{Float64} = []
 
-	# mfcc
-	mfcc_coeffs::AbstractArray{Float64} = []
-	mfcc_delta::AbstractArray{Float64} = []
-	mfcc_deltadelta::AbstractArray{Float64} = []
-	log_energy::AbstractVector{Float64} = []
+# 	# mfcc
+# 	mfcc_coeffs::AbstractArray{Float64} = []
+# 	mfcc_delta::AbstractArray{Float64} = []
+# 	mfcc_deltadelta::AbstractArray{Float64} = []
+# 	log_energy::AbstractVector{Float64} = []
 
-	# spectral
-	spectral_centroid::AbstractVector{Float64} = []
-	spectral_crest::AbstractVector{Float64} = []
-	spectral_decrease::AbstractVector{Float64} = []
-	spectral_entropy::AbstractVector{Float64} = []
-	spectral_flatness::AbstractVector{Float64} = []
-	spectral_flux::AbstractVector{Float64} = []
-	spectral_kurtosis::AbstractVector{Float64} = []
-	spectral_rolloff::AbstractVector{Float64} = []
-	spectral_skewness::AbstractVector{Float64} = []
-	spectral_slope::AbstractVector{Float64} = []
-	spectral_spread::AbstractVector{Float64} = []
+# 	# spectral
+# 	spectral_centroid::AbstractVector{Float64} = []
+# 	spectral_crest::AbstractVector{Float64} = []
+# 	spectral_decrease::AbstractVector{Float64} = []
+# 	spectral_entropy::AbstractVector{Float64} = []
+# 	spectral_flatness::AbstractVector{Float64} = []
+# 	spectral_flux::AbstractVector{Float64} = []
+# 	spectral_kurtosis::AbstractVector{Float64} = []
+# 	spectral_rolloff::AbstractVector{Float64} = []
+# 	spectral_skewness::AbstractVector{Float64} = []
+# 	spectral_slope::AbstractVector{Float64} = []
+# 	spectral_spread::AbstractVector{Float64} = []
 
-	# f0
-	f0::AbstractVector{Float64} = []
+# 	# f0
+# 	f0::AbstractVector{Float64} = []
 
-	# constant-q transform
-	cqt_spec::AbstractArray{Float64} = []
-end
-
-mutable struct AudioObj
-	setup::AudioSetup
-	data::AudioData
-end
+# 	# constant-q transform
+# 	cqt_spec::AbstractArray{Float64} = []
+# end

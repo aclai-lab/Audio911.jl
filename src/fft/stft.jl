@@ -1,25 +1,23 @@
-"""
-Note on choose win_length and stft_length values
+# Note on choose win_length and stft_length values
 
-When you apply a Fast Fourier Transform (FFT), you're transforming your data from the time domain to the frequency domain.
-The length of the FFT, here called stft_length, determines the resolution of the frequency domain output.
-If the window length (the length of the data segment you're analyzing) is greater than the FFT length, 
-you have to somehow reduce the amount of data to fit into the FFT. One common way to do this is by "wrapping" the data.
+# When you apply a Fast Fourier Transform (FFT), you're transforming your data from the time domain to the frequency domain.
+# The length of the FFT, here called stft_length, determines the resolution of the frequency domain output.
+# If the window length (the length of the data segment you're analyzing) is greater than the FFT length, 
+# you have to somehow reduce the amount of data to fit into the FFT. One common way to do this is by "wrapping" the data.
 
-Wrapping involves taking the part of the data that "overflows" the FFT length and adding it back to the beginning 
-of the data segment. This is equivalent to assuming that the data is periodic and continues to repeat.
-However, this can introduce discontinuities at the wrap-around point, 
-which can lead to spectral leakage (distortion in the frequency domain representation). 
-To mitigate this, it's common to apply a window function to the data before performing the FFT.
+# Wrapping involves taking the part of the data that "overflows" the FFT length and adding it back to the beginning 
+# of the data segment. This is equivalent to assuming that the data is periodic and continues to repeat.
+# However, this can introduce discontinuities at the wrap-around point, 
+# which can lead to spectral leakage (distortion in the frequency domain representation). 
+# To mitigate this, it's common to apply a window function to the data before performing the FFT.
 
-It's important to choose an appropriate FFT length for your specific application. 
-If you're dealing with non-periodic signals or you want to avoid the potential issues associated with wrapping, 
-it might be better to choose an FFT length that's equal to or larger than your window length.
+# It's important to choose an appropriate FFT length for your specific application. 
+# If you're dealing with non-periodic signals or you want to avoid the potential issues associated with wrapping, 
+# it might be better to choose an FFT length that's equal to or larger than your window length.
 
-If the FFT window is larger than the window, the audio data will be zero-padded to match the size of the FFT window.
-This zero-padding in the time domain results in an interpolation in the frequency domain, 
-which can provide a more detailed view of the spectral content of the signal.
-"""
+# If the FFT window is larger than the window, the audio data will be zero-padded to match the size of the FFT window.
+# This zero-padding in the time domain results in an interpolation in the frequency domain, 
+# which can provide a more detailed view of the spectral content of the signal.
 
 #------------------------------------------------------------------------------#
 #                                     stft                                     #
@@ -64,35 +62,35 @@ function _get_stft(
 end
 
 #------------------------------------------------------------------------------#
-function _get_stft(wframes::AbstractArray{Float64}, sr::Int64, s::StftSetup)
-    _get_stft(
-        wframes;
-        sr = sr,
-        win_length = s.win_length,
-        stft_length = s.stft_length,
-        spec_norm = s.spec_norm)
-end
+# function _get_stft(wframes::AbstractArray{Float64}, sr::Int64, s::StftSetup)
+#     _get_stft(
+#         wframes;
+#         sr = sr,
+#         win_length = s.win_length,
+#         stft_length = s.stft_length,
+#         spec_norm = s.norm)
+# end
 
-function get_stft!(a::AudioObj)
-    if isnothing(a.data.stft)
-        a.data.stft = StftData()
-    end
+# function get_stft!(a::AudioObj)
+#     if isnothing(a.data.stft)
+#         a.data.stft = StftData()
+#     end
 
-    if isempty(a.data.stft.frames)
-        a.data.stft.frames, a.setup.stft.win, _, _, _ = _get_frames(a.data.x, a.setup.stft)
-    end
+#     if isempty(a.data.stft.frames)
+#         a.data.stft.frames, a.setup.stft.win, _, _, _ = _get_frames(a.data.x, a.setup.stft)
+#     end
 
-    a.data.stft.stft, a.data.stft.freq = _get_stft(
-        a.data.stft.frames .* a.setup.stft.win, a.setup.sr, a.setup.stft)
+#     a.data.stft.stft, a.data.stft.freq = _get_stft(
+#         a.data.stft.frames .* a.setup.stft.win, a.setup.sr, a.setup.stft)
 
-    # if a.setup.freq_range == (0, floor(Int, a.setup.sr / 2))
-    #     a.data.lin_spec = a.data.stft.stft
-    #     a.data.lin_freq = a.data.stft.freq
-    # else
-    #     a.data.lin_spec, a.data.lin_freq, _ = _trim_freq_range(
-    #         a.data.stft.stft, a.setup.sr, a.setup.stft)
-    # end
-end
+#     # if a.setup.freq_range == (0, floor(Int, a.setup.sr / 2))
+#     #     a.data.lin_spec = a.data.stft.stft
+#     #     a.data.lin_freq = a.data.stft.freq
+#     # else
+#     #     a.data.lin_spec, a.data.lin_freq, _ = _trim_freq_range(
+#     #         a.data.stft.stft, a.setup.sr, a.setup.stft)
+#     # end
+# end
 
 #------------------------------------------------------------------------------#
 #                            linear spectrogram                                #

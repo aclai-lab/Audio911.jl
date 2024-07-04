@@ -14,7 +14,7 @@ TODO documentation
 #                                data structures                                  #
 ###################################################################################
 
-@with_kw mutable struct FbSetup
+@with_kw mutable struct WFbSetup
     sr::Int64
     length::Int64
     wavelet::Symbol = :morse # :morse, :amor, :bump
@@ -138,7 +138,7 @@ function freq2scales(
     scales = s0 * a0 .^ (0:(vpo * numoctaves))
 end
 
-function cwtfilterbank!(fb_setup::FbSetup)
+function cwtfilterbank!(fb_setup::WFbSetup)
     ###########################################################################
     #                             setup parameters                            #
     ###########################################################################
@@ -252,7 +252,7 @@ end # function cwtfilterbank
 
 function wt(
         x::AbstractVector{Float64},
-        fb_setup::FbSetup
+        fb_setup::WFbSetup
 )
     if (fb_setup.signal_pad > 0)
         x = vcat(reverse(x[1:fb_setup.signal_pad]), x,
@@ -306,7 +306,7 @@ function cwt(
 )
     # ga, be = gamma, beta: symmetric parameters for morse wavelet
 
-    fb_setup = FbSetup(
+    fb_setup = WFbSetup(
         sr = sr,
         length = size(x, 1),
         wavelet = wavelet,

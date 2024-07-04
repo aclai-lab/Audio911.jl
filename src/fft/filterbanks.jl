@@ -139,9 +139,9 @@ end
 function design_filterbank(;
         n_bands::Int64,
         scale::Symbol, # :linear, :mel, :erb, :bark
-        freq_range::Tuple{Int64, Int64},
         norm::Symbol, # :bandwidth, :area, :none
         mel_style::Symbol = :htk, # :htk, :slaney
+        freq_range::Tuple{Int64, Int64},
         stft_length::Int64,
         freq::StepRangeLen{Float64}
 )
@@ -166,12 +166,12 @@ function design_filterbank(;
 
     elseif scale == :mel || scale == :bark
         scale == :mel ? begin
-                mel_range = hz2mel(freq_range, mel_style)
-                band_edges = mel2hz(mel_range, n_bands, mel_style)
-            end : begin
-                bark_range = hz2bark(freq_range)
-                band_edges = bark2hz(bark_range, n_bands)
-            end
+            mel_range = hz2mel(freq_range, mel_style)
+            band_edges = mel2hz(mel_range, n_bands, mel_style)
+        end : begin
+            bark_range = hz2bark(freq_range)
+            band_edges = bark2hz(bark_range, n_bands)
+        end
 
         filter_freq = band_edges[2:(end - 1)]
         n_bands = length(filter_freq)
@@ -203,3 +203,17 @@ function design_filterbank(;
 
     return filterbank, filter_freq
 end
+
+# function design_filterbank!(
+#         setup::AudioSetup,
+#         data::AudioData
+# )
+#     data.fb.fbank, data.fb.freq = zdesign_filterbank(
+#         n_bands = setup.fb.bands,
+#         scale = setup.fb.scale,
+#         norm = setup.fb.norm,
+#         mel_style = setup.fb.mel_style,
+#         stft_length = setup.stft.stft_length,
+#         freq = setup.freq_range
+#     )
+# end

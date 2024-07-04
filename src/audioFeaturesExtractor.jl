@@ -11,19 +11,17 @@ function audio_setup(
 	win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
 	win_length::Int64 = stft_length, 					# standard setting: round(Int, 0.03 * sr)
 	overlap_length::Int64 = round(Int, stft_length / 2), # standard setting: round(Int, 0.02 * sr)
-	spec_norm::Symbol = :power, # :none, :power, :magnitude, :pow2mag
+	stft_norm::Symbol = :power, # :none, :power, :magnitude, :pow2mag
 
 	# lin
 	win_norm::Symbol = :none, # :none, :power, :magnitude
 	db_scale::Bool = false,
 
-	# mel
-	mel_style::Symbol = :htk, 							# :htk, :slaney, :tuned
-	mel_bands::Int64 = 26,
-	design_domain::Symbol = :linear,
-	fb_norm::Symbol = :bandwidth, 		# :bandwidth, :area, :none
-	frequency_scale::Symbol = :mel, 					# TODO :mel, :bark, :erb
-	st_peak_range::Tuple{Int64, Int64} = (200, 700),
+	# filterbank
+	fb_bands::Int64 = 26,
+    scale::Symbol = :mel, # :mel, :erb, :bark
+    fb_norm::Symbol = :bandwidth, # :bandwidth, :area, :none
+    mel_style::Symbol = :htk, # :htk, :slaney
 
 	# chroma
 	bins_octave::Int64 = 12,
@@ -63,7 +61,7 @@ function audio_setup(
 			win_type = win_type,
 			win_length = win_length,
 			overlap_length = overlap_length,
-			spec_norm = spec_norm,
+			norm = stft_norm,
 		),
 
 		lin = LinSetup(
@@ -71,13 +69,12 @@ function audio_setup(
 			db_scale = db_scale
 		),
 
-		# mel
-		mel_style = mel_style,
-		mel_bands = mel_bands,
-		design_domain = design_domain,
-		fb_norm = fb_norm,
-		frequency_scale = frequency_scale,
-		st_peak_range = st_peak_range,
+		fb = FbSetup(
+			bands = fb_bands,
+			scale = scale,
+			norm = fb_norm,
+			mel_style = mel_style
+		),
 
 		# chroma
 		bins_octave = bins_octave,

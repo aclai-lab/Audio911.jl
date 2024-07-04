@@ -106,28 +106,28 @@ function _get_frames(
 	return frames, win, frames .* win, n_col, col_offsets
 end
 
-function _get_frames(x::AbstractVector{Float64}, s::StftSetup)
-	_get_frames(x, win_type = s.win_type, win_length = s.win_length, overlap_length = s.overlap_length)
-end
+# function _get_frames(x::AbstractVector{Float64}, s::StftSetup)
+# 	_get_frames(x, win_type = s.win_type, win_length = s.win_length, overlap_length = s.overlap_length)
+# end
 
-function _get_frames(x::AbstractVector{Float64}, a::AudioSetup)
-	_get_frames(x, a.stft)
-end
+# function _get_frames(x::AbstractVector{Float64}, a::AudioSetup)
+# 	_get_frames(x, a.stft)
+# end
 
-function get_frames(
-	x::AbstractVector{<:AbstractFloat},
-	win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-	win_length::Int64 = 256,
-	overlap_length::Int64 = 128,
-)
-	@assert 0 < overlap_length < win_length "Overlap length must be < window length."
+# function get_frames(
+# 	x::AbstractVector{<:AbstractFloat},
+# 	win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
+# 	win_length::Int64 = 256,
+# 	overlap_length::Int64 = 128,
+# )
+# 	@assert 0 < overlap_length < win_length "Overlap length must be < window length."
 
-	frames, win, wframes, n_col, col_offsets = _get_frames(
-		eltype(x) == Float64 ? x : Float64.(x),
-		win_type = win_type,
-		win_length = win_length,
-		overlap_length = overlap_length,
-	)
-end
+# 	frames, win, wframes, n_col, col_offsets = _get_frames(
+# 		eltype(x) == Float64 ? x : Float64.(x),
+# 		win_type = win_type,
+# 		win_length = win_length,
+# 		overlap_length = overlap_length,
+# 	)
+# end
 
-get_frames!(a::AudioObj; kwargs...) = a.data.frames, a.setup.stft.window = get_frames(a.data.x; kwargs...)
+# get_frames!(a::AudioObj; kwargs...) = a.data.frames, a.setup.stft.window = get_frames(a.data.x; kwargs...)
