@@ -2,7 +2,7 @@ function load_audio(
     filename::AbstractString,
     sr::Int64=16000
 )
-    Audio(py"load_audio"(filename, sr)...)
+    AudioRack(py"load_audio"(filename, sr)...)
 end
 
 function save_audio(

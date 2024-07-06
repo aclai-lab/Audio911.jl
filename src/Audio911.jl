@@ -2,13 +2,13 @@ module Audio911
 
 using FFTW, DSP
 using LinearAlgebra
-using Parameters
 using SpecialFunctions
 using StatsBase
 using Statistics, Roots
 using NaNStatistics
 using Polynomials
 
+using Parameters # DA CANCELLARE
 using PyCall
 
 function __init__()
@@ -56,7 +56,9 @@ include("wavelet/wpspectrum.jl")
 # include("cqt/cqt.jl")
 
 # structures
-export AudioObj, Audio, Stft, LinSpec, Fbank
+export AudioObj, AudioRack
+export Audio, Stft, LinSpec, Fbank
+
 # audio features
 export audio_obj, get_features
 
