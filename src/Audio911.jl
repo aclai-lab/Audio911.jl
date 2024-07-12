@@ -39,12 +39,12 @@ include("fft/conv.jl")
 # include("fft/mel.jl")
 # include("fft/spectral.jl")
 include("fft/stft.jl")
-include("fft/filterbanks.jl")
+include("fft/fbank.jl")
 # utils
 include("utils/histogram.jl")
 include("utils/speech_detector.jl")
 include("utils/in_out.jl")
-include("utils/trimaudio.jl")
+# include("utils/trimaudio.jl")
 # wavelets
 include("wavelet/wavelets_data_structures.jl")
 include("wavelet/waveletData.jl")
@@ -60,7 +60,8 @@ export AudioObj, AudioRack
 export Audio, Stft, LinSpec, Fbank
 
 # audio features
-export audio_obj, get_features
+export get_stft!, get_lin!, get_fbank!
+# export audio_obj, get_features
 
 # utility functions
 export speech_detector

@@ -49,9 +49,8 @@ end
 struct Fbank
 	# setup
     bands::Int64
-    scale::Symbol # :mel, :erb, :bark
+    scale::Symbol # :mel_htk, :mel_slaney, :erb, :bark
     norm::Symbol # :bandwidth, :area, :none
-    mel_style::Symbol # :htk, :slaney
 	# data
 	fbank::AbstractArray{Float64}
 	freq::AbstractVector{Float64}
@@ -65,7 +64,7 @@ mutable struct AudioRack
 	audio::Audio
 	stft::Union{Stft, Nothing}
 	lin::Union{LinSpec, Nothing}
-	fb::Union{Fbank, Nothing}
+	fbank::Union{Fbank, Nothing}
 
 	# custom constructor
     function AudioRack(

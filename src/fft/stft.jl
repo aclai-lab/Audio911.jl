@@ -61,47 +61,64 @@ function _get_stft(
     return stft_spec, stft_freq
 end
 
+function _get_stft!(
+    rack::AudioRack;
+    stft_length::Int64 = rack.audio.sr <= 8000 ? 256 : 512,
+    win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
+    win_length::Int64 = stft_length, 				   	 # standard setting: round(Int, 0.03 * sr)
+	overlap_length::Int64 = round(Int, stft_length / 2), # standard setting: round(Int, 0.02 * sr)
+	norm::Symbol = :power, # :none, :power, :magnitude, :pow2mag
+)
+    frames, win, wframes, _, _ = _get_frames(
+        rack.audio.data,
+        win_type=win_type,
+        win_length=win_length,
+        overlap_length=overlap_length
+    )
+
+    stft, freq = _get_stft(
+        wframes,
+        sr = rack.audio.sr,
+        win_length = win_length,
+        stft_length = stft_length,
+        spec_norm = norm
+    ) 
+
+    rack.stft = Stft(
+        stft_length,
+        win,
+        win_type,
+        win_length,
+        overlap_length,
+        norm,
+        frames,
+        stft,
+        freq
+    )
+end
+
 #------------------------------------------------------------------------------#
-# function _get_stft(wframes::AbstractArray{Float64}, sr::Int64, s::StftSetup)
-#     _get_stft(
-#         wframes;
-#         sr = sr,
-#         win_length = s.win_length,
-#         stft_length = s.stft_length,
-#         spec_norm = s.norm)
-# end
-
-# function get_stft!(a::AudioObj)
-#     if isnothing(a.data.stft)
-#         a.data.stft = StftData()
-#     end
-
-#     if isempty(a.data.stft.frames)
-#         a.data.stft.frames, a.setup.stft.win, _, _, _ = _get_frames(a.data.x, a.setup.stft)
-#     end
-
-#     a.data.stft.stft, a.data.stft.freq = _get_stft(
-#         a.data.stft.frames .* a.setup.stft.win, a.setup.sr, a.setup.stft)
-
-#     # if a.setup.freq_range == (0, floor(Int, a.setup.sr / 2))
-#     #     a.data.lin_spec = a.data.stft.stft
-#     #     a.data.lin_freq = a.data.stft.freq
-#     # else
-#     #     a.data.lin_spec, a.data.lin_freq, _ = _trim_freq_range(
-#     #         a.data.stft.stft, a.setup.sr, a.setup.stft)
-#     # end
-# end
+#                                  callings                                    #
+#------------------------------------------------------------------------------#
+function get_stft!(
+    rack::AudioRack,
+    audio::Audio;
+    kwargs...
+)
+    _get_stft!(rack; kwargs...)
+end
 
 #------------------------------------------------------------------------------#
 #                            linear spectrogram                                #
 #------------------------------------------------------------------------------#
 no_zero =  x -> x == 0 ? floatmin(Float64) : x
 
-function _get_lin_spec(
-    x::AbstractArray{Float64};
+function _get_lin(
+    x::AbstractArray{Float64},
     win::AbstractVector{Float64},
-    x_freq::StepRangeLen{Float64},
+    x_freq::StepRangeLen{Float64};
     freq_range::Tuple{Int64, Int64},
+    win_norm::Symbol,
     db_scale::Bool
 )
     # trim to desired range
@@ -118,6 +135,7 @@ function _get_lin_spec(
     @assert haskey(norm_funcs, win_norm) "Unknown spectrum_type: $spec_norm."
     lin_spec = norm_funcs[win_norm](x * 2)
 
+    # scale to log
     if db_scale
         lin_spec = log10.(no_zero.(lin_spec))
     end
@@ -125,4 +143,38 @@ function _get_lin_spec(
     return lin_spec, lin_freq
 end
 
+function _get_lin!(
+    rack::AudioRack;
+    freq_range::Tuple{Int64, Int64} = (0, floor(Int, rack.audio.sr / 2)),
+    win_norm::Symbol = :power,
+    db_scale::Bool = false
+)
+    spec, freq = _get_lin(
+        rack.stft.stft,
+        rack.stft.win,
+        rack.stft.freq,
+        freq_range=freq_range,
+        win_norm=win_norm,
+        db_scale=db_scale
+    )
+
+    rack.lin = LinSpec(
+        win_norm,
+        db_scale,
+        spec,
+        freq
+    )
+end
+
 #------------------------------------------------------------------------------#
+#                                  callings                                    #
+#------------------------------------------------------------------------------#
+function get_lin!(
+    rack::AudioRack,
+    stft::Stft;
+    kwargs...
+)
+    _get_lin!(rack; kwargs...)
+end
+
+# TODO: calling for wavelets
