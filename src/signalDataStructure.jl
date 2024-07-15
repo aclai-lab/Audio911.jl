@@ -44,7 +44,7 @@ struct LinSpec
 end
 
 # ---------------------------------------------------------------------------- #
-#                                 filterbank                                   #
+#                                 filterbanks                                   #
 # ---------------------------------------------------------------------------- #
 struct Fbank
 	# setup
@@ -56,6 +56,22 @@ struct Fbank
 	freq::AbstractVector{Float64}
 end
 
+struct CwtFbank
+	# setup
+	wavelet::Symbol # :morse, :morlet, :bump
+	morse_params::Tuple{Int64, Int64}
+	vpo::Int64
+	boundary::Symbol # :reflection, :periodic
+	signal_pad::Int64
+	# data
+	fbank::AbstractArray{Float64}
+	freq::AbstractVector{Float64}
+end
+
+struct Cwt
+	spec::AbstractArray{Complex}
+end
+
 # ---------------------------------------------------------------------------- #
 #                                 audio rack                                   #
 # ---------------------------------------------------------------------------- #
@@ -65,6 +81,8 @@ mutable struct AudioRack
 	stft::Union{Stft, Nothing}
 	lin::Union{LinSpec, Nothing}
 	fbank::Union{Fbank, Nothing}
+	cwt_fb::Union{CwtFbank, Nothing}
+	cwt::Union{Cwt, Nothing}
 
 	# custom constructor
     function AudioRack(
@@ -72,9 +90,11 @@ mutable struct AudioRack
         sr::Int64; 
         stft::Union{Stft, Nothing} = nothing,
         lin::Union{LinSpec, Nothing} = nothing,
-        fb::Union{Fbank, Nothing} = nothing
+        fbank::Union{Fbank, Nothing} = nothing,
+		cwt_fb::Union{CwtFbank, Nothing} = nothing,
+		cwt::Union{Cwt, Nothing} = nothing
     ) where T <: Real
-        new(Audio(Float64.(audio), sr), stft, lin, fb)
+        new(Audio(Float64.(audio), sr), stft, lin, fbank, cwt_fb, cwt)
     end
 end
 
