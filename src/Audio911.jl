@@ -26,6 +26,7 @@ function __init__()
 end
 
 include("signalDataStructure.jl")
+include("spectrograms.jl")
 # include("audioFeaturesExtractor.jl")
 # windowing
 include("windowing/cswindows.jl")
@@ -34,11 +35,10 @@ include("windowing/windowing.jl")
 # fft
 include("fft/conv.jl")
 # include("fft/f0.jl")
-# include("fft/fft.jl")
-# include("fft/lin.jl")
 # include("fft/mel.jl")
 # include("fft/spectral.jl")
 include("fft/stft.jl")
+# include("fft/lin.jl")
 include("fft/fbank.jl")
 # utils
 include("utils/histogram.jl")
@@ -61,8 +61,9 @@ export AudioRack
 export Audio, Stft, LinSpec, Fbank
 
 # audio features
+export get_spectrogram!
 # stft based
-export get_stft!, get_lin!, get_fbank!
+export get_stft!, get_fbank!
 # wavelets based
 export get_cwt_fb!, get_cwt!
 

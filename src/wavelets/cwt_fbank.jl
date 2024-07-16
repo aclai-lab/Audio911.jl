@@ -23,30 +23,37 @@ function morsepeakfreq(ga::Real, be::Real)
 end
 
 function morseproperties(ga::Real, be::Real)
-    morse_loga = (ga, be) -> be / ga * (1 + log(ga) - log(be))
-
     width = sqrt(ga * be)
     skew = (ga - 3) / width
     kurt = 3 - skew .^ 2 - (2 / width^2)
+    
+    lg, lb = log(ga), log(be)
+    morse_loga = (be) -> be / ga * (1 + lg - log(be))
+    morse_gb = 2 * morse_loga(be) - morse_loga(2 * be)
 
-    logsigo1 = 2 / ga * log(ga / (2 * be)) + loggamma((2 * be + 1 + 2) / ga) - loggamma((2 * be + 1) / ga)
-    logsigo2 = 2 / ga * log(ga / (2 * be)) + 2 * loggamma((2 * be + 2) / ga) - 2 * loggamma((2 * be + 1) / ga)
+    lg_sig1 = 2 / ga * log(ga / (2 * be))
+    lg_sig2 = 2 / ga * log(be / ga)
+    lg_sig3 = loggamma((2 * be + 1) / ga)
+
+    logsigo1 = lg_sig1 + loggamma((2 * be + 1 + 2) / ga) - lg_sig3
+    logsigo2 = lg_sig1 + 2 * loggamma((2 * be + 2) / ga) - 2 * lg_sig3
 
     sigmaF = sqrt(exp(logsigo1) - exp(logsigo2))
-    ra = 2 * morse_loga(ga, be) - 2 * morse_loga(ga, be - 1) + morse_loga(ga, 2 * (be - 1)) - morse_loga(ga, 2 * be)
-    rb = 2 * morse_loga(ga, be) - 2 * morse_loga(ga, be - 1 + ga) + morse_loga(ga, 2 * (be - 1 + ga)) - morse_loga(ga, 2 * be)
-    rc = 2 * morse_loga(ga, be) - 2 * morse_loga(ga, be - 1 + ga ./ 2) + morse_loga(ga, 2 * (be - 1 + ga ./ 2)) - morse_loga(ga, 2 * be)
 
-    logsig2a = ra + 2 / ga * log(be / ga) + 2 * log(be) + loggamma((2 * (be - 1) + 1) / ga) - loggamma((2 * be + 1) / ga)
-    logsig2b = rb + 2 / ga * log(be / ga) + 2 * log(ga) + loggamma((2 * (be - 1 + ga) + 1) / ga) - loggamma((2 * be + 1) / ga)
-    logsig2c = rc + 2 / ga * log(be / ga) + log(2) + log(be) + log(ga) + loggamma((2 * (be - 1 + ga ./ 2) + 1) / ga) - loggamma((2 * be + 1) / ga)
+    ra = morse_gb - 2 * morse_loga(be - 1)           + morse_loga(2 * (be - 1))
+    rb = morse_gb - 2 * morse_loga(be - 1 + ga)      + morse_loga(2 * (be - 1 + ga))
+    rc = morse_gb - 2 * morse_loga(be - 1 + ga ./ 2) + morse_loga(2 * (be - 1 + ga ./ 2))
+
+    logsig2a = ra + lg_sig2 + 2 * lb + loggamma((2 * (be - 1) + 1) / ga) - lg_sig3
+    logsig2b = rb + lg_sig2 + 2 * lg + loggamma((2 * (be - 1 + ga) + 1) / ga) - lg_sig3
+    logsig2c = rc + lg_sig2 + log(2) + lb + lg + loggamma((2 * (be - 1 + ga ./ 2) + 1) / ga) - lg_sig3
 
     sigmaT = sqrt(exp(logsig2a) + exp(logsig2b) - exp(logsig2c))
 
     return width, skew, kurt, sigmaT, sigmaF
 end
 
-function get_freq_cutoff_morse(cutoff::Int64, cf::Float64, ga::Real, be::Real)
+function get_freq_cutoff_morse(cutoff::Int64, cf::Real, ga::Real, be::Real)
     anorm = 2 * exp(be / ga * (1 + (log(ga) - log(be))))
     alpha = 2 * (cutoff / 100)
 
@@ -64,8 +71,8 @@ function get_freq_cutoff_morse(cutoff::Int64, cf::Float64, ga::Real, be::Real)
     end
 end
 
-function get_freq_cutoff_morlet(cutoff::Int64, cf::Float64)
-    alpha = 2 * cutoff
+function get_freq_cutoff_morlet(cutoff::Int64, cf::Real)
+    alpha = 2 * cutoff / 100
 
     psihat = x -> alpha - 2 * exp(-(x - cf) .^ 2 / 2)
 
@@ -78,8 +85,9 @@ function get_freq_cutoff_morlet(cutoff::Int64, cf::Float64)
     end
 end
 
-function get_freq_cutoff_bump(cutoff::Int64, cf::Float64)
+function get_freq_cutoff_bump(cutoff::Int64, cf::Real)
     sigma = 0.6
+    cutoff = cutoff / 100
 
     if cutoff < 10 * eps(0.0)
         omegaC = cf + sigma - 10 * eps(cf + sigma)
@@ -159,12 +167,12 @@ end
 #                       continuous wavelets filterbank                         #
 # ---------------------------------------------------------------------------- #
 function _get_cwt_fb(
+    sr::Int64,
+    x_length::Int64;
     wavelet::Symbol,
     morse_params::Tuple{Int64, Int64},
-    sr::Int64,
-    x_length::Int64,
     vpo::Int64,
-    boundary::Symbol,
+    boundary::Symbol
 )
     gamma_beta = (morse_params[1], morse_params[2] / morse_params[1])
     ga, be = gamma_beta
@@ -212,34 +220,28 @@ function _get_cwt_fb(
     return fbank, wavelet_center_freqs, signal_pad
 end
 
-function _get_cwt_fb!(
-    rack::AudioRack;
+# ---------------------------------------------------------------------------- #
+#                                  callings                                    #
+# ---------------------------------------------------------------------------- #
+function get_cwt_fb!(
+    rack::AudioRack,
+    audio::Audio;
     wavelet::Symbol = :morse,
     morse_params::Tuple{Int64, Int64} = (3, 60),
     vpo::Int64 = 10,
     boundary::Symbol = :reflection
 )
-    fbank, wcf, signal_pad = _get_cwt_fb(wavelet, morse_params, rack.audio.sr, size(rack.audio.data, 1), vpo, boundary)
+    fbank, wcf, signal_pad = _get_cwt_fb(rack.audio.sr, size(rack.audio.data, 1); wavelet, morse_params, vpo, boundary)
 
     rack.cwt_fb = CwtFbank(
-        wavelet, 
-        morse_params, 
-        vpo, 
+        wavelet,
+        morse_params,
+        vpo,
         boundary, 
         signal_pad,
         fbank, 
-        wcf
+        reverse(wcf)
     )
-end
-
-# ---------------------------------------------------------------------------- #
-#                                  callings                                    #
-# ---------------------------------------------------------------------------- #
-function get_cwt_fb!(
-    rack::AudioRack;
-    kwargs...
-)
-    _get_cwt_fb!(rack; kwargs...)
 end
 
 # TODO: calling for stft

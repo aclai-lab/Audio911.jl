@@ -32,18 +32,6 @@ struct Stft
 end
 
 # ---------------------------------------------------------------------------- #
-#                             linear spectrogram                               #
-# ---------------------------------------------------------------------------- #
-struct LinSpec
-	# setp
-	win_norm::Symbol # :none, :power, :magnitude
-	db_scale::Bool
-	# data
-	spec::AbstractArray{Float64}
-	freq::AbstractVector{Float64}
-end
-
-# ---------------------------------------------------------------------------- #
 #                                 filterbanks                                   #
 # ---------------------------------------------------------------------------- #
 struct Fbank
@@ -69,9 +57,29 @@ struct CwtFbank
 end
 
 struct Cwt
-	spec::AbstractArray{Complex}
+	cwt::AbstractArray{Complex{Float64}}
 end
 
+# ---------------------------------------------------------------------------- #
+#                                 spectrograms                                 #
+# ---------------------------------------------------------------------------- #
+struct LinSpec
+	# setp
+	win_norm::Symbol # :none, :power, :magnitude
+	db_scale::Bool
+	# data
+	spec::AbstractArray{Float64}
+	freq::AbstractVector{Float64}
+end
+
+struct CwtSpec
+	# setp
+	win_norm::Symbol # :none, :power, :magnitude
+	db_scale::Bool
+	# data
+	spec::AbstractArray{Float64}
+	freq::AbstractVector{Float64}
+end
 # ---------------------------------------------------------------------------- #
 #                                 audio rack                                   #
 # ---------------------------------------------------------------------------- #
@@ -79,22 +87,24 @@ end
 mutable struct AudioRack
 	audio::Audio
 	stft::Union{Stft, Nothing}
-	lin::Union{LinSpec, Nothing}
 	fbank::Union{Fbank, Nothing}
 	cwt_fb::Union{CwtFbank, Nothing}
 	cwt::Union{Cwt, Nothing}
+	lin_spec::Union{LinSpec, Nothing}
+	cwt_spec::Union{CwtSpec, Nothing}
 
 	# custom constructor
     function AudioRack(
         audio::AbstractVector{T},
         sr::Int64; 
         stft::Union{Stft, Nothing} = nothing,
-        lin::Union{LinSpec, Nothing} = nothing,
         fbank::Union{Fbank, Nothing} = nothing,
 		cwt_fb::Union{CwtFbank, Nothing} = nothing,
-		cwt::Union{Cwt, Nothing} = nothing
+		cwt::Union{Cwt, Nothing} = nothing,
+		lin_spec::Union{LinSpec, Nothing} = nothing,
+		cwt_spec::Union{LinSpec, Nothing} = nothing,
     ) where T <: Real
-        new(Audio(Float64.(audio), sr), stft, lin, fbank, cwt_fb, cwt)
+        new(Audio(Float64.(audio), sr), stft, fbank, cwt_fb, cwt, lin_spec, cwt_spec)
     end
 end
 

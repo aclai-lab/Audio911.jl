@@ -52,7 +52,7 @@ function _get_stft(
         :none => x -> x,
         :power => x -> real.((x .* conj.(x))),
         :magnitude => x -> abs.(x),
-        :pow2mag => sqrt.(real.((x .* conj.(x)))),
+        :pow2mag => x -> sqrt.(real.((x .* conj.(x))))
     )
     # check if spectrum_type is valid
     @assert haskey(norm_funcs, spec_norm) "Unknown spectrum_type: $spec_norm."
@@ -107,74 +107,3 @@ function get_stft!(
 )
     _get_stft!(rack; kwargs...)
 end
-
-# ---------------------------------------------------------------------------- #
-#                            linear spectrogram                                #
-# ---------------------------------------------------------------------------- #
-no_zero =  x -> x == 0 ? floatmin(Float64) : x
-
-function _get_lin(
-    x::AbstractArray{Float64},
-    win::AbstractVector{Float64},
-    x_freq::StepRangeLen{Float64};
-    freq_range::Tuple{Int64, Int64},
-    win_norm::Symbol,
-    db_scale::Bool
-)
-    # trim to desired range
-    x_range = findall(freq_range[1] .<= x_freq .<= freq_range[2])
-    lin_spec, lin_freq = x[x_range, :], x_freq[x_range]
-
-    # normalize
-    norm_funcs = Dict(
-        :none => x -> x,
-        :power => x -> x / sum(win)^2,
-        :magnitude => x / sum(win),
-    )
-    # check if spectrum_type is valid
-    @assert haskey(norm_funcs, win_norm) "Unknown spectrum_type: $spec_norm."
-    lin_spec = norm_funcs[win_norm](x * 2)
-
-    # scale to log
-    if db_scale
-        lin_spec = log10.(no_zero.(lin_spec))
-    end
-
-    return lin_spec, lin_freq
-end
-
-function _get_lin!(
-    rack::AudioRack;
-    freq_range::Tuple{Int64, Int64} = (0, floor(Int, rack.audio.sr / 2)),
-    win_norm::Symbol = :power,
-    db_scale::Bool = false
-)
-    spec, freq = _get_lin(
-        rack.stft.stft,
-        rack.stft.win,
-        rack.stft.freq,
-        freq_range=freq_range,
-        win_norm=win_norm,
-        db_scale=db_scale
-    )
-
-    rack.lin = LinSpec(
-        win_norm,
-        db_scale,
-        spec,
-        freq
-    )
-end
-
-# ---------------------------------------------------------------------------- #
-#                                  callings                                    #
-# ---------------------------------------------------------------------------- #
-function get_lin!(
-    rack::AudioRack,
-    stft::Stft;
-    kwargs...
-)
-    _get_lin!(rack; kwargs...)
-end
-
-# TODO: calling for wavelets
