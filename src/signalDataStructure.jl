@@ -49,8 +49,6 @@ struct CwtFbank
 	wavelet::Symbol # :morse, :morlet, :bump
 	morse_params::Tuple{Int64, Int64}
 	vpo::Int64
-	boundary::Symbol # :reflection, :periodic
-	signal_pad::Int64
 	# data
 	fbank::AbstractArray{Float64}
 	freq::AbstractVector{Float64}

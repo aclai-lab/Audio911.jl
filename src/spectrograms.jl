@@ -15,7 +15,6 @@ function _get_spec(
     # trim to desired frequency range
     x_range = findall(freq_range[1] .<= x_freq .<= freq_range[2])
     lin_spec, lin_freq = x[x_range, :], x_freq[x_range]
-    # lin_spec, lin_freq = x[:, x_range], x_freq[x_range]
 
     # apply normalization function
     lin_spec = norm_func.(lin_spec * 2)

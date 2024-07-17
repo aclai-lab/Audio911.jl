@@ -72,17 +72,11 @@ function get_freq_cutoff_morse(cutoff::Int64, cf::Real, ga::Real, be::Real)
 end
 
 function get_freq_cutoff_morlet(cutoff::Int64, cf::Real)
-    alpha = 2 * cutoff / 100
-
-    psihat = x -> alpha - 2 * exp(-(x - cf) .^ 2 / 2)
-
-    omax = ((2 * 750) .^ 0.5 + cf)
-
-    if psihat(cf) > 0
-        omegaC = omax
-    else
-        omegaC = find_zero(psihat, (cf, omax))
-    end
+    alpha = 0.02 * cutoff
+    omax = √1500 + cf
+    psihat(x) = alpha - 2 * exp(-(x - cf)^2 / 2)
+    
+    psihat(cf) > 0 ? omax : find_zero(psihat, (cf, omax))
 end
 
 function get_freq_cutoff_bump(cutoff::Int64, cf::Real)
@@ -104,20 +98,6 @@ end
 # ---------------------------------------------------------------------------- #
 #              construct the frequency grid for the wavelet DFT                #
 # ---------------------------------------------------------------------------- #
-function frequency_grid(
-    sr::Int64,
-    x_length::Int64,
-    signal_pad::Int64
-)
-    n = x_length + 2 * signal_pad
-
-    omega = [1:floor(Int, n / 2)...] .* ((2 * pi) / n)
-    omega = vcat(0.0, omega, -omega[floor(Int, (n - 1) / 2):-1:1])
-    frequencies = sr * omega ./ (2 * pi)
-
-    return omega, frequencies
-end
-
 function cwt_scales(
     wavelet::Symbol,
     x_length::Int64,   
@@ -168,18 +148,18 @@ end
 # ---------------------------------------------------------------------------- #
 function _get_cwt_fb(
     sr::Int64,
-    x_length::Int64;
+    n::Int64;
     wavelet::Symbol,
     morse_params::Tuple{Int64, Int64},
     vpo::Int64,
-    boundary::Symbol
+    freq_range::Tuple{Int64, Int64}
 )
     gamma_beta = (morse_params[1], morse_params[2] / morse_params[1])
     ga, be = gamma_beta
-    signal_pad = boundary == :reflection ? x_length <= 1e5 ? floor(Int, x_length / 2) : ceil(Int, log2(x_length)) : 0
 
-    omega, frequencies = frequency_grid(sr, x_length, signal_pad)
-    scales, center_freq = cwt_scales(wavelet, x_length, gamma_beta, vpo)
+    omega = range(0, step=(2π/n), length=floor(Int, n / 2)+1)
+
+    scales, center_freq = cwt_scales(wavelet, n, gamma_beta, vpo)
 
     somega = scales .* omega'
 
@@ -215,9 +195,13 @@ function _get_cwt_fb(
         error("Wavelet $wavelet not supported.")
     end
 
-    wavelet_center_freqs = (center_freq ./ scales) / (2 * pi) .* sr
+    cwt_freq = (center_freq ./ scales) / (2 * pi) .* sr
 
-    return fbank, wavelet_center_freqs, signal_pad
+    # trim to desired frequency range
+    x_range = findall(freq_range[1] .<= cwt_freq .<= freq_range[2])
+    fbank, cwt_freq = fbank[x_range, :], cwt_freq[x_range]
+
+    return fbank, cwt_freq
 end
 
 # ---------------------------------------------------------------------------- #
@@ -229,16 +213,14 @@ function get_cwt_fb!(
     wavelet::Symbol = :morse,
     morse_params::Tuple{Int64, Int64} = (3, 60),
     vpo::Int64 = 10,
-    boundary::Symbol = :reflection
+    freq_range::Tuple{Int64, Int64} = (60,4000)
 )
-    fbank, wcf, signal_pad = _get_cwt_fb(rack.audio.sr, size(rack.audio.data, 1); wavelet, morse_params, vpo, boundary)
+    fbank, wcf = _get_cwt_fb(rack.audio.sr, size(rack.audio.data, 1); wavelet, morse_params, vpo, freq_range)
 
     rack.cwt_fb = CwtFbank(
         wavelet,
         morse_params,
-        vpo,
-        boundary, 
-        signal_pad,
+        vpo, 
         fbank, 
         reverse(wcf)
     )
