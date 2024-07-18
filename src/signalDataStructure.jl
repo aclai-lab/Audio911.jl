@@ -49,6 +49,7 @@ struct CwtFbank
 	wavelet::Symbol # :morse, :morlet, :bump
 	morse_params::Tuple{Int64, Int64}
 	vpo::Int64
+	freq_range::Tuple{Int64, Int64}
 	# data
 	fbank::AbstractArray{Float64}
 	freq::AbstractVector{Float64}

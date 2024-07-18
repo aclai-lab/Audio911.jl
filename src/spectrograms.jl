@@ -66,7 +66,6 @@ end
 function get_spectrogram!(
     rack::AudioRack,
     cwt::Cwt;
-    freq_range::Tuple{Int64, Int64} = (0, floor(Int, rack.audio.sr / 2)),
     norm::Symbol = :power,
     db_scale::Bool = false
 )
@@ -83,7 +82,7 @@ function get_spectrogram!(
     spec, freq = _get_spec(
         rack.cwt.cwt,
         rack.cwt_fb.freq;
-        freq_range=freq_range,
+        freq_range=rack.cwt_fb.freq_range,
         norm_func=norm_funcs[norm],
         db_scale=db_scale
     )
