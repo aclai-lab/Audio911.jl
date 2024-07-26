@@ -1,4 +1,42 @@
 # ---------------------------------------------------------------------------- #
+#                                mel filterbank                                #
+# ---------------------------------------------------------------------------- #
+
+mutable struct MelFbank
+	# setup
+    sr::Int64
+    nbands::Int64
+    scale::Symbol # :mel_htk, :mel_slaney, :erb, :bark
+    norm::Symbol # :bandwidth, :area, :none
+    freq_range::Tuple{Int64, Int64}
+	# data
+	fbank::Union{Nothing, AbstractArray{Float64}}
+	freq::Union{Nothing, AbstractVector{Float64}}
+end
+
+# keyword constructor
+function MelFbank(;
+    sr,
+	nbands = 26,
+    scale = :mel_htk,
+    norm = :bandwidth,
+    freq_range = (0, round(Int, sr / 2)),
+    fbank = nothing,
+    freq = nothing,
+)
+    mel_fb = MelFbank(
+        sr,
+        nbands,
+        scale,
+        norm,
+        freq_range,
+        fbank,
+        freq
+    )
+	return 	mel_fb
+end
+
+# ---------------------------------------------------------------------------- #
 #                         scale convertions functions                          #
 # ---------------------------------------------------------------------------- #
 function hz2mel(hz::Tuple{Int64, Int64}, style::Symbol)
@@ -136,109 +174,112 @@ end
 # ---------------------------------------------------------------------------- #
 #                           design filterbank matrix                           #
 # ---------------------------------------------------------------------------- #
-function _get_fbank(;
-        sr::Int64,
+function _get_melfb(;
         stft_length::Int64,
         freq::StepRangeLen{Float64},
-        n_bands::Int64,
-        scale::Symbol, # :mel_htk, :mel_slaney :erb, :bark
-        norm::Symbol, # :bandwidth, :area, :none
-        freq_range::Tuple{Int64, Int64}
+        mel_fb::MelFbank
 )
-    if scale == :erb
-        erb_range = hz2erb(freq_range)
-        filter_freq = erb2hz(erb_range, n_bands)
-        coeffs = compute_gammatone_coeffs(sr, filter_freq)
+    if mel_fb.scale == :erb
+        erb_range = hz2erb(mel_fb.freq_range)
+        filter_freq = erb2hz(erb_range, mel_fb.nbands)
+        coeffs = compute_gammatone_coeffs(mel_fb.sr, filter_freq)
 
         iirfreqz = (b, a, n) -> fft([b; zeros(n - length(b))]) ./ fft([a; zeros(n - length(a))])
         sosfilt = (c, n) -> reduce((x, y) -> x .* y, map(row -> iirfreqz(row[1:3], row[4:6], n), eachrow(c)))
         apply_sosfilt = (i) -> abs.(sosfilt(coeffs[:, :, i], stft_length))
 
-        filterbank = hcat(map(apply_sosfilt, 1:n_bands)...)'
+        filterbank = hcat(map(apply_sosfilt, 1:mel_fb.nbands)...)'
         # Derive Gammatone filter bandwidths as a function of center frequencies
         bw = 1.019 * 24.7 * (0.00437 * filter_freq .+ 1)
 
         # normalization
-        (norm != :none) && normalize!(filterbank, norm, bw)
+        (mel_fb.norm != :none) && normalize!(filterbank, mel_fb.norm, bw)
 
         rem(stft_length, 2) == 0 ? filterbank[:, 2:(stft_length ÷ 2)] .*= 2 : filterbank[:, 2:(stft_length ÷ 2 + 1)] .*= 2
         filterbank = filterbank[:, 1:(stft_length ÷ 2 + 1)]
 
-    elseif scale == :mel_htk || scale == :mel_slaney || scale == :bark
-        (scale == :mel_htk || scale == :mel_slaney) ? begin
-            mel_range = hz2mel(freq_range, scale)
-            band_edges = mel2hz(mel_range, n_bands, scale)
+    elseif mel_fb.scale == :mel_htk || mel_fb.scale == :mel_slaney || mel_fb.scale == :bark
+        (mel_fb.scale == :mel_htk || mel_fb.scale == :mel_slaney) ? begin
+            mel_range = hz2mel(mel_fb.freq_range, mel_fb.scale)
+            band_edges = mel2hz(mel_range, mel_fb.nbands, mel_fb.scale)
         end : begin
-            bark_range = hz2bark(freq_range)
-            band_edges = bark2hz(bark_range, n_bands)
+            bark_range = hz2bark(mel_fb.freq_range)
+            band_edges = bark2hz(bark_range, mel_fb.nbands)
         end
 
         filter_freq = band_edges[2:(end - 1)]
-        n_bands = length(filter_freq)
+        mel_fb.nbands = length(filter_freq)
 
-        p = [findfirst(freq .> edge) for edge in band_edges[1:(end - 1)]]
-        push!(p, length(freq))
+        p = [findfirst(freq .> edge) for edge in band_edges]
+        isnothing(p[end]) ? p[end] = length(freq) : nothing
 
-        # Create triangular filters for each band
-        # TODO create windows with windowing.jl
+        # create triangular filters for each band
         bw = diff(band_edges)
-        filterbank = zeros(n_bands, length(freq))
+        filterbank = zeros(mel_fb.nbands, length(freq))
 
-        for k in 1:n_bands
-            # Rising side of triangle
+        for k in 1:mel_fb.nbands
+            # rising side of triangle
             filterbank[k, p[k]:(p[k + 1] - 1)] .= (freq[p[k]:(p[k + 1] - 1)] .- band_edges[k]) ./ bw[k]
 
-            # Falling side of triangle
+            # falling side of triangle
             filterbank[k, p[k + 1]:(p[k + 2] - 1)] .= (band_edges[k + 2] .- freq[p[k + 1]:(p[k + 2] - 1)]) ./ bw[k + 1]
         end
 
         bw = (band_edges[3:end] - band_edges[1:(end - 2)])
 
         # normalization
-        (norm != :none) && normalize!(filterbank, norm, bw)
+        (mel_fb.norm != :none) && normalize!(filterbank, mel_fb.norm, bw)
 
     else
-        error("Unknown filterbank frequency scale ($scale).")
+        error("Unknown filterbank frequency scale ($mel_fb.scale).")
     end
 
-    return filterbank, filter_freq
+    mel_fb.fbank = filterbank
+    mel_fb.freq = filter_freq
+
+    return mel_fb
 end
 
-function _get_fbank!(
-    rack::AudioRack;
-    n_bands::Int64 = 26,
-    scale::Symbol = :mel_htk, # :mel_htk, :mel_slaney :erb, :bark
-    norm::Symbol = :bandwidth, # :bandwidth, :area, :none
-    freq_range::Tuple{Int64, Int64} = (0, floor(Int, rack.audio.sr / 2)),
-)
-    fbank, freq = _get_fbank(
-        sr = rack.audio.sr,
-        stft_length = rack.stft.stft_length,
-        freq = rack.stft.freq,
-        n_bands = n_bands,
-        scale = scale,
-        norm = norm,
-        freq_range = freq_range
-    )
-
-    rack.fbank = Fbank(
-        n_bands,
-        scale,
-        norm,
-        fbank,
-        freq
-    )
+function Base.show(io::IO, mel_fb::MelFbank)
+    print(io, "MelFbank(")
+    print(io, "sr=$(mel_fb.sr), ")
+    print(io, "nbands=$(mel_fb.nbands), ")
+    print(io, "scale=:$(mel_fb.scale), ")
+    print(io, "norm=:$(mel_fb.norm), ")
+    print(io, "freq_range=$(mel_fb.freq_range), ")
+    if isnothing(mel_fb.fbank)
+        print(io, "fbank=nothing, ")
+    else
+        print(io, "fbank=$(size(mel_fb.fbank)), ")
+    end
+    if isnothing(mel_fb.freq)
+        print(io, "freq=nothing)")
+    else
+        print(io, "freq=$(length(mel_fb.freq)) frequencies)")
+    end
 end
 
-#------------------------------------------------------------------------------#
-#                                  callings                                    #
-#------------------------------------------------------------------------------#
-function get_fbank!(
-    rack::AudioRack,
-    stft::Stft;
+function Base.display(mel_fb::MelFbank)
+    if isempty(mel_fb.fbank)
+        println("Filter bank is empty.")
+        return
+    end
+
+    f_length = size(mel_fb.fbank, 2)
+    freqs = range(0, round(Int, mel_fb.sr / 2), length=f_length)
+
+    p = plot(title = "Filter Bank Responses", xlabel = "Frequency (Hz)", ylabel = "Amplitude", legend = false)
+
+    for i in eachrow(mel_fb.fbank)
+        plot!(p, freqs, i[1:f_length], label = "", alpha = 0.6)
+    end
+
+    display(p)
+end
+
+function get_melfb(;
+    stft::Stft,
     kwargs...
 )
-    _get_fbank!(rack; kwargs...)
+    _get_melfb(; stft_length=stft.stft_length, freq=stft.freq, mel_fb=MelFbank(; sr=stft.sr, kwargs...))
 end
-
-# TODO: calling for wavelets

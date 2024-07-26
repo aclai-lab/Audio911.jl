@@ -7,8 +7,8 @@ using StatsBase
 using Statistics, Roots
 using NaNStatistics
 using Polynomials
+using Plots
 
-using Parameters # DA CANCELLARE
 using PyCall
 
 function __init__()
@@ -16,65 +16,45 @@ function __init__()
     import librosa as librosa
     import soundfile as soundfile
 
-    def load_audio(filename, sr):
-        x, sr_def = librosa.load(filename, sr=sr, mono=True)
+    def load_audio(fname, sr):
+        x, sr_def = librosa.load(fname, sr=sr, mono=True)
         return x, sr_def
 
-    def save_audio(filename, x, sr):
-        soundfile.write(filename, x, samplerate=sr, subtype='PCM_16')
+    def save_audio(fname, x, sr):
+        soundfile.write(fname, x, samplerate=sr, subtype='PCM_16')
     """
 end
 
-include("signalDataStructure.jl")
-include("spectrograms.jl")
-# include("audioFeaturesExtractor.jl")
-# windowing
-include("windowing/cswindows.jl")
-include("windowing/windows.jl")
+include("structs/audio.jl")
+export Audio, load_audio
+
 include("windowing/windowing.jl")
-# fft
-include("fft/conv.jl")
-# include("fft/f0.jl")
-# include("fft/mel.jl")
-# include("fft/spectral.jl")
-include("fft/stft.jl")
-# include("fft/lin.jl")
-include("fft/fbank.jl")
-# utils
-include("utils/histogram.jl")
-include("utils/speech_detector.jl")
-include("utils/in_out.jl")
-# include("utils/trimaudio.jl")
-# wavelets
-include("wavelets/wavelets_data_structures.jl")
-include("wavelets/waveletData.jl")
-include("wavelets/cwt_fbank.jl")
-include("wavelets/cwt.jl")
-include("wavelets/expand.jl")
-include("wavelets/wpdec.jl")
-include("wavelets/wpspectrum.jl")
-# constant-q transform
-# include("cqt/cqt.jl")
+include("windowing/windows.jl")
+include("structs/stft.jl")
+export Stft, get_stft
 
-# structures
-export AudioRack
-export Audio, Stft, LinSpec, Fbank
+include("structs/lin_spec.jl")
+export LinSpec, get_linspec
 
-# audio features
-export get_spectrogram!
-# stft based
-export get_stft!, get_fbank!
-# wavelets based
-export get_cwt_fb!, get_cwt!
+include("structs/mel_fbank.jl")
+include("structs/cwt_fbank.jl")
+export MelFbank, get_melfb
+export CwtFbank, get_cwtfb
 
-# utility functions
-export speech_detector
-export load_audio, save_audio, trim_audio, normalize_audio
-# wavelets
-# export cwt, cwt_windowing, wpspectrum
-# get_stft!
-# TODO patch
-extractfeatures = 
-export extractfeatures
+include("structs/mel_spec.jl")
+export MelSpec, get_melspec
 
-end # module Audio911
+include("structs/mfcc.jl")
+export Mfcc, get_mfcc
+export Deltas, get_deltas
+
+include("structs/spectral.jl")
+export Spectral, get_spectrals
+
+include("structs/f0.jl")
+export F0, get_f0
+
+include("structs/cwt.jl")
+export Cwt, get_cwt
+
+end

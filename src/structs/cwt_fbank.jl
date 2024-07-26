@@ -1,3 +1,41 @@
+# ---------------------------------------------------------------------------- #
+#                                cwt filterbank                                #
+# ---------------------------------------------------------------------------- #
+
+mutable struct CwtFbank
+	# setup
+    sr::Int64
+	wavelet::Symbol # :morse, :morlet, :bump
+	morse_params::Tuple{Int64, Int64}
+	vpo::Int64
+    freq_range::Tuple{Int64, Int64}
+	# data
+	fbank::Union{Nothing, AbstractArray{Float64}}
+	freq::Union{Nothing, AbstractVector{Float64}}
+end
+
+# keyword constructor
+function CwtFbank(;
+    sr,
+	wavelet = :morse,
+	morse_params = (3, 60),
+	vpo = 10,
+    freq_range = (20, round(Int, sr / 2)),
+    fbank = nothing,
+    freq = nothing,
+)
+    cwt_fb = CwtFbank(
+        sr,
+        wavelet,
+        morse_params,
+        vpo,
+        freq_range,
+        fbank,
+        freq
+    )
+	return 	cwt_fb
+end
+
 # the wavelets are normalized so that the peak magnitudes for all passbands are approximately equal to 2.
 
 # vpo = voices per octave
@@ -17,7 +55,7 @@ function morsepeakfreq(ga::Real, be::Real)
     # peak frequency for 0-th order Morse wavelet is $(\frac{\beta}{\gamma})^{1/\gamma}$
     peakAF = exp(1 / ga * (log(be) - log(ga)))
     # obtain the peak frequency in cyclical frequency
-    peakCF = peakAF / (2 * pi)
+    peakCF = peakAF / 2π
 
     return peakAF, peakCF
 end
@@ -100,11 +138,12 @@ end
 # ---------------------------------------------------------------------------- #
 function cwt_scales(
     wavelet::Symbol,
-    x_length::Int64,   
     ga::Real,
     be::Real,
     vpo::Int64,
-    wrange::Tuple{Real, Real}
+    freq_range::Tuple{Int64, Int64},
+    sr::Int64,
+    x_length::Int64
 )
     cutoff = wavelet == :morse ? 50 : 10
 
@@ -130,93 +169,107 @@ function cwt_scales(
         error("Wavelet $wavelet not supported.")
     end
 
-    wfreq = (center_freq / wrange[2], center_freq / wrange[1])
-    n_octaves = log2(wfreq[2] / wfreq[1])
-    a0 = 2^(1 / vpo)
+    minfreq = sigmaT * center_freq * sr / (π * x_length)
 
-    return wfreq[1] * a0 .^ (0:(vpo * n_octaves)), center_freq
+    if freq_range[1] < minfreq
+        freq_range = (minfreq, freq_range[2])
+    end
+
+    wrange = freq_range .* (2π / sr)
+    wfreq = (center_freq / wrange[2], center_freq / wrange[1])
+    a0 = 2^(1 / vpo)
+    n_octaves = log2(wfreq[2] / wfreq[1])
+    scales = wfreq[1] * a0 .^ (0:(vpo * n_octaves))
+
+    return scales, center_freq
 end
 
 # ---------------------------------------------------------------------------- #
 #                       continuous wavelets filterbank                         #
 # ---------------------------------------------------------------------------- #
-function _get_cwt_fb(
-    sr::Int64,
-    x_length::Int64;
-    wavelet::Symbol,
-    morse_params::Tuple{Int64, Int64},
-    vpo::Int64,
-    freq_range::Tuple{Int64, Int64},
-    full_process::Bool
+function _get_cwtfb(;
+    x_length::Int64,
+    cwt_fb::CwtFbank,
 )
-    ga, be = (morse_params[1], morse_params[2] / morse_params[1])
+    ga, be = (cwt_fb.morse_params[1], cwt_fb.morse_params[2] / cwt_fb.morse_params[1])
 
     omega = range(0, step=(2π / x_length), length=floor(Int, x_length / 2) + 1)
-    wrange = freq_range .* (2π / sr)
-    scales, center_freq = cwt_scales(wavelet, x_length, ga, be, vpo, wrange)
+    scales, center_freq = cwt_scales(cwt_fb.wavelet, ga, be, cwt_fb.vpo, cwt_fb.freq_range, cwt_fb.sr, x_length)
 
     somega = scales .* omega'
 
-    if wavelet == :morse
+    if cwt_fb.wavelet == :morse
         absomega = abs.(somega)
         powscales = ga == 3 ? absomega .^ 3 : absomega .^ ga
         factor = exp(-be * log(center_freq) + center_freq^ga)
-        fbank = 2 * factor * exp.(be .* log.(absomega) - powscales) .* (somega .> 0)
+        cwt_fb.fbank = 2 * factor * exp.(be .* log.(absomega) - powscales) .* (somega .> 0)
 
-    elseif wavelet == :morlet
+    elseif cwt_fb.wavelet == :morlet
         fc, mul = 6, 2
         squareterm = (somega .- fc) .^ 2
         expnt = -squareterm ./ 2 .* (somega .> 0)
-        fbank = mul * exp.(expnt) .* (somega .> 0)
+        cwt_fb.fbank = mul * exp.(expnt) .* (somega .> 0)
 
-    elseif wavelet == :bump
+    elseif cwt_fb.wavelet == :bump
         fc, sigma = 5, 0.6
         w = (somega .- fc) ./ sigma
         absw2 = w .^ 2
         expnt = -1 ./ (1 .- absw2)
         daughter = 2 * exp(1) * exp.(expnt) .* (abs.(w) .< 1 .- eps(1.0))
         daughter[isnan.(daughter)] .= 0
-        fbank = daughter
+        cwt_fb.fbank = daughter
 
     else
-        error("Wavelet $wavelet not supported.")
+        error("Wavelet $cwt_fb.wavelet not supported.")
     end
 
-    cwt_freq = (center_freq ./ scales) / (2 * pi) .* sr
+    cwt_fb.freq = (center_freq ./ scales) / (2π) .* cwt_fb.sr
+    cwt_fb.fbank = hcat(cwt_fb.fbank, zeros(size(cwt_fb.fbank[:,2:end])))
 
-    full_process ? fbank = hcat(fbank, zeros(size(fbank[:,2:end]))) : nothing
-
-    return fbank, cwt_freq
+    return cwt_fb
 end
 
-# ---------------------------------------------------------------------------- #
-#                                  callings                                    #
-# ---------------------------------------------------------------------------- #
-function get_cwt_fb!(
-    rack::AudioRack,
-    audio::Audio;
-    wavelet::Symbol = :morse,
-    morse_params::Tuple{Int64, Int64} = (3, 60),
-    vpo::Int64 = 10,
-    freq_range::Tuple{Int64, Int64} = (0, floor(Int, rack.audio.sr / 2)),
-    full_process::Bool = true
-)
-    fbank, freqs = _get_cwt_fb(
-        rack.audio.sr, 
-        size(rack.audio.data, 1); 
-        wavelet, 
-        morse_params, 
-        vpo, 
-        freq_range, 
-        full_process
-    )
+function Base.show(io::IO, cwt_fb::CwtFbank)
+    print(io, "CwtFbank(")
+    print(io, "sr=$(cwt_fb.sr), ")
+    print(io, "wavelet=:$(cwt_fb.wavelet), ")
+    print(io, "morse_params=$(cwt_fb.morse_params), ")
+    print(io, "vpo=$(cwt_fb.vpo), ")
+    print(io, "freq_range=$(cwt_fb.freq_range), ")
+    print(io, "full_proc=$(cwt_fb.full_proc), ")
+    if isnothing(cwt_fb.fbank)
+        print(io, "fbank=nothing, ")
+    else
+        print(io, "fbank=$(size(cwt_fb.fbank)), ")
+    end
+    if isnothing(cwt_fb.freq)
+        print(io, "freq=nothing)")
+    else
+        print(io, "freq=$(length(cwt_fb.freq)) frequencies)")
+    end
+end
 
-    rack.cwt_fb = CwtFbank(
-        wavelet,
-        morse_params,
-        vpo, 
-        freq_range,
-        fbank, 
-        reverse(freqs)
-    )
+function Base.display(cwt_fb::CwtFbank)
+    if isempty(cwt_fb.fbank)
+        println("Filter bank is empty.")
+        return
+    end
+
+    f_length = round(Int, size(cwt_fb.fbank, 2) / 2)
+    freqs = range(0, round(Int, cwt_fb.sr / 2), length=f_length)
+
+    p = plot(title = "Filter Bank Responses", xlabel = "Frequency (Hz)", ylabel = "Amplitude", legend = false)
+
+    for i in eachrow(cwt_fb.fbank)
+        plot!(p, freqs, i[1:f_length], label = "", alpha = 0.6)
+    end
+
+    display(p)
+end
+
+function get_cwtfb(;
+	audio::Audio,
+	kwargs...
+)
+    _get_cwtfb(; x_length=size(audio.data, 1), cwt_fb=CwtFbank(; sr=audio.sr, kwargs...))
 end

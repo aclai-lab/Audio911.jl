@@ -91,10 +91,10 @@ end # function fade
 #                                   windowing                                  #
 #------------------------------------------------------------------------------#
 function _get_frames(
-	x::AbstractVector{Float64};
+	x::AbstractVector{Float64},
 	win_type::Tuple{Symbol, Symbol},
 	win_length::Int64,
-	overlap_length::Int64,
+	overlap_length::Int64
 )
     hop_length = win_length - overlap_length
 	frames = buffer(x, win_length, hop_length)
