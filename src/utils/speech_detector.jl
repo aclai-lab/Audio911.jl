@@ -1,3 +1,25 @@
+# ---------------------------------------------------------------------------------- #
+#                             single spectral functions                              #
+# ---------------------------------------------------------------------------------- #
+function _get_spec_centroid(
+	s::AbstractArray{Float64},
+	sfreq::AbstractVector{Float64},
+)
+	vec(sum_sfreq(s, sfreq) ./ sum_s(s))
+	# replace!(vec(sum(s .* sfreq, dims = 1) ./ sum(x1, dims=1)), NaN => 0)
+end
+
+function _get_spec_spread(
+	s::AbstractArray{Float64},
+	sfreq::AbstractVector{Float64},
+)
+	centroid = _get_spec_centroid(s, sfreq)
+	vec(sqrt.(sum_s(s .* (sfreq .- centroid').^2) ./ sum_s(s)))
+end
+
+# ---------------------------------------------------------------------------------- #
+#                                     utilities                                      #
+# ---------------------------------------------------------------------------------- #
 function moving_mean(x::AbstractVector{Float64}, w::Int64)
     @assert isodd(w) "Window size must be odd"
     n = length(x)
@@ -109,11 +131,13 @@ function debuffer_frame_overlap(
     return out, hop_length
 end
 
-function speech_detector(
-        x::AbstractVector{Float64},
-        sr::Int64;
+# ---------------------------------------------------------------------------------- #
+#                                   speech detector                                  #
+# ---------------------------------------------------------------------------------- #
+function _speech_detector(;
+        audio::Audio,
         win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-        win_length::Int64 = round(Int, 0.03 * sr),
+        win_length::Int64 = round(Int, 0.03 * audio.sr),
         overlap_length::Int64 = 0,
         thresholds::Tuple{Float64, Float64} = (-Inf, -Inf),
         merge_distance::Int64 = win_length * 5
@@ -134,41 +158,25 @@ function speech_detector(
     #      step 1: extract short-term spectral spread and energy from whole signal       #
     # ---------------------------------------------------------------------------------- #
 
-    # normalize
-    x = normalize_audio(x)
-
     # get stft
-    frames, win, wframes, _, _ = _get_frames(
-        x,
-        win_type = win_type,
-        win_length = win_length,
-        overlap_length = overlap_length
-    )
-    s, _ = _get_stft(
-        wframes;
-        sr = sr,
-        win = win,
-        win_length = win_length,
-        stft_length = 2 * win_length,
-        spec_norm = :magnitude
-    )
-
-    s, sfreq, _ = _trim_freq_range(
-        s, 
-        sr = sr,
-        win_length = win_length,
-        freq_range = (0, floor(Int, sr/2))
-    )
+    stftspec = get_stft(
+        audio=audio, 
+        stft_length=2 * win_length,
+        win_type=win_type,
+        win_length=win_length,
+        overlap_length=overlap_length,
+        norm=:magnitude
+    );
 
     # determine short term energy
-    energy = vec(win' .^ 2 * frames .^ 2)
+    energy = vec(stftspec.win' .^ 2 * stftspec.frames .^ 2)
 
     # filter the short term energy twice
     filtered_energy = moving_mean(
         moving_mean(energy, smoothing_filter_length), smoothing_filter_length)
 
     # get spectral spread and normalize
-    spread = _get_spec_spread(s, sfreq) / (sr / 2)
+    spread = _get_spec_spread(stftspec.spec, stftspec.freq) / (audio.sr / 2)
 
     # set spectral spread value to 0 for frames with low energy
     spread[energy .< spread_threshold] .= 0
@@ -212,7 +220,7 @@ function speech_detector(
 
     # change frames into data points
     a = repeat(unbuff_out', outer = [win_length, 1])
-    unbuff_out_mask = [a[:]; falses(length(x) - length(a), 1)]
+    unbuff_out_mask = [a[:]; falses(length(audio.data) - length(a), 1)]
     difference = diff([unbuff_out_mask; false], dims = 1)
 
     # find all changes from speech to silence; return index before change
@@ -248,14 +256,16 @@ function speech_detector(
 
     y = Float64[]
     for i in eachrow(outidx)
-        y = [y; x[i[1]:i[2]]]
+        y = [y; audio.data[i[1]:i[2]]]
     end
 
-    return y, outidx
+    audio.data = y
+
+    return audio
 end
 
-function speech_detector(x::AbstractVector{<:AbstractFloat}, sr::Int64; kwargs...)
-    speech_detector(Float64.(x), sr; kwargs...)
+function speech_detector(; audio::Audio, kwargs...)
+    _speech_detector(audio=audio, kwargs...)
 end
 
 # references

@@ -13,6 +13,7 @@ mutable struct Stft
 	# data
 	spec::Union{Nothing, AbstractArray{Float64}}
 	freq::Union{Nothing, AbstractVector{Float64}}
+    win::Union{Nothing, AbstractVector{Float64}}
     frames::Union{Nothing, AbstractArray{Float64}}
 end
 
@@ -27,6 +28,7 @@ function Stft(;
 	norm = :power, # :none, :power, :magnitude, :pow2mag
 	spec = nothing,
 	freq = nothing,
+    win = nothing,
     frames = nothing
 )
 	stft = Stft(
@@ -39,6 +41,7 @@ function Stft(;
 		norm,
 		spec,
 		freq,
+        win,
         frames
 	)
 	return stft
@@ -48,7 +51,7 @@ function _get_stft(;
 	x::AbstractVector{Float64},
 	stft::Stft
 )
-	frames, _, wframes, _, _ = _get_frames(x, stft.win_type, stft.win_length, stft.overlap_length)
+    stft.frames, stft.win, wframes, _, _ = _get_frames(x, stft.win_type, stft.win_length, stft.overlap_length)
 
     if stft.win_length < stft.stft_length
         wframes = vcat(wframes, zeros(Float64, stft.stft_length - stft.win_length, size(wframes, 2)))
@@ -74,7 +77,6 @@ function _get_stft(;
 
     stft.spec = norm_funcs[stft.norm](fft(wframes, (1,))[one_side, :])
     stft.freq = (stft.sr / stft.stft_length) * (one_side .- 1)
-    stft.frames = frames
 
 	return stft
 end

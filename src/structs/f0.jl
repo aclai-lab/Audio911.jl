@@ -8,7 +8,7 @@ mutable struct F0
 	freq_range::Tuple{Int64, Int64}
 	mf_length::Int64
 	# data
-	data::Union{Nothing, AbstractVector{Float64}}
+	f0::Union{Nothing, AbstractVector{Float64}}
 end
 
 # keyword constructor
@@ -17,14 +17,14 @@ function F0(;
 	method = :nfc,
 	freq_range = (50, 400),
 	mf_length = 1,
-	data = nothing
+	f0 = nothing
 )
 	f0 = F0(
         sr,
 		method,
         freq_range,
 		mf_length,
-		data
+		f0
 	)
 	return f0
 end
@@ -90,7 +90,7 @@ function _get_f0(;
 		_, locs = get_candidates(domain, edge)
 
 		# convert lag domain to frequency
-		f0.data = vec(f0.sr ./ locs)
+		f0.f0 = vec(f0.sr ./ locs)
 
 		## TODO
 		# elseif f0.method == :srh
@@ -108,28 +108,28 @@ function Base.show(io::IO, f0::F0)
     println(io, "  Method: $(f0.method)")
     println(io, "  Frequency Range: $(f0.freq_range) Hz")
     println(io, "  Median Filter Length: $(f0.mf_length)")
-    if isnothing(f0.data)
-        println(io, "  Data: Not computed")
+    if isnothing(f0.f0)
+        println(io, "  F0: Not computed")
     else
-        println(io, "  Data: $(length(f0.data)) points")
+        println(io, "  F0: $(length(f0.f0)) points")
     end
 end
 
 function Base.display(f0::F0)
-    if isnothing(f0.data)
-        println("F0 data not computed yet.")
+    if isnothing(f0.f0)
+        println("F0 not computed yet.")
         return
     end
 
-    time = (0:length(f0.data)-1)
+    time = (0:length(f0.f0)-1)
 
-    plot(time, f0.data, 
+    plot(time, f0.f0, 
          title="Fundamental Frequency Estimation",
          xlabel="Frame",
          ylabel="Frequency (Hz)",
          label="F0",
          linewidth=2,
-         ylim=(0, maximum(f0.data) * 1.1),
+         ylim=(0, maximum(f0.f0) * 1.1),
          legend=:none)
 end
 

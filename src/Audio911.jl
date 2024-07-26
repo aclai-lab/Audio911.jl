@@ -57,4 +57,8 @@ export F0, get_f0
 include("structs/cwt.jl")
 export Cwt, get_cwt
 
+include("utils/histogram.jl")
+include("utils/speech_detector.jl")
+export speech_detector
+
 end

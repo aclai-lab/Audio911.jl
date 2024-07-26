@@ -63,14 +63,6 @@ sum_sfreq = (s, sfreq) -> sum(s .* sfreq, dims = 1)
 # ---------------------------------------------------------------------------------- #
 #                             single spectral functions                              #
 # ---------------------------------------------------------------------------------- #
-# function _get_spec_centroid(
-# 	s::AbstractArray{Float64},
-# 	sfreq::AbstractVector{Float64},
-# )
-# 	vec(sum_sfreq(s, sfreq) ./ sum_s(s))
-# 	# replace!(vec(sum(s .* sfreq, dims = 1) ./ sum(x1, dims=1)), NaN => 0)
-# end
-
 function spectral_crest(s::AbstractArray{Float64}, arithmetic_mean::Vector{Float64})
 	# calculate spectral peak
 	peak = maximum(s, dims = 1)
@@ -142,14 +134,6 @@ function spectral_slope(
 	X_minus_mu_X = s .- arithmetic_mean'
 	return vec(real(sum(X_minus_mu_X .* f_minus_mu_f, dims = 1) ./ sum(f_minus_mu_f .^ 2)))
 end
-
-# function _get_spec_spread(
-# 	s::AbstractArray{Float64},
-# 	sfreq::AbstractVector{Float64},
-# )
-# 	centroid = _get_spec_centroid(s, sfreq)
-# 	vec(sqrt.(sum_s(s .* (sfreq .- centroid').^2) ./ sum_s(s)))
-# end
 
 # ---------------------------------------------------------------------------- #
 #                             spectral features                                #

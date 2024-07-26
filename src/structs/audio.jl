@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------- #
 #                                    audio                                     #
 # ---------------------------------------------------------------------------- #
-struct Audio 
+mutable struct Audio 
 	data::AbstractVector{Float64}
 	sr::Int64
 end
@@ -34,11 +34,18 @@ end
 
 function load_audio(;
     fname::AbstractString,
-    sr::Int64 = 8000
+    sr::Int64 = 8000,
+	norm::Bool = false
 )
     audio = Audio(
 		py"load_audio"(fname, sr)...
 	)
+
+	# normalize audio
+	if norm && length(audio.data) != 0
+		audio.data ./ maximum(abs.(audio.data))
+	end
+
 	return audio
 end
 
