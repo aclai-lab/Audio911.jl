@@ -226,9 +226,8 @@ end
 
 
 function get_spectrals(;
-    stft::Stft,
+    source::Union{Stft, Cwt},
     kwargs...
 )
-	_get_spectrals(s=stft.spec, freq=stft.freq, spect=Spectral(; sr=stft.sr, kwargs...))
+	_get_spectrals(s=source.spec, freq=source.freq, spect=Spectral(; sr=source.sr, kwargs...))
 end
-

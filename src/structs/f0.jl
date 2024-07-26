@@ -134,8 +134,8 @@ function Base.display(f0::F0)
 end
 
 function get_f0(;
-	stft::Stft,
+	source::Stft,
 	kwargs...
 )
-	_get_f0(x=stft.frames, win_length=stft.win_length, f0=F0(; sr=stft.sr, kwargs...))
+	_get_f0(x=source.frames, win_length=source.win_length, f0=F0(; sr=source.sr, kwargs...))
 end

@@ -48,14 +48,14 @@ include("structs/mfcc.jl")
 export Mfcc, get_mfcc
 export Deltas, get_deltas
 
+include("structs/cwt.jl")
+export Cwt, get_cwt
+
 include("structs/spectral.jl")
 export Spectral, get_spectrals
 
 include("structs/f0.jl")
 export F0, get_f0
-
-include("structs/cwt.jl")
-export Cwt, get_cwt
 
 include("utils/histogram.jl")
 include("utils/speech_detector.jl")

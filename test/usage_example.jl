@@ -1,4 +1,4 @@
-using Audio911
+using Revise, Audio911
 
 TESTPATH = joinpath(dirname(pathof(Audio911)), "..", "test")
 TESTFILE = "common_voice_en_23616312.wav"
@@ -16,6 +16,10 @@ audio = load_audio(
     sr=8000, 
     norm=true,
 );
+
+# *** bear in mind that you can always display a plot of waht's going on *** #
+# simply by typing "display(plot)" after the function call, like this:
+# display(audio)
 
 # if needed you can optionally perform vocal speech detection to cut silence and/or noise
 audio = speech_detector(audio=audio);
@@ -57,11 +61,13 @@ melspec =  get_melspec(
 );
 
 # compute mfcc
-# with a mel spectrogram composed of 26 bands, we suggest to use 13 coefficients.
+# with a mel spectrogram composed of 26 bands, we suggest to use 13 coefficients,
+# exactly half of the number of filterbank coefficients.
+# if you don't declare ncoeffs, it will be defaulted to half of the number of filterbank coefficients.
 # we use a logarithmic rectification.
 # the dithered mfcc is suggested, as it's more robust to noise. (taken from AudioFlux Python package)
 mfcc = get_mfcc(
-    melspec=melspec,
+    source=melspec,
     ncoeffs = 13,
     rectification = :log, # :log, :cubic_root
     dither = true,
@@ -70,7 +76,7 @@ mfcc = get_mfcc(
 # take the fundamental frequency
 # we use the NFC method, with a range of 50-400hz.
 f0 = get_f0(
-    stft=stftspec,
+    source=stftspec,
     method = :nfc,
 	freq_range = (50, 400)
 );
@@ -90,7 +96,7 @@ f0 = get_f0(
 # spect.spread
 # also in this case, we use broadband frequency range.
 spect = get_spectrals(
-    stft=stftspec,
+    source=stftspec,
     freq_range = (0, round(Int, audio.sr / 2))
 );
 

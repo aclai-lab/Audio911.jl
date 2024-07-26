@@ -15,12 +15,17 @@ end
 # keyword constructor
 function Mfcc(;
 	sr,
-    ncoeffs = 13,
+    nbands,
+    ncoeffs = nothing,
     rectification = :log, # :log, :cubic_root
     dither = false,
 	mfcc = nothing,
 	freq = nothing,
 )
+    if isnothing(ncoeffs)
+        ncoeffs = round(Int, nbands / 2)
+    end
+
 	mfcc = Mfcc(
         sr,
         ncoeffs,
@@ -107,28 +112,25 @@ end
 #                                     Mfcc                                     #
 # ---------------------------------------------------------------------------- #
 function _get_mfcc(;
-        mel_spec::AbstractArray{Float64},
-        mel_bands::Int64,
+        spec::AbstractArray{Float64},
+        nbands::Int64,
         freq::AbstractVector{Float64},
         mfcc::Mfcc,
 )
-    # # Rectify
-    # mel_spec = deepcopy(data.mel_spectrogram')
-
-    mfcc.dither ? mel_spec[mel_spec .< 1e-8] .= 1e-8 : mel_spec[mel_spec .== 0] .= floatmin(Float64)
+    mfcc.dither ? spec[spec .< 1e-8] .= 1e-8 : spec[spec .== 0] .= floatmin(Float64)
 
     # Design DCT matrix
-    DCTmatrix = create_DCT_matrix(mel_bands)
+    DCTmatrix = create_DCT_matrix(nbands)
 
     # apply DCT matrix
     if (mfcc.rectification == :log)
-        coeffs = DCTmatrix * log10.(mel_spec)
+        coeffs = DCTmatrix * log10.(spec)
     elseif (mfcc.rectification == :cubic_root)
         # apply DCT matrix
-        coeffs = DCTmatrix * mel_spec .^ (1 / 3)
+        coeffs = DCTmatrix * spec .^ (1 / 3)
     else
         @warn("Unknown $mfcc.rectification DCT matrix rectification, defaulting to log.")
-        coeffs = DCTmatrix * log10.(mel_spec)
+        coeffs = DCTmatrix * log10.(spec)
     end
 
     # reduce to mfcc coefficients
@@ -159,10 +161,16 @@ function Base.display(mfcc::Mfcc)
 end
 
 function get_mfcc(;
-    melspec::MelSpec,
+    source = nothing,
     kwargs...
 )
-    _get_mfcc(mel_spec=melspec.spec, mel_bands=melspec.nbands, freq=melspec.freq, mfcc=Mfcc(; sr=melspec.sr, kwargs...))
+    if source isa MelSpec
+        _get_mfcc(spec=source.spec, nbands=source.nbands, freq=source.freq, mfcc=Mfcc(; sr=source.sr, nbands=source.nbands, kwargs...))
+    elseif source isa Cwt
+        _get_mfcc(spec=source.spec, nbands=length(source.freq), freq=source.freq, mfcc=Mfcc(; sr=source.sr, nbands=length(source.freq), kwargs...))
+    else
+        error("Unsupported type for spec: typeof(source) = $(typeof(source))")
+    end
 end
 
 function _get_deltas(;

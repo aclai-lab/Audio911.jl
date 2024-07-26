@@ -224,7 +224,7 @@ function _get_cwtfb(;
     end
 
     cwt_fb.freq = (center_freq ./ scales) / (2π) .* cwt_fb.sr
-    cwt_fb.fbank = hcat(cwt_fb.fbank, zeros(size(cwt_fb.fbank[:,2:end])))
+    cwt_fb.fbank = hcat(cwt_fb.fbank, zeros(size(cwt_fb.fbank, 1), x_length - size(cwt_fb.fbank, 2)))
 
     return cwt_fb
 end
