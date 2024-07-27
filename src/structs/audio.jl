@@ -6,18 +6,6 @@ mutable struct Audio
 	sr::Int64
 end
 
-# keyword constructor
-function Audio(;
-	data,
-	sr
-)
-	audio = Audio(;
-		data,
-		sr
-	)
-	return audio
-end
-
 function Base.show(io::IO, audio::Audio)
 	print(io, "Audio(data: $(length(audio.data)) samples, sr: $(audio.sr) Hz)")
 end
@@ -33,13 +21,19 @@ function Base.display(audio::Audio)
 end
 
 function load_audio(;
-    fname::AbstractString,
-    sr::Int64 = 8000,
+    fname::Union{AbstractString, AbstractVector{Float64}},
+    sr::Union{Nothing, Int64} = nothing,
 	norm::Bool = false
 )
-    audio = Audio(
-		py"load_audio"(fname, sr)...
-	)
+	if fname isa AbstractString
+		audio = Audio(
+			py"load_audio"(fname, sr)...
+		)
+	elseif fname isa AbstractVector{Float64} && sr isa Int64
+		audio = Audio(fname, sr)
+	else
+		throw(ArgumentError("Invalid arguments"))
+	end
 
 	# normalize audio
 	if norm && length(audio.data) != 0

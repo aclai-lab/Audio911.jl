@@ -38,7 +38,7 @@ stftspec = get_stft(
 	win_type = (:hann, :periodic),
 	win_length=stft_length,
 	overlap_length = round(Int, stft_length / 2),
-	norm = :power, # :none, :power, :magnitude, :pow2mag
+	norm = :power, # :power, :magnitude, :pow2mag
 );
 
 # compute mel spectrogram part 1: create the filterbank
