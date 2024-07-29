@@ -168,6 +168,8 @@ function _speech_detector(;
         norm=:magnitude
     );
 
+    # stftspec.spec = (stftspec.spec ./ (0.5 * sum(stftspec.win)))./2
+
     # determine short term energy
     energy = vec(stftspec.win' .^ 2 * stftspec.frames .^ 2)
 

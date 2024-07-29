@@ -21,23 +21,23 @@ function Base.display(audio::Audio)
 end
 
 function load_audio(;
-    fname::Union{AbstractString, AbstractVector{Float64}},
+    file::Union{AbstractString, AbstractVector{Float64}},
     sr::Union{Nothing, Int64} = nothing,
 	norm::Bool = false
 )
-	if fname isa AbstractString
+	if file isa AbstractString
 		audio = Audio(
-			py"load_audio"(fname, sr)...
+			py"load_audio"(file, sr)...
 		)
-	elseif fname isa AbstractVector{Float64} && sr isa Int64
-		audio = Audio(fname, sr)
+	elseif file isa AbstractVector{Float64} && sr isa Int64
+		audio = Audio(file, sr)
 	else
 		throw(ArgumentError("Invalid arguments"))
 	end
 
 	# normalize audio
 	if norm && length(audio.data) != 0
-		audio.data ./ maximum(abs.(audio.data))
+		audio.data = audio.data ./ maximum(abs.(audio.data))
 	end
 
 	return audio
@@ -45,7 +45,7 @@ end
 
 function save_audio(;
 	audio::Audio,
-    fname::AbstractString
+    file::AbstractString
 )
-    py"save_audio"(fname, audio.data, audio.sr)
+    py"save_audio"(file, audio.data, audio.sr)
 end

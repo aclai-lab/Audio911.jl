@@ -16,12 +16,12 @@ function __init__()
     import librosa as librosa
     import soundfile as soundfile
 
-    def load_audio(fname, sr):
-        x, sr_def = librosa.load(fname, sr=sr, mono=True)
+    def load_audio(file, sr):
+        x, sr_def = librosa.load(file, sr=sr, mono=True)
         return x, sr_def
 
-    def save_audio(fname, x, sr):
-        soundfile.write(fname, x, samplerate=sr, subtype='PCM_16')
+    def save_audio(file, x, sr):
+        soundfile.write(file, x, samplerate=sr, subtype='PCM_16')
     """
 end
 

@@ -22,7 +22,7 @@ function audio911_extractor(
     stft_norm::Symbol=:power,               # :power, :magnitude, :pow2mag
     # mel filterbank module
     nbands::Int64=26,
-    scale::Symbol=:mel_htk,                 # :mel_htk, :mel_slaney, :erb, :bark
+    scale::Symbol=:bark,                 # :mel_htk, :mel_slaney, :erb, :bark
     melfb_norm::Symbol=:bandwidth,          # :bandwidth, :area, :none
     freq_range::Union{Tuple{Int64, Int64}, Nothing}=nothing,
     # mel spectrogram module
@@ -31,9 +31,9 @@ function audio911_extractor(
     ncoeffs::Int64=13,
     rectification::Symbol=:log,             # :log, :cubic_root
     dither::Bool=true,
-    # deltas module
-    d_length = 9,
-    d_matrix = :transposed,                 # :standard, :transposed
+    # # deltas module
+    # d_length = 9,
+    # d_matrix = :transposed,                 # :standard, :transposed
     # f0 module
     method::Symbol=:nfc,
     f0_range::Tuple{Int64, Int64}=(50, 400),
@@ -42,7 +42,7 @@ function audio911_extractor(
 )
     # audio module
     audio = load_audio(
-        fname=wavfile, 
+        file=wavfile, 
         sr=sr, 
         norm=norm,
     );
@@ -96,12 +96,12 @@ function audio911_extractor(
         dither=dither,
     );
 
-    # deltas module
-    deltas = get_deltas(
-        source=mfcc,
-        d_length=d_length,
-        d_matrix=d_matrix
-    );
+    # # deltas module
+    # deltas = get_deltas(
+    #     source=mfcc,
+    #     d_length=d_length,
+    #     d_matrix=d_matrix
+    # );
 
     # f0 module
     f0 = get_f0(
@@ -122,8 +122,8 @@ function audio911_extractor(
     return hcat(
         melspec.spec',
         mfcc.mfcc',
-        deltas.delta',
-        deltas.ddelta',
+        # deltas.delta',
+        # deltas.ddelta',
         f0.f0,
         spect.centroid,
         spect.crest,

@@ -6,8 +6,8 @@ TESTFILE = "common_voice_en_23616312.wav"
 wavfile = joinpath(TESTPATH, TESTFILE)
 
 sr = 16000
-audio = load_audio(fname=wavfile);
-audio = load_audio(fname=wavfile, sr=sr);
+audio = load_audio(file=wavfile);
+audio = load_audio(file=wavfile, sr=sr);
 display(audio)
 
 stftspec = get_stft(audio=audio);

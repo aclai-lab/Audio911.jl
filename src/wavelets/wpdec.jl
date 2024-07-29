@@ -98,9 +98,9 @@ end # function orthfilt
 function wfilters(
     wname::String
 )
-    fname = match(r"(?:[a-zA-Z]+)", wname).match # estrapola le lettere tramite regex da wname, .match riconverte da regex a string
-    wcode = wname[length(fname)+1:end] # estrapola la parte numerica
-    i_fam = winfo[fname] # recupera i dati dal dizionario generale
+    file = match(r"(?:[a-zA-Z]+)", wname).match # estrapola le lettere tramite regex da wname, .match riconverte da regex a string
+    wcode = wname[length(file)+1:end] # estrapola la parte numerica
+    i_fam = winfo[file] # recupera i dati dal dizionario generale
 
     F = i_fam.coeff[wcode]
     lo_D, hi_D, lo_R, hi_R = orthfilt(F)

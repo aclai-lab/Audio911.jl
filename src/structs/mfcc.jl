@@ -174,12 +174,12 @@ function get_mfcc(;
 end
 
 function _get_deltas(;
-        mfcc::AbstractArray{Float64},
+        source::AbstractArray{Float64},
         freq::AbstractVector{Float64},
         deltas::Deltas,
 )
     deltas.delta = audioDelta(
-        mfcc, deltas.d_length, deltas.d_matrix)
+        source, deltas.d_length, deltas.d_matrix)
     deltas.ddelta = audioDelta(
         deltas.delta, deltas.d_length, deltas.d_matrix)
 
@@ -220,8 +220,8 @@ function Base.display(deltas::Deltas)
 end
 
 function get_deltas(;
-    mfcc::Mfcc,
+    source::Mfcc,
     kwargs...
 )
-    _get_deltas(mfcc=mfcc.mfcc, freq=mfcc.freq, deltas=Deltas(; sr=mfcc.sr, kwargs...))
+    _get_deltas(source=source.mfcc, freq=source.freq, deltas=Deltas(; sr=source.sr, kwargs...))
 end

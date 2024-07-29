@@ -12,7 +12,7 @@ wavfile = joinpath(TESTPATH, TESTFILE)
 # sample rate suggested for vocal analysis is 8000hz
 # always good pratice to normalize the audio beforehand
 audio = load_audio(
-    fname=wavfile, 
+    file=wavfile, 
     sr=8000, 
     norm=true,
 );
