@@ -3,6 +3,9 @@ using Revise, Audio911, BenchmarkTools
 TESTPATH = joinpath(dirname(pathof(Audio911)), "..", "test")
 TESTFILE = "common_voice_en_23616312.wav"
 # TESTFILE = "104_1b1_Al_sc_Litt3200_4.wav"
+# abstracttrees
+# unique(collect(AbstractTrees.PreOrderDST(config))
+# [i in AbstractTrees.childer(j) for i in nodes, j in nodes)]
 wavfile = joinpath(TESTPATH, TESTFILE)
 
 sr = 16000
@@ -44,7 +47,7 @@ f0 = get_f0(stft=stftspec, freq_range=(300, 2000));
 display(f0)
 
 cwtfb = get_cwtfb(audio=audio);
-cwtfb = get_cwtfb(audio=audio, wavelet=:morlet, freq_range=(100,4000));
+cwtfb = get_cwtfb(audio=audio, wavelet=:bump, freq_range=(100,4000));
 display(cwtfb)
 
 cwt = get_cwt(audio=audio, fbank=cwtfb);

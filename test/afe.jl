@@ -8,10 +8,10 @@ nan_replacer!(x::AbstractArray{Float64}) = replace!(x, NaN => 0.0)
 # ---------------------------------------------------------------------------- #
 #                       audio911 audio features extractor                      #
 # ---------------------------------------------------------------------------- #
-function audio911_extractor(
+function audio911features(
     # audio module
     wavfile::Union{String, AbstractVector{Float64}};
-    sr::Int64=8000,
+    sr::Int64=8000, # di default sarà nothing
     norm::Bool=true,
     speech_detection::Bool=false,
     # stft module
