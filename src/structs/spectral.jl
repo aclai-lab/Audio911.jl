@@ -229,5 +229,5 @@ function get_spectrals(;
     source::Union{Stft, Cwt},
     kwargs...
 )
-	_get_spectrals(s=source.spec, freq=source.freq, spect=Spectral(; sr=source.sr, kwargs...))
+	_get_spectrals(s=source.data.spec, freq=source.data.freq, spect=Spectral(; sr=source.sr, kwargs...))
 end

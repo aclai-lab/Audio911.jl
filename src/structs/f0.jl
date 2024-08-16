@@ -137,5 +137,5 @@ function get_f0(;
 	source::Stft,
 	kwargs...
 )
-	_get_f0(x=source.frames, win_length=source.win_length, f0=F0(; sr=source.sr, kwargs...))
+	_get_f0(x=source.data.frames, win_length=source.setup.win_length, f0=F0(; sr=source.sr, kwargs...))
 end

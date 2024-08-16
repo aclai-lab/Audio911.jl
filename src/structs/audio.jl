@@ -1,51 +1,67 @@
 # ---------------------------------------------------------------------------- #
 #                                    audio                                     #
 # ---------------------------------------------------------------------------- #
-mutable struct Audio 
-	data::AbstractVector{Float64}
-	sr::Int64
+struct Audio
+    data::AbstractVector{Float64}
+    sr::Int
 end
 
-function Base.show(io::IO, audio::Audio)
-	print(io, "Audio(data: $(length(audio.data)) samples, sr: $(audio.sr) Hz)")
-end
+const SUPPORTED_FORMATS = [".wav", ".mp3", ".ogg", ".flac"]
 
-function Base.display(audio::Audio)
-    t = (0:length(audio.data)-1) / audio.sr
-    p = plot(t, audio.data, 
-             xlabel="Time (s)", 
-             ylabel="Amplitude",
-             title="Audio Waveform",
-             legend=false)
-    display(p)
+Base.show(io::IO, audio::Audio) = print(io, "Audio(length: $(length(audio.data)) samples, sr: $(audio.sr) Hz)")
+
+function Plots.plot(audio::Audio; kwargs...)
+    t = range(0, length = length(audio.data), step = 1/audio.sr)
+    plot(t, audio.data; xlabel="Time (s)", ylabel="Amplitude", title="Audio Waveform", legend=false, kwargs...)
 end
 
 function load_audio(;
-    file::Union{AbstractString, AbstractVector{Float64}},
-    sr::Union{Nothing, Int64} = nothing,
-	norm::Bool = false
+        file::Union{AbstractString, AbstractVector{<:AbstractFloat}},
+        sr::Union{Nothing, Int} = nothing,
+        norm::Bool = false
 )
-	if file isa AbstractString
-		audio = Audio(
-			py"load_audio"(file, sr)...
-		)
-	elseif file isa AbstractVector{Float64} && sr isa Int64
-		audio = Audio(file, sr)
-	else
-		throw(ArgumentError("Invalid arguments"))
-	end
+    # check if stereo2mono is needed, TODO check
+    validate_data = data -> begin
+        if size(data, 2) > 1
+            @warn "Multichannel audio detected: converting to mono."
+            vec(mean(data, dims = 2))
+		else
+			data
+		end
+    end
+    # scheck ample rate	
+    validate_sr = sr -> begin
+        if isnothing(sr)
+            @warn "No sampling rate given, using default sampling rate of 8000Hz."
+            8000
+        else
+            @assert sr > 0 && isinteger(sr) "Sample rate must be a positive integer."
+            sr
+        end
+    end
 
-	# normalize audio
-	if norm && length(audio.data) != 0
-		audio.data = audio.data ./ maximum(abs.(audio.data))
-	end
+    if file isa AbstractString
+        # check file
+        @assert isfile(file) "File does not exist."
+        @assert any(endswith.(lowercase(file), SUPPORTED_FORMATS)) "Unsupported file format."
 
-	return audio
+        data, sr = py"load_audio"(file, validate_sr(sr))
+    else
+        data = file
+        if !isa(data, Vector{Float64})
+            @warn "Converting audio to Float64."
+            data = Float64.(data)
+        end
+    end
+
+    # normalize audio
+    if norm && !isempty(data)
+        data ./= maximum(abs, data)
+    end
+
+    Audio(validate_data(data), validate_sr(sr))
 end
 
-function save_audio(;
-	audio::Audio,
-    file::AbstractString
-)
+function save_audio(; audio::Audio, file::AbstractString)
     py"save_audio"(file, audio.data, audio.sr)
 end

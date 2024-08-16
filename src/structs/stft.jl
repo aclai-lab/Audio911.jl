@@ -1,69 +1,53 @@
 # ---------------------------------------------------------------------------- #
 #                                    stft                                      #
 # ---------------------------------------------------------------------------- #
-mutable struct Stft
-	# setup
-    sr::Int64
-    x_length::Int64
-	stft_length::Int64
-	win_type::Tuple{Symbol, Symbol}
-	win_length::Int64
-	overlap_length::Int64
-	norm::Symbol
-	# data
-	spec::Union{Nothing, AbstractArray{Float64}}
-	freq::Union{Nothing, AbstractVector{Float64}}
-    win::Union{Nothing, AbstractVector{Float64}}
-    frames::Union{Nothing, AbstractArray{Float64}}
+struct StftSetup
+    stft_length::Int
+    win_type::Tuple{Symbol, Symbol}
+    win_length::Int
+    overlap_length::Int
+    norm::Symbol 
 end
 
-# keyword constructor
-function Stft(;
-	sr,
-    x_length,
-	stft_length	= sr !== nothing ? (sr <= 8000 ? 256 : 512) : 512,
-	win_type = (:hann, :periodic),
-	win_length = stft_length,
-	overlap_length = round(Int, stft_length / 2),
-	norm = :power, # :none, :power, :magnitude, :pow2mag
-	spec = nothing,
-	freq = nothing,
-    win = nothing,
-    frames = nothing
-)
-	stft = Stft(
-        sr,
-        x_length,
-		stft_length,
-		win_type,
-		win_length,
-		overlap_length,
-		norm,
-		spec,
-		freq,
-        win,
-        frames
-	)
-	return stft
+struct StftData
+    spec::AbstractArray{<:AbstractFloat}
+    freq::AbstractVector{<:AbstractFloat}
+    win::AbstractVector{<:AbstractFloat}
+    frames::AbstractArray{<:AbstractFloat}
+end
+
+struct Stft
+    # setup
+    sr::Int64
+    x_length::Int64
+    setup::StftSetup
+    data::StftData
 end
 
 function _get_stft(;
-	x::AbstractVector{Float64},
-	stft::Stft
+        x::AbstractVector{<:AbstractFloat},
+        sr::Int,
+        x_length::Int,
+        stft_length::Int = sr !== nothing ? (sr <= 8000 ? 256 : 512) : 512,
+        win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
+        win_length::Int = stft_length,
+        overlap_length::Int = round(Int, stft_length / 2),
+        stft_norm::Symbol = :power, # :none, :power, :magnitude, :pow2mag
+        _whatever...
 )
-    stft.frames, stft.win, wframes, _, _ = _get_frames(x, stft.win_type, stft.win_length, stft.overlap_length)
+    frames, win, wframes, _, _ = _get_frames(x, win_type, win_length, overlap_length)
 
-    if stft.win_length < stft.stft_length
-        wframes = vcat(wframes, zeros(Float64, stft.stft_length - stft.win_length, size(wframes, 2)))
-    elseif stft.win_length > stft.stft_length
+    if win_length < stft_length
+        wframes = vcat(wframes, zeros(Float64, stft_length - win_length, size(wframes, 2)))
+    elseif win_length > stft_length
         @error("FFT window size smaller than actual window size is highly discuraged.")
     end
 
     # take one side
-    if mod(stft.stft_length, 2) == 0
-        one_side = 1:Int(stft.stft_length / 2 + 1)   # even
+    if mod(stft_length, 2) == 0
+        one_side = 1:Int(stft_length / 2 + 1)   # even
     else
-        one_side = 1:Int((stft.stft_length + 1) / 2)  # odd
+        one_side = 1:Int((stft_length + 1) / 2)  # odd
     end
 
     # normalize
@@ -73,40 +57,37 @@ function _get_stft(;
         :pow2mag => x -> sqrt.(real.((x .* conj.(x))))
     )
     # check if spectrum_type is valid
-    @assert haskey(norm_funcs, stft.norm) "Unknown spectrum_type: $stft.norm."
+    @assert haskey(norm_funcs, stft_norm) "Unknown spectrum_type: $stft_norm."
 
-    stft.spec = norm_funcs[stft.norm](fft(wframes, (1,))[one_side, :])
-    stft.freq = (stft.sr / stft.stft_length) * (one_side .- 1)
+    spec = norm_funcs[stft_norm](fft(wframes, (1,))[one_side, :])
+    freq = (sr / stft_length) * (one_side .- 1)
 
-	return stft
+    Stft(sr, x_length, StftSetup(stft_length, win_type, win_length, overlap_length, stft_norm), StftData(spec, freq, win, frames))
 end
 
 function Base.show(io::IO, stft::Stft)
     print(io, "Stft(")
-    print(io, "stft_length=$(stft.stft_length), ")
-    print(io, "win_type=$(stft.win_type), ")
-    print(io, "win_length=$(stft.win_length), ")
-    print(io, "overlap_length=$(stft.overlap_length), ")
-    print(io, "norm=:$(stft.norm), ")
-    print(io, "spec=$(isnothing(stft.spec) ? "nothing" : size(stft.spec)), ")
-    print(io, "freq=$(isnothing(stft.freq) ? "nothing" : length(stft.freq)))")
+    print(io, "stft_length=$(stft.setup.stft_length), ")
+    print(io, "win_type=$(stft.setup.win_type), ")
+    print(io, "win_length=$(stft.setup.win_length), ")
+    print(io, "overlap_length=$(stft.setup.overlap_length), ")
+    print(io, "norm=:$(stft.setup.norm), ")
+    print(io, "spec=$(size(stft.data.spec)))")
 end
 
-function Base.display(stft::Stft)
-    isnothing(stft.spec) && error("STFT has not been computed yet.")
-    
-    heatmap(1:size(stft.spec, 2), stft.freq, stft.spec;
-            ylabel="Frequency (Hz)",
-            xlabel="Frame",
-            title="STFT Spectrogram",
-            color=:viridis,
-			clim=(0, 1)
+function Plots.plot(stft::Stft)
+    heatmap(1:size(stft.data.spec, 2), stft.data.freq, stft.data.spec;
+        ylabel = "Frequency (Hz)",
+        xlabel = "Frame",
+        title = "STFT Spectrogram",
+        color = :viridis,
+        clim = (0, 1)
     )
 end
 
 function get_stft(;
-	audio::Audio,
-	kwargs...
+        audio::Audio,
+        kwargs...
 )
-	_get_stft(x=audio.data, stft=Stft(;sr=audio.sr, x_length=size(audio.data, 1), kwargs...))
+    _get_stft(; x = audio.data, sr = audio.sr, x_length = size(audio.data, 1), kwargs...)
 end

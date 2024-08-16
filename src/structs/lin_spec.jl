@@ -87,9 +87,9 @@ function get_linspec(;
     kwargs...
 )
     if source isa Stft
-        _get_lin_spec(x=source.spec, xfreq=source.freq, lspec=LinSpec(;source.sr, kwargs...))
+        _get_lin_spec(x=source.data.spec, xfreq=source.data.freq, lspec=LinSpec(;source.sr, kwargs...))
     elseif source isa Cwt
-        _get_lin_spec(x=source.spec, xfreq=source.freq, lspec=LinSpec(;source.sr, freq_range=round.(Int, extrema(source.freq)), kwargs...))
+        _get_lin_spec(x=source.data.spec, xfreq=source.data.freq, lspec=LinSpec(;source.sr, freq_range=round.(Int, extrema(source.freq)), kwargs...))
     else
         error("Unsupported type for spec: typeof(source) = $(typeof(source))")
     end

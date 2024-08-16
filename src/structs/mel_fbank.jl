@@ -281,5 +281,5 @@ function get_melfb(;
     stft::Stft,
     kwargs...
 )
-    _get_melfb(; stft_length=stft.stft_length, freq=stft.freq, mel_fb=MelFbank(; sr=stft.sr, kwargs...))
+    _get_melfb(; stft_length=stft.setup.stft_length, freq=stft.data.freq, mel_fb=MelFbank(; sr=stft.sr, kwargs...))
 end

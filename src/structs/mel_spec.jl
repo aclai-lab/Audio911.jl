@@ -85,11 +85,11 @@ function get_melspec(;
     kwargs...
 )
     _get_melspec(;
-        x=stft.spec,
+        x=stft.data.spec,
         fbank=fbank.fbank,
         x_length=stft.x_length,
-        win_length=stft.win_length, 
-        overlap_length=stft.overlap_length,
+        win_length=stft.setup.win_length, 
+        overlap_length=stft.setup.overlap_length,
         freq=fbank.freq,
         mel_spec=MelSpec(; sr=stft.sr, nbands=fbank.nbands, kwargs...)
     )

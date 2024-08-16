@@ -1,21 +1,25 @@
+using Pkg
+Pkg.activate("/home/paso/results")
 using Revise, Audio911, BenchmarkTools
 
 TESTPATH = joinpath(dirname(pathof(Audio911)), "..", "test")
 TESTFILE = "common_voice_en_23616312.wav"
 # TESTFILE = "104_1b1_Al_sc_Litt3200_4.wav"
-# abstracttrees
-# unique(collect(AbstractTrees.PreOrderDST(config))
-# [i in AbstractTrees.childer(j) for i in nodes, j in nodes)]
 wavfile = joinpath(TESTPATH, TESTFILE)
 
+# --- audio ------------------------------------------------------------------ #
 sr = 16000
 audio = load_audio(file=wavfile);
-audio = load_audio(file=wavfile, sr=sr);
-display(audio)
+audio = load_audio(file=wavfile, sr=sr, norm=true);
+show(audio)
+plot(audio)
+save_audio(audio=audio, file="/home/paso/Documents/testnorm.wav")
 
+# --- stft ------------------------------------------------------------------- #
 stftspec = get_stft(audio=audio);
-stftspec = get_stft(audio=audio, norm=:magnitude);
-display(stftspec)
+stftspec = get_stft(audio=audio, stft_norm=:magnitude);
+show(stftspec)
+plot(stftspec)
 
 linspec = get_linspec(source=stftspec);
 linspec = get_linspec(source=stftspec, db_scale=true);
@@ -23,27 +27,27 @@ display(linspec)
 
 melfb = get_melfb(stft=stftspec);
 melfb = get_melfb(stft=stftspec, scale=:erb);
-display(melfb)
+# display(melfb);
 
 melspec =  get_melspec(stft=stftspec, fbank=melfb);
 melspec =  get_melspec(stft=stftspec, fbank=melfb, db_scale=true);
 display(melspec)
 
 melspec =  get_melspec(stft=stftspec, fbank=melfb);
-mfcc = get_mfcc(melspec=melspec);
-mfcc = get_mfcc(melspec=melspec, rectification=:cubic_root);
+mfcc = get_mfcc(source=melspec);
+mfcc = get_mfcc(source=melspec, rectification=:cubic_root);
 display(mfcc)
 
-deltas = get_deltas(mfcc=mfcc);
-deltas = get_deltas(mfcc=mfcc, d_length=7);
+deltas = get_deltas(source=mfcc);
+deltas = get_deltas(source=mfcc, d_length=7);
 display(deltas)
 
-spect = get_spectrals(stft=stftspec);
-spect = get_spectrals(stft=stftspec, freq_range=(100, 2000));
+spect = get_spectrals(source=stftspec);
+spect = get_spectrals(source=stftspec, freq_range=(100, 2000));
 display(spect)
 
-f0 = get_f0(stft=stftspec);
-f0 = get_f0(stft=stftspec, freq_range=(300, 2000));
+f0 = get_f0(source=stftspec);
+f0 = get_f0(source=stftspec, freq_range=(300, 2000));
 display(f0)
 
 cwtfb = get_cwtfb(audio=audio);
@@ -54,6 +58,7 @@ cwt = get_cwt(audio=audio, fbank=cwtfb);
 cwt = get_cwt(audio=audio, fbank=cwtfb, norm=:magnitude, db_scale=true);
 display(cwt)
 
-cwtspec = get_linspec(source=cwt);
-cwtspec = get_linspec(source=cwt, db_scale=true);
-display(cwtspec)
+# BROKEN!
+# cwtspec = get_linspec(source=cwt);
+# cwtspec = get_linspec(source=cwt, db_scale=true);
+# display(cwtspec)

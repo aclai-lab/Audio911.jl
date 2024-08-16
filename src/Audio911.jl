@@ -1,5 +1,8 @@
 module Audio911
 
+import Base: show
+import Plots: plot
+
 using FFTW, DSP
 using LinearAlgebra
 using SpecialFunctions
@@ -17,7 +20,7 @@ function __init__()
     import soundfile as soundfile
 
     def load_audio(file, sr):
-        x, sr_def = librosa.load(file, sr=sr, mono=True)
+        x, sr_def = librosa.load(file, sr=sr)
         return x, sr_def
 
     def save_audio(file, x, sr):
@@ -26,7 +29,7 @@ function __init__()
 end
 
 include("structs/audio.jl")
-export Audio, load_audio
+export Audio, load_audio, save_audio
 
 include("windowing/windowing.jl")
 include("windowing/windows.jl")
@@ -60,5 +63,8 @@ export F0, get_f0
 include("utils/histogram.jl")
 include("utils/speech_detector.jl")
 export speech_detector
+
+include("interface.jl")
+export audio911features, path, setup, plot
 
 end
