@@ -11,6 +11,7 @@ using Statistics, Roots
 using NaNStatistics
 using Polynomials
 using Plots
+using SparseArrays, StaticArrays
 
 using PyCall
 
@@ -41,7 +42,7 @@ export LinSpec, get_linspec
 
 include("structs/mel_fbank.jl")
 include("structs/cwt_fbank.jl")
-export MelFbank, get_melfb
+export MelFb, get_melfb
 export CwtFbank, get_cwtfb
 
 include("structs/mel_spec.jl")

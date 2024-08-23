@@ -11,13 +11,12 @@ end
 
 struct StftData
     spec::AbstractArray{<:AbstractFloat}
-    freq::AbstractVector{<:AbstractFloat}
+    freq::StepRangeLen{<:AbstractFloat}
     win::AbstractVector{<:AbstractFloat}
     frames::AbstractArray{<:AbstractFloat}
 end
 
 struct Stft
-    # setup
     sr::Int64
     x_length::Int64
     setup::StftSetup
@@ -32,8 +31,7 @@ function _get_stft(;
         win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
         win_length::Int = stft_length,
         overlap_length::Int = round(Int, stft_length / 2),
-        stft_norm::Symbol = :power, # :none, :power, :magnitude, :pow2mag
-        _whatever...
+        norm::Symbol = :power, # :none, :power, :magnitude, :pow2mag
 )
     frames, win, wframes, _, _ = _get_frames(x, win_type, win_length, overlap_length)
 
@@ -57,12 +55,12 @@ function _get_stft(;
         :pow2mag => x -> sqrt.(real.((x .* conj.(x))))
     )
     # check if spectrum_type is valid
-    @assert haskey(norm_funcs, stft_norm) "Unknown spectrum_type: $stft_norm."
+    @assert haskey(norm_funcs, norm) "Unknown spectrum_type: $norm."
 
-    spec = norm_funcs[stft_norm](fft(wframes, (1,))[one_side, :])
+    spec = norm_funcs[norm](fft(wframes, (1,))[one_side, :])
     freq = (sr / stft_length) * (one_side .- 1)
 
-    Stft(sr, x_length, StftSetup(stft_length, win_type, win_length, overlap_length, stft_norm), StftData(spec, freq, win, frames))
+    Stft(sr, x_length, StftSetup(stft_length, win_type, win_length, overlap_length, norm), StftData(spec, freq, win, frames))
 end
 
 function Base.show(io::IO, stft::Stft)

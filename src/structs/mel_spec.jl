@@ -81,16 +81,16 @@ end
 
 function get_melspec(;
     stft::Stft,
-    fbank::MelFbank,
+    fbank::MelFb,
     kwargs...
 )
     _get_melspec(;
         x=stft.data.spec,
-        fbank=fbank.fbank,
+        fbank=fbank.data.fbank,
         x_length=stft.x_length,
         win_length=stft.setup.win_length, 
         overlap_length=stft.setup.overlap_length,
-        freq=fbank.freq,
-        mel_spec=MelSpec(; sr=stft.sr, nbands=fbank.nbands, kwargs...)
+        freq=fbank.data.freq,
+        mel_spec=MelSpec(; sr=stft.sr, nbands=fbank.setup.nbands, kwargs...)
     )
 end
