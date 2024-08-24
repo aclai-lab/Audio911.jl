@@ -1,16 +1,19 @@
 using Pkg
-Pkg.activate("/home/paso/results")
+Pkg.activate("/home/paso/Documents/Aclai/audio-rules2024")
 using Revise, Audio911, BenchmarkTools
+using StaticArrays
+
+using SpecialFunctions, Roots
+using Statistics
 
 TESTPATH = joinpath(dirname(pathof(Audio911)), "..", "test")
 TESTFILE = "common_voice_en_23616312.wav"
+# TESTFILE = "104_1b1_Al_sc_Litt3200_4.wav"
 wavfile = joinpath(TESTPATH, TESTFILE)
 
-audio1 = audio911features(wavfile)
-audio2 = audio911features(wavfile, setup(sr=32000))
-analysis1 = audio911features(wavfile, :mfcc, setup(stft_length=1024, mel_bands=52, mfcc_source=:cwt))
-analysis2 = audio911features(wavfile, (:cwt, :melfb, :mel), setup(stft_length=1024, mel_bands=52, mfcc_source=:cwt))
+# --- audio ------------------------------------------------------------------ #
+sr = 16000
+audio = load_audio(file=wavfile, sr=sr, norm=true);
 
-# abstracttrees
-# unique(collect(AbstractTrees.PreOrderDST(config))
-# [i in AbstractTrees.childer(j) for i in nodes, j in nodes)]
+# --- result ----------------------------------------------------------------- #
+# result = audio911("stft(fft_length=1024), melfb(type=mel), cwt(source=mel_fb), mfcc(source=cwt, ncoeffs=16)")
