@@ -6,7 +6,7 @@ struct MelFbSetup
     scale::Symbol # :mel_htk, :mel_slaney, :erb, :bark, :semitones, :tuned_semitones
     norm::Symbol # :bandwidth, :area, :none
     freq_range::Tuple{Int, Int}
-    semitone_range::Tuple{Int, Int}
+    f0_semitone_range::Tuple{Int, Int}
 end
 
 struct MelFbData
@@ -141,9 +141,9 @@ end
 # -------------------------------------------------------------------------- #
 #                                  f0 log mel                                #
 # -------------------------------------------------------------------------- #
-function calc_f0(stftvec::AbstractVector{<:AbstractFloat}, stftfreq::StepRangeLen{<:AbstractFloat}, semitone_range::Tuple{Int, Int},)
-	x1 = findfirst((x)-> x >= semitone_range[1], stftfreq)
-	x2 = findfirst((x)-> x >= semitone_range[2], stftfreq)
+function calc_f0(stftvec::AbstractVector{<:AbstractFloat}, stftfreq::StepRangeLen{<:AbstractFloat}, f0_semitone_range::Tuple{Int, Int},)
+	x1 = findfirst((x)-> x >= f0_semitone_range[1], stftfreq)
+	x2 = findfirst((x)-> x >= f0_semitone_range[2], stftfreq)
 
 	peak_pos = argmax(stftvec[x1:x2-1])
 	stftfreq[x1+peak_pos-1]
@@ -161,7 +161,7 @@ function _get_melfb(
         scale::Symbol = :mel_htk, # :mel_htk, :mel_slaney, :erb, :bark, :semitones, :tuned_semitones
         norm::Symbol = :bandwidth,  # :bandwidth, :area, :none
         freq_range::Tuple{Int, Int} = (0, round(Int, sr / 2)),
-        semitone_range::Tuple{Int, Int} = (200, 700),
+        f0_semitone_range::Tuple{Int, Int} = (200, 700),
 )
     if scale == :erb
         erb_range = hz2erb(freq_range)
@@ -193,7 +193,7 @@ function _get_melfb(
             st_range = hz2semitone(freq_range)
             band_edges = semitone2hz(st_range, nbands)
         elseif scale == :tuned_semitones
-            freq_range = (round(Int, calc_f0(stftvec, stftfreq, semitone_range)), freq_range[2])
+            freq_range = (round(Int, calc_f0(stftvec, stftfreq, f0_semitone_range)), freq_range[2])
             st_range = hz2semitone(freq_range)
             band_edges = semitone2hz(st_range, nbands)
         else
@@ -223,7 +223,7 @@ function _get_melfb(
         (norm != :none) && normalize!(filterbank, norm, bw)
     end
     
-    MelFb(sr, MelFbSetup(nbands, scale, norm, freq_range, semitone_range), MelFbData(filterbank, filter_freq))
+    MelFb(sr, MelFbSetup(nbands, scale, norm, freq_range, f0_semitone_range), MelFbData(filterbank, filter_freq))
 end
 
 function Base.show(io::IO, mel_fb::MelFb)
