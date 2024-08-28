@@ -4,10 +4,10 @@ list of parameters used
 sr,
 norm = false
 # --- stft ------------------------------------------------------------------- #
-stft_length	= sr !== nothing ? (sr <= 8000 ? 256 : 512) : 512,
+nfft	= sr !== nothing ? (sr <= 8000 ? 256 : 512) : 512,
 win_type = (:hann, :periodic),
-win_length = stft_length,
-overlap_length = round(Int, stft_length / 2),
+win_length = nfft,
+overlap_length = round(Int, nfft / 2),
 stft_norm = :power, # :none, :power, :magnitude, :pow2mag
 """
 

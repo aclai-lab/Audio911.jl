@@ -155,7 +155,7 @@ end
 function _get_melfb(
         stftvec::AbstractVector{<:AbstractFloat},
         stftfreq::StepRangeLen{<:AbstractFloat},
-        stft_length::Int,
+        nfft::Int,
         sr::Int;
         nbands::Int = 26,
         scale::Symbol = :mel_htk, # :mel_htk, :mel_slaney, :erb, :bark, :semitones, :tuned_semitones
@@ -170,7 +170,7 @@ function _get_melfb(
 
         iirfreqz = (b, a, n) -> fft([b; zeros(n - length(b))]) ./ fft([a; zeros(n - length(a))])
         sosfilt = (c, n) -> reduce((x, y) -> x .* y, map(row -> iirfreqz(row[1:3], row[4:6], n), eachrow(c)))
-        apply_sosfilt = (i) -> abs.(sosfilt(coeffs[:, :, i], stft_length))
+        apply_sosfilt = (i) -> abs.(sosfilt(coeffs[:, :, i], nfft))
 
         filterbank = hcat(map(apply_sosfilt, 1:nbands)...)'
         # Derive Gammatone filter bandwidths as a function of center frequencies
@@ -179,8 +179,8 @@ function _get_melfb(
         # normalization
         (norm != :none) && normalize!(filterbank, norm, bw)
 
-        rem(stft_length, 2) == 0 ? filterbank[:, 2:(stft_length ÷ 2)] .*= 2 : filterbank[:, 2:(stft_length ÷ 2 + 1)] .*= 2
-        filterbank = filterbank[:, 1:(stft_length ÷ 2 + 1)]
+        rem(nfft, 2) == 0 ? filterbank[:, 2:(nfft ÷ 2)] .*= 2 : filterbank[:, 2:(nfft ÷ 2 + 1)] .*= 2
+        filterbank = filterbank[:, 1:(nfft ÷ 2 + 1)]
 
     else
         if (scale == :mel_htk || scale == :mel_slaney)
@@ -259,5 +259,5 @@ function Base.display(mel_fb::MelFb)
 end
 
 function get_melfb(; stft::Stft, kwargs...)
-    _get_melfb(vec(sum(stft.data.spec, dims=2)), stft.data.freq, stft.setup.stft_length, stft.sr; kwargs...)
+    _get_melfb(vec(sum(stft.data.spec, dims=2)), stft.data.freq, stft.setup.nfft, stft.sr; kwargs...)
 end
