@@ -12,6 +12,7 @@ using NaNStatistics
 using Polynomials
 using Plots
 using SparseArrays, StaticArrays
+using Unitful: Time, ms, s, kHz, ustrip, @u_str
 
 using PyCall
 

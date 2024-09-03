@@ -26,13 +26,28 @@ end
 function _get_stft(;
         x::AbstractVector{<:AbstractFloat},
         sr::Int,
-        x_length::Int,
-        nfft::Int = sr !== nothing ? (sr <= 8000 ? 256 : 512) : 512,
+        # nfft::Int = sr !== nothing ? (sr <= 8000 ? 256 : 512) : 512,
+        # win_length::Int = nfft,
+        # overlap_length::Int = round(Int, nfft / 2),
+        nfft::Union{Int, Time, Nothing} = nothing,
+        win_length::Union{Int, Time, Nothing} = nothing,
+        overlap_length::Union{Int, Time, Nothing} = nothing,
         win_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-        win_length::Int = nfft,
-        overlap_length::Int = round(Int, nfft / 2),
         norm::Symbol = :power, # :none, :power, :magnitude, :pow2mag
 )
+    # ms to sample conversion
+    typeof(nfft) <: Time && begin nfft = round(Int, ustrip(Int64, u"ms", nfft) * sr * 0.001) end
+    typeof(win_length) <: Time && begin win_length = round(Int, ustrip(Int64, u"ms", win_length) * sr * 0.001) end
+    typeof(overlap_length) <: Time && begin overlap_length = round(Int, ustrip(Int64, u"ms", overlap_length) * sr * 0.001) end
+
+    # apply default parameters if not provided
+    nfft = nfft !== nothing ? nfft : sr !== nothing ? (sr <= 8000 ? 256 : 512) : 512
+    win_length = win_length !== nothing ? win_length : nfft
+    overlap_length = overlap_length !== nothing ? overlap_length : round(Int, nfft / 2)
+
+    @assert overlap_length<nfft "Overlap length must be smaller than nfft."
+
+    x_length = size(x, 1)
     frames, win, wframes, _, _ = _get_frames(x, win_type, win_length, overlap_length)
 
     if win_length < nfft
@@ -87,5 +102,5 @@ function get_stft(;
         audio::Audio,
         kwargs...
 )
-    _get_stft(; x = audio.data, sr = audio.sr, x_length = size(audio.data, 1), kwargs...)
+    _get_stft(; x = audio.data, sr = audio.sr, kwargs...)
 end
