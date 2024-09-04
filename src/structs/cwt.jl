@@ -1,39 +1,29 @@
 # ---------------------------------------------------------------------------- #
 #                        continuous wavelets transform                         #
 # ---------------------------------------------------------------------------- #
-mutable struct Cwt
-	# setup
-    sr::Int64
+struct CwtSetup
 	norm::Symbol
-	db_scale::Bool
-	# data
-	spec::Union{Nothing, AbstractArray{Float64}}
-	freq::Union{Nothing, AbstractVector{Float64}}
+	dbscale::Bool
 end
 
-# keyword constructor
-function Cwt(;
-	sr,
-	norm = :power, # :power, :magnitude, :pow2mag
-    db_scale = false,
-	spec = nothing,
-	freq = nothing,
-)
-	cwt = Cwt(
-        sr,
-		norm,
-        db_scale,
-		spec,
-		freq
-	)
-	return cwt
+struct CwtData
+    spec::AbstractArray{<:AbstractFloat}
+	freq::AbstractVector{<:AbstractFloat}
+end
+
+struct Cwt
+    sr::Int64
+    setup::CwtSetup
+    data::CwtData
 end
 
 function _get_cwt(;
     x::AbstractVector{Float64}, 
+    sr::Int64,
     fbank::AbstractArray{Float64}, 
     freq::AbstractVector{Float64},
-    cwt::Cwt
+    norm::Symbol = :power, # :power, :magnitude, :pow2mag
+    dbscale::Bool = false,
 )
     # fourier transform of input
     # obtain the CWT in the Fourier domain
@@ -56,46 +46,33 @@ function _get_cwt(;
         :pow2mag => x -> sqrt.(real.((x .* conj.(x))))
     )
     # check if spectrum_type is valid
-    @assert haskey(norm_funcs, cwt.norm) "Unknown spectrum_type: $cwt.norm."
+    @assert haskey(norm_funcs, norm) "Unknown spectrum_type: $norm."
 
-    cwt.spec = reverse(norm_funcs[cwt.norm](spec))
-    cwt.freq = reverse(freq)
-
-    return cwt
+    Cwt(sr, CwtSetup(norm, dbscale), CwtData(reverse(norm_funcs[norm](spec)), reverse(freq)))
 end
 
 function Base.show(io::IO, cwt::Cwt)
     print(io, "Cwt(")
     print(io, "sr=$(cwt.sr), ")
-    print(io, "norm=:$(cwt.norm), ")
-    print(io, "db_scale=$(cwt.db_scale), ")
-    if isnothing(cwt.spec)
-        print(io, "spec=nothing, ")
-    else
-        print(io, "spec=$(size(cwt.spec)), ")
-    end
-    if isnothing(cwt.freq)
-        print(io, "freq=nothing)")
-    else
-        print(io, "freq=$(length(cwt.freq)) frequencies)")
-    end
+    print(io, "norm=:$(cwt.setup.norm), ")
+    print(io, "db_scale=$(cwt.setup.dbscale), ")
 end
 
 function Base.display(cwt::Cwt)
-    isnothing(cwt.spec) && error("Cwt has not been computed yet.")
+    isnothing(cwt.data.spec) && error("Cwt has not been computed yet.")
 
     # apply log scaling to enhance contrast
-    log_spec = log10.(cwt.spec .+ eps())
+    log_spec = log10.(cwt.data.spec .+ eps())
     
     # normalize to [0, 1] range
     normalized_spec = (log_spec .- minimum(log_spec)) ./ (maximum(log_spec) - minimum(log_spec))
 
     # define frequency ticks
-    min_freq, max_freq = extrema(cwt.freq)
+    min_freq, max_freq = extrema(cwt.data.freq)
     freq_ticks = 10 .^ range(log10(min_freq), log10(max_freq), length=5)
     freq_ticks = round.(freq_ticks, digits=1)
     
-    heatmap(1:size(cwt.spec, 2), cwt.freq, normalized_spec;
+    heatmap(1:size(cwt.data.spec, 2), cwt.data.freq, normalized_spec;
         ylabel="Frequency (Hz)",
         xlabel="Frame",
         title="CWT Spectrogram",
@@ -106,10 +83,6 @@ function Base.display(cwt::Cwt)
     )
 end
 
-function get_cwt(;
-	audio::Audio,
-    fbank::CwtFbank,
-	kwargs...
-)
-	_get_cwt(x=audio.data, fbank=fbank.fbank, freq=fbank.freq, cwt=Cwt(;sr=audio.sr, kwargs...))
+function get_cwt(; source::Audio, fbank::CwtFb, kwargs...)
+	_get_cwt(; x=source.data, sr=source.sr, fbank=fbank.data.fbank, freq=fbank.data.freq, kwargs...)
 end

@@ -5,8 +5,8 @@ struct MelFbSetup
     nbands::Int
     scale::Symbol # :mel_htk, :mel_slaney, :erb, :bark, :semitones, :tuned_semitones
     norm::Symbol # :bandwidth, :area, :none
-    freq_range::Tuple{Int, Int}
-    f0_semitone_range::Tuple{Int, Int}
+    freqrange::Tuple{Int, Int}
+    semitonerange::Tuple{Int, Int}
 end
 
 struct MelFbData
@@ -141,30 +141,30 @@ end
 # -------------------------------------------------------------------------- #
 #                                  f0 log mel                                #
 # -------------------------------------------------------------------------- #
-function calc_f0(stftvec::AbstractVector{<:AbstractFloat}, stftfreq::StepRangeLen{<:AbstractFloat}, f0_semitone_range::Tuple{Int, Int},)
-	x1 = findfirst((x)-> x >= f0_semitone_range[1], stftfreq)
-	x2 = findfirst((x)-> x >= f0_semitone_range[2], stftfreq)
+function calc_f0(source::AbstractVector{<:AbstractFloat}, sfreq::StepRangeLen{<:AbstractFloat}, f0_semitone_range::Tuple{Int, Int},)
+	x1 = findfirst((x)-> x >= f0_semitone_range[1], sfreq)
+	x2 = findfirst((x)-> x >= f0_semitone_range[2], sfreq)
 
-	peak_pos = argmax(stftvec[x1:x2-1])
-	stftfreq[x1+peak_pos-1]
+	peak_pos = argmax(source[x1:x2-1])
+	sfreq[x1+peak_pos-1]
 end
 
 # ---------------------------------------------------------------------------- #
 #                           design filterbank matrix                           #
 # ---------------------------------------------------------------------------- #
-function _get_melfb(
-        stftvec::AbstractVector{<:AbstractFloat},
-        stftfreq::StepRangeLen{<:AbstractFloat},
+function _get_melfb(;
+        sr::Int,
+        source::AbstractVector{<:AbstractFloat},
+        sfreq::StepRangeLen{<:AbstractFloat},
         nfft::Int,
-        sr::Int;
         nbands::Int = 26,
         scale::Symbol = :mel_htk, # :mel_htk, :mel_slaney, :erb, :bark, :semitones, :tuned_semitones
         norm::Symbol = :bandwidth,  # :bandwidth, :area, :none
-        freq_range::Tuple{Int, Int} = (0, round(Int, sr / 2)),
-        f0_semitone_range::Tuple{Int, Int} = (200, 700),
+        freqrange::Tuple{Int, Int} = (0, round(Int, sr / 2)),
+        semitonerange::Tuple{Int, Int} = (200, 700),
 )
     if scale == :erb
-        erb_range = hz2erb(freq_range)
+        erb_range = hz2erb(freqrange)
         filter_freq = erb2hz(erb_range, nbands)
         coeffs = compute_gammatone_coeffs(sr, filter_freq)
 
@@ -184,17 +184,17 @@ function _get_melfb(
 
     else
         if (scale == :mel_htk || scale == :mel_slaney)
-            mel_range = hz2mel(freq_range, scale)
+            mel_range = hz2mel(freqrange, scale)
             band_edges = mel2hz(mel_range, nbands, scale)
         elseif  scale == :bark
-            bark_range = hz2bark(freq_range)
+            bark_range = hz2bark(freqrange)
             band_edges = bark2hz(bark_range, nbands)
         elseif scale == :semitones
-            st_range = hz2semitone(freq_range)
+            st_range = hz2semitone(freqrange)
             band_edges = semitone2hz(st_range, nbands)
         elseif scale == :tuned_semitones
-            freq_range = (round(Int, calc_f0(stftvec, stftfreq, f0_semitone_range)), freq_range[2])
-            st_range = hz2semitone(freq_range)
+            freqrange = (round(Int, calc_f0(source, sfreq, semitonerange)), freqrange[2])
+            st_range = hz2semitone(freqrange)
             band_edges = semitone2hz(st_range, nbands)
         else
             error("Unknown filterbank frequency scale '($scale)', available scales are: :mel_htk, :mel_slaney, :erb, :bark, :semitones, , :semitones_tuned.")
@@ -203,46 +203,38 @@ function _get_melfb(
         filter_freq = band_edges[2:(end - 1)]
         nbands = length(filter_freq)
 
-        p = [findfirst(stftfreq .> edge) for edge in band_edges]
-        isnothing(p[end]) ? p[end] = length(stftfreq) : nothing
+        p = [findfirst(sfreq .> edge) for edge in band_edges]
+        isnothing(p[end]) ? p[end] = length(sfreq) : nothing
 
         # create triangular filters for each band
         bw = diff(band_edges)
-        filterbank = zeros(nbands, length(stftfreq))
+        filterbank = zeros(nbands, length(sfreq))
 
         for k in 1:nbands
             # rising side of triangle
-            @. filterbank[k, p[k]:(p[k + 1] - 1)] = (stftfreq[p[k]:(p[k + 1] - 1)] - band_edges[k]) / bw[k]
+            @. filterbank[k, p[k]:(p[k + 1] - 1)] = (sfreq[p[k]:(p[k + 1] - 1)] - band_edges[k]) / bw[k]
             # falling side of triangle
-            @. filterbank[k, p[k + 1]:(p[k + 2] - 1)] = (band_edges[k + 2] - stftfreq[p[k + 1]:(p[k + 2] - 1)]) / bw[k + 1]
+            @. filterbank[k, p[k + 1]:(p[k + 2] - 1)] = (band_edges[k + 2] - sfreq[p[k + 1]:(p[k + 2] - 1)]) / bw[k + 1]
         end
 
         bw = (band_edges[3:end] - band_edges[1:(end - 2)])
 
         # normalization
-        (norm != :none) && normalize!(filterbank, norm, bw)
+        norm != :none && normalize!(filterbank, norm, bw)
     end
     
-    MelFb(sr, MelFbSetup(nbands, scale, norm, freq_range, f0_semitone_range), MelFbData(filterbank, filter_freq))
+    MelFb(sr, MelFbSetup(nbands, scale, norm, freqrange, semitonerange), MelFbData(filterbank, filter_freq))
 end
 
 function Base.show(io::IO, mel_fb::MelFb)
     print(io, "MelFbank(")
-    print(io, "sr=$(mel_fb.setup.sr), ")
+    print(io, "sr=$(mel_fb.sr), ")
     print(io, "nbands=$(mel_fb.setup.nbands), ")
     print(io, "scale=:$(mel_fb.setup.scale), ")
     print(io, "norm=:$(mel_fb.setup.norm), ")
-    print(io, "freq_range=$(mel_fb.setup.freq_range), ")
-    if isnothing(mel_fb.setup.fbank)
-        print(io, "fbank=nothing, ")
-    else
-        print(io, "fbank=$(size(mel_fb.setup.fbank)), ")
-    end
-    if isnothing(mel_fb.setup.freq)
-        print(io, "freq=nothing)")
-    else
-        print(io, "freq=$(length(mel_fb.setup.freq)) frequencies)")
-    end
+    print(io, "freqrange=$(mel_fb.setup.freqrange), ")
+    print(io, "fbank=$(size(mel_fb.data.fbank)), ")
+    print(io, "freq=$(length(mel_fb.data.freq)) frequencies)")
 end
 
 function Base.display(mel_fb::MelFb)
@@ -258,6 +250,12 @@ function Base.display(mel_fb::MelFb)
     display(p)
 end
 
-function get_melfb(; stft::Stft, kwargs...)
-    _get_melfb(vec(sum(stft.data.spec, dims=2)), stft.data.freq, stft.setup.nfft, stft.sr; kwargs...)
+function get_melfb(; source::Stft, kwargs...)
+    _get_melfb(;
+        sr = source.sr, 
+        source = vec(sum(source.data.spec, dims=2)), 
+        sfreq = source.data.freq, 
+        nfft = source.setup.nfft, 
+        kwargs...
+    )
 end

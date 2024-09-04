@@ -1,96 +1,72 @@
 # ---------------------------------------------------------------------------- #
 #                               mel spectrogram                                #
 # ---------------------------------------------------------------------------- #
-mutable struct MelSpec
-	# setup
-    sr::Int64
+struct MelSpecSetup
     nbands::Int64
-    db_scale::Bool
-	# data
-	spec::Union{Nothing, AbstractArray{Float64}}
-	freq::Union{Nothing, AbstractVector{Float64}}
+    dbscale::Bool
 end
 
-# keyword constructor
-function MelSpec(;
-    sr,
-    nbands,
-    db_scale = false,
-    spec = nothing,
-    freq = nothing,
-)
-    mel_spec = MelSpec(
-        sr,
-        nbands,
-        db_scale,
-        spec,
-        freq
-    )
-	return 	mel_spec
+struct MelSpecData
+    spec::AbstractArray{<:AbstractFloat}
+    freq::AbstractVector{<:AbstractFloat}
+end
+
+struct MelSpec
+    sr::Int64
+    setup::MelSpecSetup
+    data::MelSpecData
 end
 
 function _get_melspec(;
         x::AbstractArray{Float64},
+        sr::Int64,
         fbank::AbstractArray{Float64},
         x_length::Int64,
         win_length::Int64,
         overlap_length::Int64,
         freq::AbstractVector{Float64},
-        mel_spec::MelSpec
+        nbands::Int64,
+        dbscale::Bool = false
 )
     hop_length = win_length - overlap_length
     num_hops = floor(Int, (x_length - win_length) / hop_length) + 1
 
     # apply filterbank
-    mel_spec.spec = reshape(fbank * x, mel_spec.nbands, num_hops)
-    mel_spec.freq = freq
+    spec = reshape(fbank * x, nbands, num_hops)
 
     # scale to dB if requested
-    if mel_spec.db_scale
-        mel_spec.spec = log10.(no_zero.(mel_spec.spec))
+    if dbscale
+        spec = log10.(no_zero.(spec))
     end
 
-    return mel_spec
-end # melSpectrogram
+    MelSpec(sr, MelSpecSetup(nbands, dbscale), MelSpecData(spec, freq))
+end
 
 function Base.show(io::IO, mel_spec::MelSpec)
     print(io, "MelSpec(")
     print(io, "sr=$(mel_spec.sr), ")
-    print(io, "db_scale=$(mel_spec.db_scale), ")
-    if isnothing(mel_spec.spec)
-        print(io, "spec=nothing, ")
-    else
-        print(io, "spec=$(size(mel_spec.spec)), ")
-    end
-    if isnothing(mel_spec.freq)
-        print(io, "freq=nothing)")
-    else
-        print(io, "freq=$(length(mel_spec.freq)) frequencies)")
-    end
+    print(io, "db_scale=$(mel_spec.setup.dbscale), ")
+    print(io, "spec=$(size(mel_spec.data.spec)), ")
+    print(io, "freq=$(length(mel_spec.data.freq)) frequencies)")
 end
 
 function Base.display(mel_spec::MelSpec)
-    isnothing(mel_spec.spec) && error("Mel spectrogram has not been computed yet.")
-    
-    heatmap(1:size(mel_spec.spec, 2), 1:size(mel_spec.spec, 1), mel_spec.spec;
+    heatmap(1:size(mel_spec.data.spec, 2), 1:size(mel_spec.data.spec, 1), mel_spec.data.spec;
         ylabel="Bands",
         xlabel="Frame",
         title="Mel Spectrogram",
     )
 end
 
-function get_melspec(;
-    stft::Stft,
-    fbank::MelFb,
-    kwargs...
-)
+function get_melspec(; source::Stft, fbank::MelFb, kwargs...)
     _get_melspec(;
-        x=stft.data.spec,
+        x=source.data.spec,
+        sr=source.sr,
         fbank=fbank.data.fbank,
-        x_length=stft.x_length,
-        win_length=stft.setup.win_length, 
-        overlap_length=stft.setup.overlap_length,
+        x_length=source.x_length,
+        win_length=source.setup.winlength, 
+        overlap_length=source.setup.overlaplength,
         freq=fbank.data.freq,
-        mel_spec=MelSpec(; sr=stft.sr, nbands=fbank.setup.nbands, kwargs...)
-    )
+        nbands=fbank.setup.nbands,
+        kwargs...)
 end

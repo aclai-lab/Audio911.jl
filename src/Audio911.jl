@@ -44,17 +44,18 @@ export LinSpec, get_linspec
 include("structs/mel_fbank.jl")
 include("structs/cwt_fbank.jl")
 export MelFb, get_melfb
-export CwtFbank, get_cwtfb
+export CwtFb, get_cwtfb
+
+include("structs/cwt.jl")
+export Cwt, get_cwt
 
 include("structs/mel_spec.jl")
 export MelSpec, get_melspec
 
 include("structs/mfcc.jl")
+include("structs/deltas.jl")
 export Mfcc, get_mfcc
 export Deltas, get_deltas
-
-include("structs/cwt.jl")
-export Cwt, get_cwt
 
 include("structs/spectral.jl")
 export Spectral, get_spectrals
@@ -67,6 +68,6 @@ include("utils/speech_detector.jl")
 export speech_detector
 
 include("interface.jl")
-export audio911features, path, setup, plot
+export audio911features, path, setup, plot, afe
 
 end

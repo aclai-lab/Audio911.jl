@@ -16,7 +16,7 @@ function Plots.plot(audio::Audio; kwargs...)
 end
 
 function load_audio(;
-        file::Union{AbstractString, AbstractVector{<:AbstractFloat}},
+        source::Union{AbstractString, AbstractVector{<:AbstractFloat}},
         sr::Union{Nothing, Int} = nothing,
         norm::Bool = false
 )
@@ -40,14 +40,14 @@ function load_audio(;
         end
     end
 
-    if file isa AbstractString
+    if source isa AbstractString
         # check file
-        @assert isfile(file) "File does not exist."
-        @assert any(endswith.(lowercase(file), SUPPORTED_FORMATS)) "Unsupported file format."
+        @assert isfile(source) "File does not exist."
+        @assert any(endswith.(lowercase(source), SUPPORTED_FORMATS)) "Unsupported file format."
 
-        data, sr = py"load_audio"(file, validate_sr(sr))
+        data, sr = py"load_audio"(source, validate_sr(sr))
     else
-        data = file
+        data = source
         if !isa(data, Vector{Float64})
             @warn "Converting audio to Float64."
             data = Float64.(data)
