@@ -43,7 +43,7 @@ end
 function _get_f0(;
 	x::AbstractArray{Float64},
 	sr::Int64,
-	win_length::Int64,
+	nwin::Int64,
 	method::Symbol = :nfc,
 	freqrange::Tuple{Int64, Int64} = (50, 400),
 	mflength::Int64 = 1,
@@ -52,7 +52,7 @@ function _get_f0(;
 		edge = (round.(Int, sr ./ reverse(freqrange)))
 		r = size(x, 1)
 		mxl = min(edge[2], r - 1)
-		m2 = nextpow(2, 2 * win_length - 1)
+		m2 = nextpow(2, 2 * nwin - 1)
 		y_m2 = zeros(m2, size(x, 2))
 		for i in axes(x, 1)
 			y_m2[i, :] = x[i, :]
@@ -111,5 +111,5 @@ function get_f0(;
 	source::Stft,
 	kwargs...
 )
-	_get_f0(; x=source.data.frames, sr=source.sr, win_length=source.setup.win_length, kwargs...)
+	_get_f0(; x=source.data.frames, sr=source.sr, nwin=source.setup.nwin, kwargs...)
 end

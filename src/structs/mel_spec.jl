@@ -23,12 +23,12 @@ function _get_melspec(;
         fbank::AbstractArray{Float64},
         x_length::Int64,
         win_length::Int64,
-        overlap_length::Int64,
+        noverlap::Int64,
         freq::AbstractVector{Float64},
         nbands::Int64,
         dbscale::Bool = false
 )
-    hop_length = win_length - overlap_length
+    hop_length = win_length - noverlap
     num_hops = floor(Int, (x_length - win_length) / hop_length) + 1
 
     # apply filterbank
@@ -64,8 +64,8 @@ function get_melspec(; source::Stft, fbank::MelFb, kwargs...)
         sr=source.sr,
         fbank=fbank.data.fbank,
         x_length=source.x_length,
-        win_length=source.setup.winlength, 
-        overlap_length=source.setup.overlaplength,
+        win_length=source.setup.nwin, 
+        noverlap=source.setup.noverlap,
         freq=fbank.data.freq,
         nbands=fbank.setup.nbands,
         kwargs...)

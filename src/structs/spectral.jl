@@ -1,3 +1,42 @@
+"""
+Spectral Centroid:
+The spectral centroid represents the "center of gravity" of the spectrum. 
+It is used as an indication of brightness and is commonly used in music analysis and genre classification. 
+For example, observe the jumps in the centroid corresponding to high hat hits in the audio file.
+
+Spectral Entropy:
+Spectral entropy quantifies the uncertainty or randomness in the spectral distribution.
+It has been used successfully in voiced/unvoiced decisions for automatic speech recognition. 
+Because entropy is a measure of disorder, regions of voiced speech have lower entropy compared to regions of unvoiced speech.
+
+Spectral Flatness:
+Spectral flatness measures the balance between tonal and noisy components in the speech signal. 
+It indicates the presence of harmonic or noisy characteristics.
+
+Spectral Kurtosis:
+Spectral kurtosis indicates the “tailedness” of the spectrum. 
+It offers insights into the presence of abrupt spectral changes and harmonic components in speech.
+
+Spectral Roll-Off:
+Spectral roll-off frequency is the point below which a certain percentage of the total spectral energy lies. 
+It helps distinguish between voiced and unvoiced speech sounds.
+
+Spectral Slope:
+Spectral slope measures the rate of change in the spectral distribution.
+It has been used extensively in speech analysis, particularly in modeling speaker stress.
+The slope is directly related to the resonant characteristics of the vocal folds and has also been applied to speaker identification. 
+it is a socially important aspect of timbre. 
+Spectral slope discrimination has been shown to occur in early childhood development. 
+It is most pronounced when the energy in the lower formants is much greater than the energy in the higher formants.
+
+Spectral Spread:
+Spectral spread characterizes the width or bandwidth of the frequency distribution in the spectrum. 
+It indicates the extent of frequency variations present in the speech signal.
+
+Spectral Skewness:
+Spectral skewness measures the asymmetry of the frequency distribution. 
+It reveals whether the speech sound is dominated by higher or lower frequencies.
+"""
 # ---------------------------------------------------------------------------- #
 #                             spectral features                                #
 # ---------------------------------------------------------------------------- #

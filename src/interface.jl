@@ -1,119 +1,59 @@
-"""
-list of parameters used
-# --- audio ------------------------------------------------------------------ #
-sr,
-norm = false
-# --- stft ------------------------------------------------------------------- #
-nfft	= sr !== nothing ? (sr <= 8000 ? 256 : 512) : 512,
-win_type = (:hann, :periodic),
-win_length = nfft,
-overlap_length = round(Int, nfft / 2),
-stft_norm = :power, # :none, :power, :magnitude, :pow2mag
-"""
-
 # ---------------------------------------------------------------------------- #
 #                                 parameters                                   #
 # ---------------------------------------------------------------------------- #
-setup(; kwargs...) = NamedTuple(collect(kwargs))
+const AUDIO_PARAMS = Dict(:sr => :sr, :audio_norm => :norm)
+const STFT_PARAMS = Dict(:nfft => :nfft, :fft_wintype => :wintype, :fft_nwin => :nwin, :fft_noverlap => :noverlap, :fft_norm => :norm)
+const LIN_PARAMS = Dict(:lin_freqrange => :freqrange, :lin_dbscale => :dbscale)
+const MEL_PARAMS = Dict(:mel_nbands => :nbands, :mel_scale => :scale, :mel_norm => :norm, :mel_freqrange => :freqrange, :mel_semitonerange => :semitonerange)
+const MELSPEC_PARAMS = Dict(:mel_dbscale => :dbscale)
+const MFCC_PARAMS = Dict(:mfcc_ncoeffs => :ncoeffs, :mfcc_rect => :rect, :mfcc_dither => :dither)
+const DELTA_PARAMS = Dict(:delta_length => :dlength, :delta_transpose => :transpose)
+const F0_PARAMS = Dict(:f0_method => :method, :f0_freqrange => :freqrange, :f0_mflength => :mflength)
+const SPEC_PARAMS = Dict(:spec_freqrange => :freqrange)
+const CWT_PARAMS = Dict(:cwt_wavelet => :wavelet, :cwt_morseparams => :morseparams, :cwt_vpo => :vpo, :cwt_freqrange => :freqrange)
+const CWTSPEC_PARAMS = Dict(:cwt_norm => :norm, :cwt_dbscale => :dbscale)
 
-f_prefix = "get_"
-f_list = [:stft, :lin, :melfb, :mel, :mfcc, :deltas, :spec, :f0, :cwtfb, :cwt,]
-
-# default_pipelines = Dict{Symbol,Vector{Symbol}}(
-#     :stft -> [], 
-#     :lin -> [:stft], 
-#     :melfb -> [:stft], 
-#     :mel -> [:stft, :melfb], 
-#     :mfcc -> [:mel], 
-#     :deltas -> [:stft, :melfb, :mel, :mfcc], 
-#     :spec -> [:stft], 
-#     :f0 -> [:stft], 
-#     :cwtfb -> [], 
-#     :cwt -> [:cwtfb]
-# )
-
-function audio911features(audio::Audio, feats::Union{Symbol, Tuple}, setup_params::NamedTuple)
-
-end
-
-function audio911features(
-        file::Union{AbstractString, AbstractVector{<:AbstractFloat}}, feats::Union{Symbol, Tuple}, setup_params::NamedTuple)
-    if !isnothing(setup_params)
-        sr, norm = get(setup_params, :sr, nothing), get(setup_params, :norm_audio, false)
-    else
-        sr, norm = nothing, false
-    end
-    audio911features(load_audio(; file = file, sr = sr, norm = norm), feats, setup_params)
-end
-
-audio911features(file::Union{AbstractString, AbstractVector{<:AbstractFloat}}, setup_params::NamedTuple, feats::Union{Symbol, Tuple}) = audio911features(file, feats, setup_params)
-
-audio911features(file::Union{AbstractString, AbstractVector{<:AbstractFloat}}, feats::Union{Symbol, Tuple}) = audio911features(file, feats, NamedTuple())
-audio911features(file::Union{AbstractString, AbstractVector{<:AbstractFloat}}, setup_params::NamedTuple) = audio911features(file, (), setup_params)
-
-audio911features(file::Union{AbstractString, AbstractVector{<:AbstractFloat}}) = audio911features(file, (), NamedTuple())
-
-####################################################################################################################
-####################################################################################################################
-####################################################################################################################
-
+# ---------------------------------------------------------------------------- #
+#                                  Audio911                                    #
+# ---------------------------------------------------------------------------- #
 function afe(x::Union{String, AbstractVector{Float64}}; kwargs...)
-    p_mapping = Dict(:sr => :sr, :audio_norm => :norm)
-    p_kwargs = Dict(p_mapping[k] => v for (k, v) in kwargs if k in keys(p_mapping))
-    audio = load_audio(; source=x, p_kwargs...)
+    aparams = (AUDIO_PARAMS[k] => v for (k, v) in kwargs if k in keys(AUDIO_PARAMS))
+    if isa(x, String)
+        audio = load_audio(; source=x, aparams...)
+    else
+        audio =Audio(x, kwargs[:sr])
+    end
 
-    featset = get(kwargs, :featset, ()) |> x -> x isa Symbol ? (x,) : x
+    featset = get(kwargs, :featset, ()) |> x -> isa(x, Symbol) ? (x,) : x
 
-    p_mapping = Dict(:nfft => :nfft, :fft_wintype => :wintype, :fft_winlength => :winlength, :fft_overlaplength => :overlaplength, :fft_norm => :norm)
-    p_kwargs = Dict(p_mapping[k] => v for (k, v) in kwargs if k in keys(p_mapping))
-    stftspec = get_stft(; source=audio, p_kwargs...)
+    stftspec = get_stft(audio; (STFT_PARAMS[k] => v for (k, v) in kwargs if k in keys(STFT_PARAMS))...)
 
     :lin in featset && begin
-        p_mapping = Dict(:lin_freqrange => :freqrange, :lin_dbscale => :dbscale)
-        p_kwargs = Dict(p_mapping[k] => v for (k, v) in kwargs if k in keys(p_mapping))
-        linspec = get_linspec(; source=stftspec, p_kwargs...)
+        linspec = get_linspec(; source=stftspec, (LIN_PARAMS[k] => v for (k, v) in kwargs if k in keys(LIN_PARAMS))...)
     end
 
-    p_mapping = Dict(:mel_nbands => :nbands, :mel_scale => :scale, :mel_norm => :norm, :mel_freqrange => :freqrange, :mel_semitonerange => :semitonerange)
-    p_kwargs = Dict(p_mapping[k] => v for (k, v) in kwargs if k in keys(p_mapping))
-    melfb = get_melfb(; source=stftspec, p_kwargs...)
+    melfb = get_melfb(; source=stftspec, (MEL_PARAMS[k] => v for (k, v) in kwargs if k in keys(MEL_PARAMS))...)
 
     :get_only_freqs in featset && return melfb.data.freq
 
-    p_mapping = Dict(:mel_dbscale => :dbscale)
-    p_kwargs = Dict(p_mapping[k] => v for (k, v) in kwargs if k in keys(p_mapping))
-    melspec = get_melspec(; source=stftspec, fbank=melfb, p_kwargs...)
+    melspec = get_melspec(; source=stftspec, fbank=melfb, (MELSPEC_PARAMS[k] => v for (k, v) in kwargs if k in keys(MELSPEC_PARAMS))...)
 
     :mfcc in featset && begin
-        p_mapping = Dict(:mfcc_ncoeffs => :ncoeffs, :mfcc_rect => :rect, :mfcc_dither => :dither)
-        p_kwargs = Dict(p_mapping[k] => v for (k, v) in kwargs if k in keys(p_mapping))
-        mfcc = get_mfcc(; source=melspec, p_kwargs...)
-
+        mfcc = get_mfcc(; source=melspec, (MFCC_PARAMS[k] => v for (k, v) in kwargs if k in keys(MFCC_PARAMS))...)
         :deltas in featset && begin
-            p_mapping = Dict(:delta_length => :dlength, :delta_transpose => :transpose)
-            p_kwargs = Dict(p_mapping[k] => v for (k, v) in kwargs if k in keys(p_mapping))
-            deltas = get_deltas(; source=mfcc, p_kwargs...)
+            deltas = get_deltas(; source=mfcc, (DELTA_PARAMS[k] => v for (k, v) in kwargs if k in keys(DELTA_PARAMS))...)
         end
     end
 
     :f0 in featset && begin
-        p_mapping = Dict(:f0_method => :method, :f0_freqrange => :freqrange, :f0_mflength => :mflength)
-        p_kwargs = Dict(p_mapping[k] => v for (k, v) in kwargs if k in keys(p_mapping))
-        f0 = get_f0(; source=stftspec, p_kwargs...)
+        f0 = get_f0(; source=stftspec, (F0_PARAMS[k] => v for (k, v) in kwargs if k in keys(F0_PARAMS))...)
     end
 
-    p_mapping = Dict(:f0_method => :method, :f0_freqrange => :freqrange, :f0_mflength => :mflength)
-    p_kwargs = Dict(p_mapping[k] => v for (k, v) in kwargs if k in keys(p_mapping))
-    spect = get_spectrals(; source=stftspec, p_kwargs...)
+    spect = get_spectrals(; source=stftspec, (SPEC_PARAMS[k] => v for (k, v) in kwargs if k in keys(SPEC_PARAMS))...)
 
     :cwt in featset && begin
-        p_mapping = Dict(:cwt_wavelet => :wavelet, :cwt_morseparams => :morseparams, :cwt_vpo => :vpo, :cwt_freqrange => :freqrange)
-        p_kwargs = Dict(p_mapping[k] => v for (k, v) in kwargs if k in keys(p_mapping))
-        cwtfb = get_cwtfb(; source=audio, p_kwargs...)
-
-        p_mapping = Dict(:cwt_norm => :norm, :cwt_dbscale => :dbscale)
-        p_kwargs = Dict(p_mapping[k] => v for (k, v) in kwargs if k in keys(p_mapping))
-        cwtspec = get_cwt(; source=audio, fbank=cwtfb, p_kwargs...)
+        cwtfb = get_cwtfb(; source=audio, (CWT_PARAMS[k] => v for (k, v) in kwargs if k in keys(CWT_PARAMS))...)
+        cwtspec = get_cwt(; source=audio, fbank=cwtfb, (CWTSPEC_PARAMS[k] => v for (k, v) in kwargs if k in keys(CWTSPEC_PARAMS))...)
     end
 
     hcat(
@@ -136,4 +76,13 @@ function afe(x::Union{String, AbstractVector{Float64}}; kwargs...)
             spect.data.spread
         ])...
     )  
+end
+
+function mfcc(audio::Audio; kwargs...)
+    stftspec = get_stft(; source=audio, (STFT_PARAMS[k] => v for (k, v) in kwargs if k in keys(STFT_PARAMS))...)
+    melfb = get_melfb(; source=stftspec, (MEL_PARAMS[k] => v for (k, v) in kwargs if k in keys(MEL_PARAMS))...)
+    melspec = get_melspec(; source=stftspec, fbank=melfb, (MELSPEC_PARAMS[k] => v for (k, v) in kwargs if k in keys(MELSPEC_PARAMS))...)
+    mfcc = get_mfcc(; source=melspec, (MFCC_PARAMS[k] => v for (k, v) in kwargs if k in keys(MFCC_PARAMS))...)
+
+    mfcc.data.spec'
 end

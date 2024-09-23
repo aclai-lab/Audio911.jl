@@ -173,10 +173,8 @@ function _get_melfb(;
         apply_sosfilt = (i) -> abs.(sosfilt(coeffs[:, :, i], nfft))
 
         filterbank = hcat(map(apply_sosfilt, 1:nbands)...)'
-        # Derive Gammatone filter bandwidths as a function of center frequencies
         bw = 1.019 * 24.7 * (0.00437 * filter_freq .+ 1)
 
-        # normalization
         (norm != :none) && normalize!(filterbank, norm, bw)
 
         rem(nfft, 2) == 0 ? filterbank[:, 2:(nfft ÷ 2)] .*= 2 : filterbank[:, 2:(nfft ÷ 2 + 1)] .*= 2

@@ -4,6 +4,7 @@ import Base: show
 import Plots: plot
 
 using FFTW, DSP
+using Base.Threads
 using LinearAlgebra
 using SpecialFunctions
 using StatsBase
@@ -12,7 +13,6 @@ using NaNStatistics
 using Polynomials
 using Plots
 using SparseArrays, StaticArrays
-using Unitful: Time, ms, s, kHz, ustrip, @u_str
 
 using PyCall
 
@@ -33,7 +33,6 @@ end
 include("structs/audio.jl")
 export Audio, load_audio, save_audio
 
-include("windowing/windowing.jl")
 include("windowing/windows.jl")
 include("structs/stft.jl")
 export Stft, get_stft
@@ -68,6 +67,10 @@ include("utils/speech_detector.jl")
 export speech_detector
 
 include("interface.jl")
-export audio911features, path, setup, plot, afe
+export audio911features, path, setup, plot
+export afe, mfcc
+
+# DEBUG!
+export _get_frames
 
 end
