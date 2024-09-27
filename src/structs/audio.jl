@@ -62,6 +62,6 @@ function load_audio(;
     Audio(validate_data(data), validate_sr(sr))
 end
 
-function save_audio(; audio::Audio, file::AbstractString)
+function save_audio(audio::Audio, file::AbstractString)
     py"save_audio"(file, audio.data, audio.sr)
 end

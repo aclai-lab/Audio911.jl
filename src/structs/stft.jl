@@ -3,17 +3,17 @@
 # ---------------------------------------------------------------------------- #
 struct StftSetup
     nfft::Int
-    wintype::Tuple{Symbol, Symbol}
     nwin::Int
     noverlap::Int
+    wintype::Tuple{Symbol, Symbol}
     norm::Symbol 
 end
 
-struct StftData
-    spec::AbstractArray{<:AbstractFloat}
-    freq::StepRangeLen{<:AbstractFloat}
-    win::AbstractVector{<:AbstractFloat}
-    frames::AbstractArray{<:AbstractFloat}
+struct StftData{T<:AbstractFloat}
+    spec::AbstractArray{T}
+    freq::StepRangeLen{T}
+    win::AbstractVector{T}
+    frames::Base.Generator
 end
 
 struct Stft
@@ -23,59 +23,71 @@ struct Stft
     data::StftData
 end
 
-const NORM_FUNCS = Dict(:power => x -> (@. real((x * conj(x)))), :magnitude => x -> (@. abs(x)))
+global const NORM_FUNCS = Dict{Symbol, Function}(
+    :power => (x, y) -> (@. real(x * conj(x))),
+    :magnitude => (x, y) -> (@. abs(x)),
+    :winpower => (x, y) -> real.(x .* conj(x)) ./ (0.5 * sum(y)^2),
+    :winmagnitude => (x, y) -> abs.(x) ./ (0.5 * sum(y))
+)
 
-function _get_stft(
+@kwdef struct WindowFunctions
+    hann::Function = x -> 0.5 * (1 + cospi(2x))
+    hamming::Function = x -> 0.54 - 0.46 * cospi(2x)
+    rect::Function = x -> 1.0
+end
+
+function _get_window(wintype::Symbol, nwin::Int, winperiod::Bool)
+    nwin == 1 && return [1.0]
+    winfunc = getproperty(WindowFunctions(), wintype)
+    winperiod && return collect(winfunc(x) for x in range(-0.5, stop=0.5, length=nwin+1)[1:end-1])
+    collect(winfunc(x) for x in range(-0.5, stop=0.5, length=nwin))
+end
+
+function _get_frames(x::AbstractVector{<:AbstractFloat}, nwin::Int, noverlap::Int)
+    nhop = nwin - noverlap
+    nhops = div(length(x) - nwin, nhop) + 1
+    @views (view(x, i:i+nwin-1) for i in 1:nhop:(nhops-1)*nhop+1)
+end
+
+_get_wframes(frames::Base.Generator, win::AbstractVector{<:AbstractFloat}) = @inbounds collect(i .* win for i in frames)
+
+@inline function _get_stft(
     x::AbstractVector{T},
     sr::Int;
-    nfft::Union{Int, AbstractFloat, Nothing} = nothing,
-    nwin::Union{Int, AbstractFloat, Nothing} = nothing,
-    noverlap::Union{Int, AbstractFloat, Nothing} = nothing,
+    nfft::Int = prevpow(2, sr ÷ 30),
+    nwin::Int = nfft,
+    noverlap::Int = round(Int, nwin * 0.5),
     wintype::Tuple{Symbol, Symbol} = (:hann, :periodic),
     norm::Symbol = :power, # :none, :power, :magnitude
+    halve::Bool = true,
 ) where T<:AbstractFloat
-    typeof(nfft) <: AbstractFloat && begin nfft = round(Int, nfft * sr) end
-    typeof(nwin) <: AbstractFloat && begin nwin = round(Int, nwin * sr) end
-    typeof(noverlap) <: AbstractFloat && begin noverlap = round(Int, noverlap * sr) end
+    (0 ≤ noverlap ≤ nwin) || throw(DomainError((; noverlap, nwin), "Overlap length must be smaller than nwin: $nwin."))
+    nfft >= nwin || throw(DomainError((; nfft, nwin), "nfft must be >= nwin"))
+    haskey(NORM_FUNCS, norm) || throw(ArgumentError("Unknown spectrum_type: $norm."))
 
-    # apply default parameters if not provided
-    nfft = nfft !== nothing ? nfft : sr !== nothing ? (sr <= 8000 ? 256 : 512) : 512
-    nwin = nwin !== nothing ? nwin : nfft
-    noverlap = noverlap !== nothing ? noverlap : round(Int, nwin * 0.5)
+    win = _get_window(wintype[1], nwin, wintype[2] == :periodic ? true : false)
+    frames = _get_frames(x, nwin, noverlap)
+    wframes = _get_wframes(frames, win)
 
-    @assert noverlap < nwin "Overlap length must be smaller than nwin: $nwin."
-    @assert nwin ≤ nfft "FFT window size smaller than actual window size is highly discuraged."
-    @assert haskey(NORM_FUNCS, norm) "Unknown spectrum_type: $norm."
-
-    frames, win = _get_frames(x, wintype, nwin, noverlap)    
-    wframes = nwin < nfft ? vcat(frames, zeros(Float64, nfft - nwin, size(frames, 2))) .* win : frames .* win
-
-    nout = (nfft >> 1)+1
-    spec = zeros(T, nout, size(wframes, 2))
-    tmp = Vector{ComplexF64}(undef, nout)
+    nwin < nfft && (wframes = [vcat(wframe, zeros(Float64, nfft - nwin)) for wframe in wframes])
 
     plan = plan_rfft(1:nfft)
-    offset = 0
+    spec = NORM_FUNCS[norm](combinedims(collect(plan * wframe for wframe in wframes)), win)
+    halve && @views spec[[1, end], :] .*= 0.5 
 
-    @inbounds @simd for i in eachcol(wframes)
-        mul!(tmp, plan, i)
-        copyto!(spec, offset+1, NORM_FUNCS[norm](tmp), 1, nout)
-        offset += nout
-    end
-    
-    freq = sr / nfft * (StepRangeLen(1:nout) .- 1)
+    freq = range(0, stop = sr/2, length = size(spec, 1))
 
-    Stft(sr, size(x, 1), StftSetup(nfft, wintype, nwin, noverlap, norm), StftData(spec, freq, win, frames))
+    Stft(sr, size(x, 1), StftSetup(nfft, nwin, noverlap, wintype, norm), StftData(spec, freq, win, frames))
 end
 
 function Base.show(io::IO, stft::Stft)
     print(io, "Stft(")
+    print(io, "spec=$(size(stft.data.spec)), ")
     print(io, "nfft=$(stft.setup.nfft), ")
-    print(io, "win_type=$(stft.setup.wintype), ")
-    print(io, "win_length=$(stft.setup.nwin), ")
-    print(io, "overlap_length=$(stft.setup.noverlap), ")
-    print(io, "norm=:$(stft.setup.norm), ")
-    print(io, "spec=$(size(stft.data.spec)))")
+    print(io, "nwin=$(stft.setup.nwin), ")
+    print(io, "noverlap=$(stft.setup.noverlap), ")
+    print(io, "wintype=$(stft.setup.wintype), ")
+    print(io, "norm=:$(stft.setup.norm))")
 end
 
 function Plots.plot(stft::Stft)
