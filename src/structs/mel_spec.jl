@@ -2,32 +2,32 @@
 #                               mel spectrogram                                #
 # ---------------------------------------------------------------------------- #
 struct MelSpecSetup
-    nbands::Int64
+    nbands::Int
     dbscale::Bool
 end
 
-struct MelSpecData
-    spec::AbstractArray{<:AbstractFloat}
-    freq::AbstractVector{<:AbstractFloat}
+struct MelSpecData{T<:AbstractFloat}
+    spec::AbstractArray{T}
+    freq::AbstractVector{T}
 end
 
 struct MelSpec
-    sr::Int64
+    sr::Int
     setup::MelSpecSetup
     data::MelSpecData
 end
 
-function _get_melspec(;
-        x::AbstractArray{Float64},
-        sr::Int64,
-        fbank::AbstractArray{Float64},
-        x_length::Int64,
-        win_length::Int64,
-        noverlap::Int64,
-        freq::AbstractVector{Float64},
-        nbands::Int64,
+function _get_melspec(
+        x::AbstractArray{T},
+        sr::Int;
+        fbank::AbstractArray{T},
+        x_length::Int,
+        win_length::Int,
+        noverlap::Int,
+        freq::AbstractVector{T},
+        nbands::Int,
         dbscale::Bool = false
-)
+) where T <: AbstractFloat
     hop_length = win_length - noverlap
     num_hops = floor(Int, (x_length - win_length) / hop_length) + 1
 
@@ -58,10 +58,10 @@ function Base.display(mel_spec::MelSpec)
     )
 end
 
-function get_melspec(; source::Stft, fbank::MelFb, kwargs...)
-    _get_melspec(;
-        x=source.data.spec,
-        sr=source.sr,
+function get_melspec(source::Stft; fbank::MelFb, kwargs...)
+    _get_melspec(
+        source.data.spec,
+        source.sr;
         fbank=fbank.data.fbank,
         x_length=source.x_length,
         win_length=source.setup.nwin, 

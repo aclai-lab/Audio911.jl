@@ -3,8 +3,8 @@
 # ---------------------------------------------------------------------------- #
 struct F0Setup
 	method::Symbol
-	freqrange::Tuple{Int64, Int64}
-	mflength::Int64
+	freqrange::Tuple{Int, Int}
+	mflength::Int
 end
 
 struct F0Data
@@ -12,7 +12,7 @@ struct F0Data
 end
 
 struct F0
-    sr::Int64
+    sr::Int
     setup::F0Setup
     data::F0Data
 end
@@ -20,7 +20,7 @@ end
 # ---------------------------------------------------------------------------- #
 #                                    utilities                                 #
 # ---------------------------------------------------------------------------- #
-function get_candidates(domain::AbstractArray{Float64}, edge::Tuple{Int64, Int64})
+function get_candidates(domain::AbstractArray{<:AbstractFloat}, edge::Tuple{Int, Int})
 	range = collect(edge[1]:edge[end])
 	lower = edge[1]
 
@@ -30,7 +30,7 @@ function get_candidates(domain::AbstractArray{Float64}, edge::Tuple{Int64, Int64
 	return peaks, locs
 end
 
-function i_clip(x::AbstractVector{Float64}, range::Tuple{Int64, Int64})
+function i_clip(x::AbstractVector{<:AbstractFloat}, range::Tuple{Int, Int})
 	x[x.<range[1]] .= range[1]
 	x[x.>range[2]] .= range[2]
 
@@ -40,13 +40,13 @@ end
 # ---------------------------------------------------------------------------- #
 #                             fundamental frequency                            #
 # ---------------------------------------------------------------------------- #
-function _get_f0(;
-	x::AbstractArray{Float64},
-	sr::Int64,
-	nwin::Int64,
+function _get_f0(
+	x::AbstractArray{<:AbstractFloat},
+	sr::Int;
+	nwin::Int,
 	method::Symbol = :nfc,
-	freqrange::Tuple{Int64, Int64} = (50, 400),
-	mflength::Int64 = 1,
+	freqrange::Tuple{Int, Int} = (50, 400),
+	mflength::Int = 1,
 )
 	if method == :nfc
 		edge = (round.(Int, sr ./ reverse(freqrange)))
@@ -107,9 +107,4 @@ function Base.display(f0::F0)
          legend=:none)
 end
 
-function get_f0(;
-	source::Stft,
-	kwargs...
-)
-	_get_f0(; x=source.data.frames, sr=source.sr, nwin=source.setup.nwin, kwargs...)
-end
+get_f0(source::Stft; kwargs...) = _get_f0(combinedims(collect(source.data.frames)), source.sr; nwin=source.setup.nwin, kwargs...)

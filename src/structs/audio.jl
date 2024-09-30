@@ -15,9 +15,9 @@ function Plots.plot(audio::Audio; kwargs...)
     plot(t, audio.data; xlabel="Time (s)", ylabel="Amplitude", title="Audio Waveform", legend=false, kwargs...)
 end
 
-function load_audio(;
+function load_audio(
         source::Union{AbstractString, AbstractVector{<:AbstractFloat}},
-        sr::Union{Nothing, Int} = nothing,
+        sr::Union{Nothing, Int} = nothing;
         norm::Bool = false
 )
     # check if stereo2mono is needed, TODO check

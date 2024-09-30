@@ -2,22 +2,22 @@
 #                                    deltas                                    #
 # ---------------------------------------------------------------------------- #
 struct DeltasSetup
-    dlength::Int64
+    dlength::Int
     transpose::Bool
 end
 
-struct DeltasData
-    dspec::AbstractArray{<:AbstractFloat}
-    ddspec::AbstractArray{<:AbstractFloat}
+struct DeltasData{T<:AbstractFloat}
+    dspec::AbstractArray{T}
+    ddspec::AbstractArray{T}
 end
 
 struct Deltas
-    sr::Int64
+    sr::Int
     setup::DeltasSetup
     data::DeltasData
 end
 
-function audiodelta(x::AbstractArray{Float64}, dlength::Int64, transpose::Bool)
+function audiodelta(x::AbstractArray{<:AbstractFloat}, dlength::Int, transpose::Bool)
     # define window shape
     m = floor(Int, dlength / 2)
     b = collect(m:-1:(-m)) ./ sum((1:m) .^ 2)
@@ -25,10 +25,10 @@ function audiodelta(x::AbstractArray{Float64}, dlength::Int64, transpose::Bool)
     transpose ? filt(b, 1.0, x')' : filt(b, 1.0, x)
 end
 
-function _get_deltas(; 
-    source::AbstractArray{Float64}, 
-    sr::Int64, 
-    dlength::Int64 = 9, 
+function _get_deltas(
+    source::AbstractArray{<:AbstractFloat}, 
+    sr::Int;
+    dlength::Int = 9, 
     transpose::Bool = false
 )
     delta = audiodelta(source, dlength, transpose)
@@ -65,6 +65,6 @@ function Base.display(deltas::Deltas)
     display(current())
 end
 
-function get_deltas(; source::Mfcc, kwargs...)
-     _get_deltas(; source=source.data.spec, sr=source.sr, kwargs...)
+function get_deltas(source::Mfcc; kwargs...)
+     _get_deltas(source.data.spec, source.sr; kwargs...)
 end

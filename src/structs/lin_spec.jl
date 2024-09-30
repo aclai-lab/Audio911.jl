@@ -2,17 +2,17 @@
 #                            linear spectrogram                                #
 # ---------------------------------------------------------------------------- #
 struct LinSpecSetup
-    freqrange::Tuple{Int64, Int64}
+    freqrange::Tuple{Int, Int}
     dbscale::Bool
 end
 
-struct LinSpecData
-    spec::AbstractArray{<:AbstractFloat}
-    freq::AbstractVector{<:AbstractFloat}
+struct LinSpecData{T<:AbstractFloat}
+    spec::AbstractArray{<:T}
+    freq::AbstractVector{<:T}
 end
 
 struct LinSpec
-    sr::Int64
+    sr::Int
     setup::LinSpecSetup
     data::LinSpecData
 end
@@ -20,13 +20,13 @@ end
 # helper function to avoid log of zero
 no_zero = x -> x == 0 ? floatmin(Float64) : x
 
-function _get_lin_spec(;
-    x::AbstractArray{Float64},
-    sr::Int64,
-    xfreq::AbstractVector{Float64},
-    freqrange::Tuple{Int64, Int64} = (0, round(Int, sr / 2)),
+function _get_lin_spec(
+    x::AbstractArray{T},
+    sr::Int;
+    xfreq::AbstractVector{T},
+    freqrange::Tuple{Int, Int} = (0, round(Int, sr / 2)),
 	dbscale::Bool = false,
-)
+) where {T<:AbstractFloat}
     # trim to desired frequency range
     x_range = findall(freqrange[1] .<= xfreq .<= freqrange[2])
     spec, freq = x[x_range, :], xfreq[x_range]
@@ -60,11 +60,11 @@ function Base.display(lspec::LinSpec)
     )
 end
 
-function get_linspec(; source = nothing, kwargs...)
+function get_linspec(source = nothing; kwargs...)
     if source isa Stft
-        _get_lin_spec(; x=source.data.spec, sr=source.sr, xfreq=source.data.freq, kwargs...)
+        _get_lin_spec(source.data.spec, source.sr; xfreq=source.data.freq, kwargs...)
     elseif source isa Cwt
-        _get_lin_spec(x=source.data.spec, sr=source.sr, xfreq=source.data.freq, kwargs...)
+        _get_lin_spec(source.data.spec, source.sr; xfreq=source.data.freq, kwargs...)
         ### BROKEN >>> lspec=LinSpec(;source.sr, freq_range=round.(Int, extrema(source.freq)), kwargs...))
     else
         error("Unsupported type for spec: typeof(source) = $(typeof(source))")

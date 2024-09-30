@@ -68,8 +68,8 @@ include("utils/speech_detector.jl")
 export speech_detector
 
 include("interface.jl")
-export audio911features, path, setup, plot
-export afe, mfcc
+export plot
+export audio_features
 
 # DEBUG!
 export _get_frames

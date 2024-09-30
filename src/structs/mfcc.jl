@@ -2,7 +2,7 @@
 #                                     mfcc                                     #
 # ---------------------------------------------------------------------------- #
 struct MfccSetup
-    ncoeffs::Int64
+    ncoeffs::Int
 	rectification::Symbol
 	dither::Bool
 end
@@ -12,12 +12,12 @@ struct MfccData
 end
 
 struct Mfcc
-    sr::Int64
+    sr::Int
     setup::MfccSetup
     data::MfccData
 end
 
-function create_DCT_matrix(mel_coeffs::Int64)
+function create_DCT_matrix(mel_coeffs::Int)
     # create DCT matrix
     matrix = zeros(Float64, mel_coeffs, mel_coeffs)
     s0 = sqrt(1 / mel_coeffs)
@@ -32,11 +32,11 @@ function create_DCT_matrix(mel_coeffs::Int64)
     matrix
 end
 
-function _get_mfcc(;
-    spec::AbstractArray{Float64},
-    sr::Int64,
-    nbands::Int64,
-    ncoeffs::Int64 = round(Int, nbands / 2),
+function _get_mfcc(
+    spec::AbstractArray{<:AbstractFloat},
+    sr::Int;
+    nbands::Int,
+    ncoeffs::Int = round(Int, nbands / 2),
     rect::Symbol = :log, # :log, :cubic_root
     dither::Bool = false,
 )
@@ -76,12 +76,10 @@ function Base.display(mfcc::Mfcc)
     )
 end
 
-function get_mfcc(;source = nothing, kwargs...)
+function get_mfcc(source::Union{MelSpec, Cwt, Nothing}=nothing; kwargs...)
     if source isa MelSpec
-        _get_mfcc(; spec=source.data.spec, sr=source.sr, nbands=source.setup.nbands, kwargs...)
+        _get_mfcc(source.data.spec, source.sr; nbands=source.setup.nbands, kwargs...)
     elseif source isa Cwt
-        _get_mfcc(; spec=source.data.spec, sr=source.sr, nbands=length(source.setup.freq), kwargs...)
-    else
-        error("Unsupported type for spec: typeof(source) = $(typeof(source))")
+        _get_mfcc(source.data.spec, source.sr; nbands=length(source.setup.freq), kwargs...)
     end
 end

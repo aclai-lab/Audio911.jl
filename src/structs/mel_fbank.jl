@@ -9,9 +9,9 @@ struct MelFbSetup
     semitonerange::Tuple{Int, Int}
 end
 
-struct MelFbData
-    fbank::AbstractArray{<:AbstractFloat}
-	freq::AbstractVector{<:AbstractFloat}
+struct MelFbData{T<:AbstractFloat}
+    fbank::AbstractArray{T}
+	freq::AbstractVector{T}
 end
 
 struct MelFb
@@ -152,17 +152,17 @@ end
 # ---------------------------------------------------------------------------- #
 #                           design filterbank matrix                           #
 # ---------------------------------------------------------------------------- #
-function _get_melfb(;
-        sr::Int,
-        source::AbstractVector{<:AbstractFloat},
-        sfreq::StepRangeLen{<:AbstractFloat},
+function _get_melfb(
+        source::AbstractVector{<:T},
+        sr::Int;
+        sfreq::StepRangeLen{<:T},
         nfft::Int,
         nbands::Int = 26,
         scale::Symbol = :mel_htk, # :mel_htk, :mel_slaney, :erb, :bark, :semitones, :tuned_semitones
         norm::Symbol = :bandwidth,  # :bandwidth, :area, :none
         freqrange::Tuple{Int, Int} = (0, round(Int, sr / 2)),
         semitonerange::Tuple{Int, Int} = (200, 700),
-)
+) where T <: AbstractFloat
     if scale == :erb
         erb_range = hz2erb(freqrange)
         filter_freq = erb2hz(erb_range, nbands)
@@ -248,12 +248,4 @@ function Base.display(mel_fb::MelFb)
     display(p)
 end
 
-function get_melfb(; source::Stft, kwargs...)
-    _get_melfb(;
-        sr = source.sr, 
-        source = vec(sum(source.data.spec, dims=2)), 
-        sfreq = source.data.freq, 
-        nfft = source.setup.nfft, 
-        kwargs...
-    )
-end
+get_melfb(source::Stft; kwargs...) = _get_melfb(vec(sum(source.data.spec, dims=2)), source.sr; sfreq = source.data.freq, nfft = source.setup.nfft, kwargs...)
