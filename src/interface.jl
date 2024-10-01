@@ -28,11 +28,13 @@ function audio_features(audio::Audio; kwargs...)
         linspec = get_linspec(stftspec; (LIN_PARAMS[k] => v for (k, v) in kwargs if k in keys(LIN_PARAMS))...)
     end
 
-    melfb = get_melfb(stftspec; (MEL_PARAMS[k] => v for (k, v) in kwargs if k in keys(MEL_PARAMS))...)
+    (:mel in featset || :mfcc in featset || :get_only_freqs in featset) && begin
+        melfb = get_melfb(stftspec; (MEL_PARAMS[k] => v for (k, v) in kwargs if k in keys(MEL_PARAMS))...)
 
-    :get_only_freqs in featset && return melfb.data.freq
+        :get_only_freqs in featset && return melfb.data.freq
 
-    melspec = get_melspec(stftspec; fbank=melfb, (MELSPEC_PARAMS[k] => v for (k, v) in kwargs if k in keys(MELSPEC_PARAMS))...)
+        melspec = get_melspec(stftspec; fbank=melfb, (MELSPEC_PARAMS[k] => v for (k, v) in kwargs if k in keys(MELSPEC_PARAMS))...)
+    end
 
     :mfcc in featset && begin
         mfcc = get_mfcc(melspec; (MFCC_PARAMS[k] => v for (k, v) in kwargs if k in keys(MFCC_PARAMS))...)
@@ -57,7 +59,7 @@ function audio_features(audio::Audio; kwargs...)
     hcat(
     filter(!isnothing, [
         (:lin in featset ? linspec.data.spec' : nothing),
-        melspec.data.spec',
+        (:mel in featset ? melspec.data.spec' : nothing),
         (:mfcc in featset ? mfcc.data.spec' : nothing),
         (:deltas in featset ? hcat(deltas.data.dspec', deltas.data.ddspec') : nothing),
         (:f0 in featset ? f0.data.f0 : nothing),
