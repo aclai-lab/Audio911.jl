@@ -72,6 +72,6 @@ export plot
 export audio_features
 
 # DEBUG!
-export _get_frames
+export _get_frames, _get_stft, _get_window, _get_wframes, F0Setup, F0Data
 
 end

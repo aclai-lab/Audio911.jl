@@ -32,8 +32,9 @@ global const NORM_FUNCS = Dict{Symbol, Function}(
 
 @kwdef struct WindowFunctions
     hann::Function = x -> 0.5 * (1 + cospi(2x))
-    hamming::Function = x -> 0.54 - 0.46 * cospi(2x)
+    hamming::Function = x -> 0.54 - 0.46 * cospi(2(x+0.5))
     rect::Function = x -> 1.0
+    blackman::Function = x -> 0.42 + 0.08 * cospi(4x) + 0.5 * cospi(2x)
 end
 
 function _get_window(wintype::Symbol, nwin::Int, winperiod::Bool)
@@ -49,6 +50,7 @@ function _get_frames(x::AbstractVector{<:AbstractFloat}, nwin::Int, noverlap::In
     @views (view(x, i:i+nwin-1) for i in 1:nhop:(nhops-1)*nhop+1)
 end
 
+_get_wframes(frames::AbstractArray{<:AbstractFloat}, win::AbstractVector{<:AbstractFloat}) = @inbounds collect(i .* win for i in eachcol(frames))
 _get_wframes(frames::Base.Generator, win::AbstractVector{<:AbstractFloat}) = @inbounds collect(i .* win for i in frames)
 
 @inline function _get_stft(
@@ -58,7 +60,7 @@ _get_wframes(frames::Base.Generator, win::AbstractVector{<:AbstractFloat}) = @in
     nwin::Int = nfft,
     noverlap::Int = round(Int, nwin * 0.5),
     wintype::Tuple{Symbol, Symbol} = (:hann, :periodic),
-    norm::Symbol = :power, # :none, :power, :magnitude
+    norm::Symbol = :power, # :power, :magnitude
     halve::Bool = true,
 ) where T<:AbstractFloat
     (0 ≤ noverlap ≤ nwin) || throw(DomainError((; noverlap, nwin), "Overlap length must be smaller than nwin: $nwin."))

@@ -20,15 +20,13 @@ end
 # ---------------------------------------------------------------------------- #
 #                                    utilities                                 #
 # ---------------------------------------------------------------------------- #
-function get_candidates(domain::AbstractArray{<:AbstractFloat}, edge::Tuple{Int, Int})
-	range = collect(edge[1]:edge[end])
-	lower = edge[1]
-
-	peaks, locs = findmax(domain[range, :], dims = 1)
-	locs = lower .+ map(i -> i[1], locs) .- 1
-
-	return peaks, locs
+function get_candidates(domain::AbstractArray{T}, freqrange::NTuple{2,Int}) where T<:AbstractFloat
+    range = freqrange[1]:freqrange[2]
+    peaks, locs = findmax(view(domain, range, :), dims=1)
+	locs = freqrange[1] .+ map(i -> i[1], locs) .- 1
+    return vec(peaks), locs
 end
+
 
 function i_clip(x::AbstractVector{<:AbstractFloat}, range::Tuple{Int, Int})
 	x[x.<range[1]] .= range[1]
@@ -37,13 +35,36 @@ function i_clip(x::AbstractVector{<:AbstractFloat}, range::Tuple{Int, Int})
 	return x
 end
 
+function compute_residual(x::AbstractArray{T}, invrt::Vector{Vector{T}}, nwin::Int, nhop::Int, hops::Int) where T <: AbstractFloat
+    x_length = length(x)
+    
+	residual = zeros(T, x_length)
+    @inbounds for i in 1:hops
+        idx1 = 1 + nhop * (i - 1)
+        idx2 = min(nwin + nhop * (i - 1), x_length)
+        @views residual[idx1:idx2] .+= invrt[i][1:min(idx2-idx1+1, nwin)]
+    end
+
+	residual_buff = (let
+		idx1 = 1 + nhop * (hop - 1)
+		idx2 = min(nwin + nhop * (hop - 1), x_length)
+		temp = @view residual[idx1:idx2]
+		[temp; zeros(T, max(0, nwin - length(temp)))]
+	end for hop in 1:hops)
+
+	win = _get_window(:blackman, nwin, true)
+	_get_wframes(residual_buff, win)
+end
+
 # ---------------------------------------------------------------------------- #
 #                             fundamental frequency                            #
 # ---------------------------------------------------------------------------- #
 function _get_f0(
 	x::AbstractArray{<:AbstractFloat},
 	sr::Int;
+	x_length::Int,
 	nwin::Int,
+	noverlap::Int,
 	method::Symbol = :nfc,
 	freqrange::Tuple{Int, Int} = (50, 400),
 	mflength::Int = 1,
@@ -77,14 +98,42 @@ function _get_f0(
 		# convert lag domain to frequency
 		f0 = vec(sr ./ locs)
 
-		## TODO
-		# elseif f0.method == :srh
-		# elseif f0.method == :pef
-		# elseif f0.method == :cep
-		# elseif f0.method == :lhs
+	elseif method == :srh
+		nhop = nwin - noverlap
+		hops = ceil(Int, (x_length - nwin) / nhop)
 
-		F0(sr, F0Setup(method, freqrange, mflength), F0Data(f0))
+		order = 12
+		a = combinedims(collect(vcat(1.0, lpc(col, order-1, LPCLevinson())[1]) for col in eachcol(x)))'
+		invrt = collect(filt(row, [1.0], x[:, i]) for (i, row) in enumerate(eachrow(a)))
+
+		residual_buff = compute_residual(x, invrt, nwin, nhop, hops)
+
+		maxbin = 5 * freqrange[2]
+		residual_pad = (vcat(r, zeros(eltype(r), sr - nwin)) for r in residual_buff)
+		res = fft(combinedims(collect(residual_pad)), 1)
+
+		e = @views abs.(res[1:maxbin, :])
+
+		domain = zeros(eltype(e), freqrange[2], size(e, 2))
+		freqr = freqrange[1]:freqrange[2]
+
+		@views @. domain[freqr, :] = 
+			e[freqr, :] + 
+			e[2*freqr, :] - e[round(Int, 1.5*freqr), :] + 
+			e[3*freqr, :] - e[round(Int, 2.5*freqr), :] + 
+			e[4*freqr, :] - e[round(Int, 3.5*freqr), :] + 
+			e[5*freqr, :] - e[round(Int, 4.5*freqr), :]
+
+		_, locs = get_candidates(domain, freqrange)
+		f0 = vec(Float64.(locs))
+
+	# elseif method == :pef
+	# elseif method == :cep
+	# elseif method == :lhs
+
 	end
+
+	F0(sr, F0Setup(method, freqrange, mflength), F0Data(f0))
 end
 
 function Base.show(io::IO, f0::F0)
@@ -95,7 +144,7 @@ function Base.show(io::IO, f0::F0)
     println(io, "  F0: $(length(f0.data.f0)) points")
 end
 
-function Base.display(f0::F0)
+function Plots.plot(f0::F0)
     time = (0:length(f0.data.f0)-1)
     plot(time, f0.data.f0, 
          title="Fundamental Frequency Estimation",
@@ -107,4 +156,4 @@ function Base.display(f0::F0)
          legend=:none)
 end
 
-get_f0(source::Stft; kwargs...) = _get_f0(combinedims(collect(source.data.frames)), source.sr; nwin=source.setup.nwin, kwargs...)
+get_f0(source::Stft; kwargs...) = _get_f0(combinedims(collect(source.data.frames)), source.sr; x_length=source.x_length, nwin=source.setup.nwin, noverlap=source.setup.noverlap, kwargs...)

@@ -100,13 +100,6 @@ end
 #     end
 # end
 
-# function blackman(n::Integer; padding::Integer=0, zerophase::Bool=false)
-#     a0, a1, a2 = 0.42, 0.5, 0.08
-#     makewindow(n, padding, zerophase) do x
-#         a0 + a2*cospi(4*x) + a1*cospi(2*x)
-#     end
-# end
-
 # function kaiser(n::Integer, α::Real; padding::Integer=0, zerophase::Bool=false)
 #     pf = 1.0/besseli(0,pi*α)
 #     makewindow(n, padding, zerophase) do x
