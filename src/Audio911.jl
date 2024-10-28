@@ -17,7 +17,17 @@ using SplitApplyCombine
 
 using PyCall
 
+const req_py_pkgs = ["librosa"]
 function __init__()
+
+    pypkgs = getindex.(PyCall.Conda.parseconda(`list`, PyCall.Conda.ROOTENV), "name")
+    needinstall = !all(p -> in(p, pypkgs), req_py_pkgs)
+
+    if (needinstall)
+        PyCall.Conda.add_channel("conda-forge")
+        PyCall.Conda.add("librosa")
+    end
+
     py"""
     import librosa as librosa
     import soundfile as soundfile
@@ -30,6 +40,20 @@ function __init__()
         soundfile.write(file, x, samplerate=sr, subtype='PCM_16')
     """
 end
+
+# function __init__()
+#     py"""
+#     import librosa as librosa
+#     import soundfile as soundfile
+
+#     def load_audio(file, sr):
+#         x, sr_def = librosa.load(file, sr=sr)
+#         return x, sr_def
+
+#     def save_audio(file, x, sr):
+#         soundfile.write(file, x, samplerate=sr, subtype='PCM_16')
+#     """
+# end
 
 include("structs/audio.jl")
 export Audio, load_audio, save_audio
