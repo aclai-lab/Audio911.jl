@@ -201,3 +201,8 @@ audio_6 = audio_obj(x, sr)
 get_frames!(audio_6)
 get_stft!(audio_6)
 display(audio_6.data.stft)
+
+################
+framest = get_frames2(x)
+stft1, stft_freq1 = get_stft2(framest, sr)
+fft22 = get_features(x, sr, :fft)

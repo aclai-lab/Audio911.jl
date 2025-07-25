@@ -19,6 +19,8 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
 StatsBase = "0.34"
+StatGeochem = "0.8"
+DSP = "0.8"
 julia = "1"
 
 [extras]

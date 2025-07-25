@@ -418,7 +418,7 @@ function get_full(audio_obj::AudioObj)
 	return hcat(
 		(
 			audio_obj.data.mel_spectrogram,
-			audio_obj.data.log_mel,
+			# audio_obj.data.log_mel,
 			audio_obj.data.mfcc_coeffs,
 			audio_obj.data.mfcc_delta,
 			audio_obj.data.mfcc_deltadelta,

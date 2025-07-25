@@ -65,4 +65,6 @@ export extractfeatures
 # modular
 export get_frames, get_frames!, get_stft, get_stft!
 
+export get_frames2, get_stft2
+
 end # module Audio911
