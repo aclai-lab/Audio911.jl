@@ -19,7 +19,7 @@ audio.get_features(profile, per ora solo :full)
 2-utilizzare l'invocazione get_feature per ottenere le features separatamente
 
 costruzione:
-get_feature(
+get_features(
 	x AbstractFloat file audio mono
 	sr Int64 frequenza di campionamento
 	feat Symbol audio feature da estrarre
@@ -33,6 +33,9 @@ get_feature(
 	kwargs...
 
 ##############################################################################################
+
+da spostare in signal data structure 
+
 paramentri addizionali
 sia per l'oggetto audio, che per la chiamata a feature singola
 
@@ -115,58 +118,69 @@ f0_range::Tuple{Int64, Int64} = (50, 400),
 median_filter_length::Int64 = 1
 Questi paramentri sono in fase di studio
 """
-#------------------------------------------------------------------------------#
-#                                audio object                                  #
-#------------------------------------------------------------------------------#
 
-function audio_features_obj(
-	x::AbstractVector{Float64},
+#------------------------------------------------------------------------------#
+#                              define structures                               #
+#------------------------------------------------------------------------------#
+function audio_setup(
 	sr::Int64;
 
-	# profile::Symbol = :all,
-
 	# fft
-	fft_length::Int64 = 256,
+	fft_length::Int64 = sr <= 8000 ? 256 : 512,
+	stft_freq::AbstractVector{Float64} = Float64[],
+	window::AbstractVector{Float64} = Float64[],
 	window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-	window_length::Int64 = fft_length,
-	overlap_length::Int64 = round(Int, fft_length * 0.500),
-	# window_length::Int64 = Int(round(0.03 * sr)),
-	# overlap_length::Int64 = Int(round(0.02 * sr)),
+	window_length::Int64 = fft_length, 					# standard setting: round(Int, 0.03 * sr)
+	overlap_length::Int64 = round(Int, fft_length / 2), # standard setting: round(Int, 0.02 * sr)
 	window_norm::Bool = false,
 
 	# spectrum
 	frequency_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
-	spectrum_type::Symbol = :power, # :power, :magnitude
+	spectrum_type::Symbol = :power, 					# :power, :magnitude
 
 	# mel
-	mel_style::Symbol = :htk, # :htk, :slaney
+	mel_style::Symbol = :htk, 							# :htk, :slaney, :tuned
 	mel_bands::Int64 = 26,
 	filterbank_design_domain::Symbol = :linear,
-	filterbank_normalization::Symbol = :bandwidth, # :bandwidth, :area, :none
-	frequency_scale::Symbol = :mel,
+	filterbank_normalization::Symbol = :bandwidth, 		# :bandwidth, :area, :none
+	frequency_scale::Symbol = :mel, 					# TODO :mel, :bark, :erb
+	st_peak_range::Tuple{Int64, Int64} = (200, 700),
+
+	# chroma
+	bins_octave::Int64 = 12,
+	center_freq::Int64 = 1000,
+	gaussian_sd::Int64 = 1,
 
 	# mfcc
 	num_coeffs::Int64 = 13,
-	normalization_type::Symbol = :dithered, # :standard, :dithered
-	rectification::Symbol = :log,
-	log_energy_source::Symbol = :standard, # :standard (after windowing), :mfcc
-	log_energy_pos::Symbol = :none, #:append, :replace, :none
+	normalization_type::Symbol = :dithered, 			# :standard, :dithered
+	rectification::Symbol = :log, 						# :log, :cubic_root
+	log_energy_source::Symbol = :standard, 				# :standard (after windowing), :mfcc
+	log_energy_pos::Symbol = :none, 					#:append, :replace, :none
 	delta_window_length::Int64 = 9,
-	delta_matrix::Symbol = :transposed, # :standard, :transposed
+	delta_matrix::Symbol = :transposed, 				# :standard, :transposed
 
 	# spectral
-	spectral_spectrum::Symbol = :lin, # :lin, :mel
+	spectral_spectrum::Symbol = :lin, 					# :lin, :mel
 
 	# f0
 	f0_method::Symbol = :nfc,
 	f0_range::Tuple{Int64, Int64} = (50, 400),
 	median_filter_length::Int64 = 1,
+
+	# constant-q transform	
+	freq_limits::Tuple{Float64, Float64} = (0.0, 0.0),
+	transform_type::Symbol = :full,
 )
-	setup = AudioSetup(
+	# TODO metti warning ed errori
+
+	AudioSetup(
 		sr = sr,
 
 		# fft
 		fft_length = fft_length,
+		stft_freq = stft_freq,
+		window = window,
 		window_type = window_type,
 		window_length = window_length,
 		overlap_length = overlap_length,
@@ -182,6 +196,12 @@ function audio_features_obj(
 		filterbank_design_domain = filterbank_design_domain,
 		filterbank_normalization = filterbank_normalization,
 		frequency_scale = frequency_scale,
+		st_peak_range = st_peak_range,
+
+		# chroma
+		bins_octave = bins_octave,
+		center_freq = center_freq,
+		gaussian_sd = gaussian_sd,
 
 		# mfcc
 		num_coeffs = num_coeffs,
@@ -199,199 +219,293 @@ function audio_features_obj(
 		f0_method = f0_method,
 		f0_range = f0_range,
 		median_filter_length = median_filter_length,
+
+		# constant-q transform
+		freq_limits = freq_limits,
+		transform_type = transform_type,
 	)
-
-	# preemphasis
-	# zi = 2 * x[1] - x[2]
-	# filt!(x, [1.0, -0.97], 1.0, x, [zi])
-	# normalize
-	# x = x ./ maximum(abs.(x))
-
-	data = AudioData(
-		x = x,
-	)
-
-	return AudioObj(setup, data)
 end
 
-function audio_features_obj(
+#------------------------------------------------------------------------------#
+#                                audio object                                  #
+#------------------------------------------------------------------------------#
+
+function audio_obj(
+	x::AbstractVector{Float64},
+	sr::Int64;
+	preemphasis::Union{Float64, Nothing} = nothing,
+	kwargs...,
+)
+	setup = audio_setup(sr; kwargs...)
+
+	if preemphasis !== nothing
+		zi = 2 * x[1] - x[2]
+		filt!(x, [1.0, - preemphasis], 1.0, x, [zi])
+		# # aclai preemphasis
+		# x = filt(PolynomialRatio([1.0, -preemphasis], [1.0]), x)
+	end
+
+	# check x audio sample length
+	if length(x) == 0
+		@warn("Sample is empty, skipped.")
+		return nothing
+	elseif length(x) < setup.fft_length
+		@warn("length of sample is < than fft windows, skipped.")
+		return nothing
+	else
+		data = AudioData(x = x)
+		audio_obj = AudioObj(setup, data)
+	end
+
+	return audio_obj
+end
+
+function audio_obj(
 	x::AbstractVector{T},
 	sr::Int64;
+	preemphasis = nothing,
 	kwargs...,
 ) where {T <: AbstractFloat}
-	audio_features_obj(Float64.(x), sr; kwargs...)
+	audio_obj(Float64.(x), sr; preemphasis, kwargs...)
 end
 
-function audio_features_obj(
+function audio_obj(
 	filepath::String,
-	sr_setup::Int64 = 8000;
+	sr::Int64;
+	preemphasis = nothing,
 	kwargs...,
 )
-	x, sr = load_audio(filepath, sr = sr_setup)
+	x, sr = load_audio(filepath, sr = sr)
 	x = normalize_audio(x)
-	audio_features_obj(Float64.(x), sr; kwargs...)
+	audio_obj(Float64.(x), sr; preemphasis, kwargs...)
 end
 
 #------------------------------------------------------------------------------#
-#                             stand alone functions                            #
+#                            get features functions                            #
 #------------------------------------------------------------------------------#
-function get_fft(setup::AudioSetup, data::AudioData)
-	get_fft!(setup, data)
-
-	return data.fft
-end
-
-function get_lin_spec(setup::AudioSetup, data::AudioData)
-	get_fft!(setup, data)
-	lin_spectrogram!(setup, data)
-
-	return data.lin_spectrogram, setup.lin_frequencies
-end
-
-function get_mel_spec(setup::AudioSetup, data::AudioData)
-	get_fft!(setup, data)
-	get_mel_spec!(setup, data)
-
-	return data.mel_spectrogram, setup.mel_frequencies
-end
-
-function get_mfcc(setup::AudioSetup, data::AudioData)
-	get_fft!(setup, data)
-	get_mel_spec!(setup, data)
-	get_mfcc!(setup, data)
-	get_mfcc_deltas!(setup, data)
-
-	return data.mfcc_coeffs, data.mfcc_delta, data.mfcc_deltadelta
-end
-
-function get_spectrals(setup::AudioSetup, data::AudioData)
-	get_fft!(setup, data)
-	if setup.spectral_spectrum == :lin
-		lin_spectrogram!(setup, data)
-	elseif setup.spectral_spectrum == :mel
-		get_mel_spec!(setup, data)
-	else
-		error("setup.spectral_spectrum must be :lin or :mel.")
+function get_fft(audio_obj::AudioObj)
+	if isempty(audio_obj.data.fft)
+		get_fft!(audio_obj.setup, audio_obj.data)
 	end
-	get_spectrals!(setup, data)
-
-	return [
-		data.spectral_centroid,
-		data.spectral_crest,
-		data.spectral_decrease,
-		data.spectral_entropy,
-		data.spectral_flatness,
-		data.spectral_flux,
-		data.spectral_kurtosis,
-		data.spectral_rolloff,
-		data.spectral_skewness,
-		data.spectral_slope,
-		data.spectral_spread,
-	]
+	return audio_obj.data.fft'
 end
 
-function get_f0(setup::AudioSetup, data::AudioData)
-	get_f0!(setup, data)
+function get_lin_spec(audio_obj::AudioObj)
+	if isempty(audio_obj.data.lin_spectrogram)
+		if isempty(audio_obj.data.fft)
+			get_fft(audio_obj)
+		end
+		lin_spectrogram!(audio_obj.setup, audio_obj.data)
+	end
+	return audio_obj.data.lin_spectrogram, audio_obj.data.lin_frequencies
+end
 
-	return data.f0
+function get_mel_spec(audio_obj::AudioObj)
+	if isempty(audio_obj.data.lin_spectrogram)
+		if isempty(audio_obj.data.fft)
+			get_fft(audio_obj)
+		end
+		get_mel_spec!(audio_obj.setup, audio_obj.data)
+	end
+	return audio_obj.data.mel_spectrogram, audio_obj.data.mel_frequencies
+end
+
+function get_log_mel(audio_obj::AudioObj)
+	if isempty(audio_obj.data.log_mel)
+		if isempty(audio_obj.data.mel_spectrogram)
+			if isempty(audio_obj.data.fft)
+				get_fft(audio_obj)
+			end
+			get_mel_spec(audio_obj)
+		end
+		get_log_mel!(audio_obj.setup, audio_obj.data)
+	end
+	return audio_obj.data.log_mel
+end
+
+function get_mfcc(audio_obj::AudioObj)
+	if isempty(audio_obj.data.mfcc_coeffs)
+		if isempty(audio_obj.data.mel_spectrogram)
+			if isempty(audio_obj.data.fft)
+				get_fft(audio_obj)
+			end
+			get_mel_spec(audio_obj)
+		end
+		get_mfcc!(audio_obj.setup, audio_obj.data)
+	end
+	return audio_obj.data.mfcc_coeffs
+end
+
+function get_mfcc_delta(audio_obj::AudioObj)
+	if isempty(audio_obj.data.mfcc_delta)
+		if isempty(audio_obj.data.mfcc_coeffs)
+			if isempty(audio_obj.data.mel_spectrogram)
+				if isempty(audio_obj.data.fft)
+					get_fft(audio_obj)
+				end
+				get_mel_spec(audio_obj)
+			end
+			get_mfcc(audio_obj)
+
+		end
+		get_mfcc_deltas!(audio_obj.setup, audio_obj.data)
+	end
+
+	return hcat((audio_obj.data.mfcc_delta, audio_obj.data.mfcc_deltadelta)...)
+end
+
+function get_spectrals(audio_obj::AudioObj)
+	if audio_obj.setup.spectral_spectrum == :lin && isempty(audio_obj.data.lin_spectrogram)
+		if isempty(audio_obj.data.fft)
+			get_fft(audio_obj)
+		end
+		get_lin_spec(audio_obj)
+	elseif audio_obj.setup.spectral_spectrum == :mel && isempty(audio_obj.data.mel_spectrogram)
+		if isempty(audio_obj.data.fft)
+			get_fft(audio_obj)
+		end
+		mel_spectrogram!(audio_obj)
+	end
+	if isempty(audio_obj.data.spectral_centroid)
+		get_spectrals!(audio_obj.setup, audio_obj.data)
+	end
+
+	return hcat(
+		(
+			audio_obj.data.spectral_centroid,
+			audio_obj.data.spectral_crest,
+			audio_obj.data.spectral_decrease,
+			audio_obj.data.spectral_entropy,
+			audio_obj.data.spectral_flatness,
+			audio_obj.data.spectral_flux,
+			audio_obj.data.spectral_kurtosis,
+			audio_obj.data.spectral_rolloff,
+			audio_obj.data.spectral_skewness,
+			audio_obj.data.spectral_slope,
+			audio_obj.data.spectral_spread,
+		)...,
+	)
+end
+
+function get_f0(audio_obj::AudioObj)
+	if isempty(audio_obj.data.f0)
+		get_f0!(audio_obj.setup, audio_obj.data)
+	end
+
+	return audio_obj.data.f0
+end
+
+function get_cqt(audio_obj::AudioObj)
+	if isempty(audio_obj.data.cqt_spec)
+		get_cqt_spec!(audio_obj.setup, audio_obj.data)
+	end
+
+	return audio_obj.data.cqt_spec
+end
+
+function get_full(audio_obj::AudioObj)
+	get_fft(audio_obj)
+	get_mel_spec(audio_obj)
+	get_log_mel(audio_obj)
+	get_mfcc(audio_obj)
+	get_mfcc_delta(audio_obj)
+	if audio_obj.setup.spectral_spectrum == :lin
+		get_lin_spec(audio_obj)
+	end
+	get_spectrals(audio_obj)
+	get_f0(audio_obj)
+
+	return hcat(
+		(
+			audio_obj.data.mel_spectrogram,
+			# audio_obj.data.log_mel,
+			audio_obj.data.mfcc_coeffs,
+			audio_obj.data.mfcc_delta,
+			audio_obj.data.mfcc_deltadelta,
+			audio_obj.data.spectral_centroid,
+			audio_obj.data.spectral_crest,
+			audio_obj.data.spectral_decrease,
+			audio_obj.data.spectral_entropy,
+			audio_obj.data.spectral_flatness,
+			audio_obj.data.spectral_flux,
+			audio_obj.data.spectral_kurtosis,
+			audio_obj.data.spectral_rolloff,
+			audio_obj.data.spectral_skewness,
+			audio_obj.data.spectral_slope,
+			audio_obj.data.spectral_spread,
+			audio_obj.data.f0,
+		)...)
 end
 
 #------------------------------------------------------------------------------#
-#                        stand alone functions caller                          #
+#                               Audio911 caller                                #
 #------------------------------------------------------------------------------#
-function get_feature(
-	x::AbstractVector{Float64},
-	sr::Int64,
-	feat::Symbol;
-
-	# profile::Symbol = :all,
-
-	# fft
-	fft_length::Int64 = 256,
-	window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-	window_length::Int64 = fft_length,
-	overlap_length::Int64 = round(Int, fft_length * 0.500),
-	# window_length::Int64 = Int(round(0.03 * sr)),
-	# overlap_length::Int64 = Int(round(0.02 * sr)),
-	window_norm::Bool = false,
-
-	# spectrum
-	frequency_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
-	spectrum_type::Symbol = :power, # :power, :magnitude
-
-	# mel
-	mel_style::Symbol = :htk, # :htk, :slaney
-	mel_bands::Int64 = 26,
-	filterbank_design_domain::Symbol = :linear,
-	filterbank_normalization::Symbol = :bandwidth, # :bandwidth, :area, :none
-	frequency_scale::Symbol = :mel,
-
-	# mfcc
-	num_coeffs::Int64 = 13,
-	normalization_type::Symbol = :dithered, # :standard, :dithered
-	rectification::Symbol = :log,
-	log_energy_source::Symbol = :standard, # :standard (after windowing), :mfcc
-	log_energy_pos::Symbol = :none, #:append, :replace, :none
-	delta_window_length::Int64 = 9,
-	delta_matrix::Symbol = :transposed, # :standard, :transposed
-
-	# spectral
-	spectral_spectrum::Symbol = :lin, # :lin, :mel
+function get_features(
+	audio_obj::Union{AudioObj, Nothing},
+	feat::Symbol = :full,
 )
-	setup = AudioSetup(
-		sr = sr,
-
-		# fft
-		fft_length = fft_length,
-		window_type = window_type,
-		window_length = window_length,
-		overlap_length = overlap_length,
-		window_norm = window_norm,
-
-		# spectrum
-		frequency_range = frequency_range,
-		spectrum_type = spectrum_type,
-
-		# mel
-		mel_style = mel_style,
-		mel_bands = mel_bands,
-		filterbank_design_domain = filterbank_design_domain,
-		filterbank_normalization = filterbank_normalization,
-		frequency_scale = frequency_scale,
-
-		# mfcc
-		num_coeffs = num_coeffs,
-		normalization_type = normalization_type,
-		rectification = rectification,
-		log_energy_source = log_energy_source,
-		log_energy_pos = log_energy_pos,
-		delta_window_length = delta_window_length,
-		delta_matrix = delta_matrix,
-
-		# spectral
-		spectral_spectrum = spectral_spectrum,
-	)
-
-	data = AudioData(
-		x = x,
-	)
-
-	calc = Dict([
+	func_call = Dict([
+		:full => get_full, 
 		:fft => get_fft,
 		:lin => get_lin_spec,
 		:mel => get_mel_spec,
+		:logmel => get_log_mel,
 		:mfcc => get_mfcc,
-		:spectrals => get_spectrals,
-		:f0 => get_f0])
+		:mfcc_delta => get_mfcc_delta,
+		:spectral => get_spectrals,
+		:f0 => get_f0,
+		:cqt => get_cqt,
+		:age_set =>
+			(x) -> begin
+				get_full(x)
+				return hcat(
+					(
+						# audio_obj.data.mel_spectrogram,
+						# audio_obj.data.log_mel,
+						audio_obj.data.mfcc_coeffs,
+						audio_obj.data.mfcc_delta,
+						audio_obj.data.mfcc_deltadelta,
+						# audio_obj.data.spectral_centroid,
+						# audio_obj.data.spectral_crest,
+						# audio_obj.data.spectral_decrease,
+						# audio_obj.data.spectral_entropy,
+						# audio_obj.data.spectral_flatness,
+						# audio_obj.data.spectral_flux,
+						# audio_obj.data.spectral_kurtosis,
+						# audio_obj.data.spectral_rolloff,
+						# audio_obj.data.spectral_skewness,
+						# audio_obj.data.spectral_slope,
+						# audio_obj.data.spectral_spread,
+						# audio_obj.data.f0,
+					)...)
+			end])
 
-	return calc[feat](setup, data)
+	if !isnothing(audio_obj)
+		if haskey(func_call, feat)
+			func_call[feat](audio_obj)
+		else
+			println("feature $feat not available.")
+			return nothing
+		end
+	else
+		return nothing
+	end
 end
 
-function get_feature(
+function get_features(
 	x::AbstractVector{T},
 	sr::Int64,
-	feat::Symbol;
+	feat::Symbol = :full;
 	kwargs...,
 ) where {T <: AbstractFloat}
-	get_feature(Float64.(x), sr, feat; kwargs...)
+	get_features(audio_obj(x, sr; kwargs...), feat)
+end
+
+function get_features(
+	filepath::String,
+	sr::Int64,
+	feat::Symbol = :full;
+	kwargs...,
+)
+	get_features(audio_obj(filepath, sr; kwargs...), feat)
 end

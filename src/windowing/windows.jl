@@ -23,6 +23,8 @@ function calc_window(
         a3 = 0.083578947
         a4 = 0.006947368
         w = a0 .- a1 * cos.(2 * pi * x) .+ a2 * cos.(4 * pi * x) .- a3 * cos.(6 * pi * x) .+ a4 * cos.(8 * pi * x)
+    else
+        error("Unknown window type: $winType")
     end
 
     return w
