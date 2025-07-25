@@ -1,5 +1,3 @@
-# using FFTW
-
 function get_candidates(
 	domain::AbstractArray{T},
 	edge::AbstractVector{Int64},
@@ -16,7 +14,7 @@ end
 
 function i_clip(
 	x::AbstractVector{T},
-	range::Vector{Int64} = [50, 400],
+	range::Tuple{Int64, Int64} = (50, 400),
 ) where {T <: AbstractFloat}
 
 	x[x.<range[1]] .= range[1]
@@ -25,18 +23,18 @@ function i_clip(
 	return x
 end
 
-function f0(
-	data::signal_data,
-	setup::signal_setup,
-	method::Symbol = :nfc,
-	f0_range::Vector{Int64} = [50, 400],
-	median_filter_length::Int64 = 1,
+################################################################################
+#                                    main                                      #
+################################################################################
+function get_f0!(
+	setup::AudioSetup,
+	data::AudioData
 )
 	len_x = size(data.x, 1)
 	hoplength = setup.window_length - setup.overlap_length
 	num_hops_final = Int(floor((len_x - setup.window_length) / hoplength)) + 1
 
-	if method == :srh
+	if setup.f0_method == :srh
 		N = Int(round(0.025 * setup.sr))
 		hop_size = Int(round(0.005 * setup.sr))
 	else
@@ -51,8 +49,8 @@ function f0(
 	y = buffer([data.x; zeros(num_to_pad)], N, hop_size)
 	extra_params = Dict(:num_candidates => 1, :min_peak_distance => 1)
 
-	if method == :nfc
-		edge = Int.(round.(setup.sr ./ reverse(f0_range)))
+	if setup.f0_method == :nfc
+		edge = Int.(round.(setup.sr ./ reverse(reduce(vcat, getindex.(setup.f0_range)))))
 		r = size(y, 1)
 		mxl = min(edge[end], r - 1)
 		m2 = nextpow(2, 2 * r - 1)
@@ -82,13 +80,13 @@ function f0(
 		# conf = peak./sum(abs(peak),2)
 
 		## TODO
-		# elseif method == :srh
-		# elseif method == :pef
-		# elseif method == :cep
-		# elseif method == :lhs
+		# elseif setup.f0_method == :srh
+		# elseif setup.f0_method == :pef
+		# elseif setup.f0_method == :cep
+		# elseif setup.f0_method == :lhs
 	end
 
 	# force pitch estimate inside band edges
-	frq_0 = i_clip(vec(frq_0), f0_range)
+	frq_0 = i_clip(vec(frq_0), setup.f0_range)
 	data.f0 = vec(frq_0[1:num_hops_final, :])
 end
