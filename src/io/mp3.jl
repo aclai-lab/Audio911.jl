@@ -68,7 +68,7 @@ end
 # ---------------------------------------------------------------------------- #
 #                                MP3FileSource                                 #
 # ---------------------------------------------------------------------------- #
-struct MP3FileSource{T} <: SampleSource
+struct MP3FileSource{T} <: AbstractSampleSource
     path    :: AbstractString
     mpg123  :: MPG123
     info    :: MP3Info
