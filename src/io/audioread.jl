@@ -4,19 +4,18 @@ end
 
 function audioread(path::File{format"MP3"}; kwargs...)
     mpg123 = mpg123_new()
-    mpg123_open(mpg123, path.filename)
+    mpg123_open(mpg123, filename(path))
     nframes = mpg123_length(mpg123)
-    samplerate, nchannels, encoding = mpg123_getformat(mpg123)
-    # if blocksize < 0
-        blocksize = mpg123_outblock(mpg123)
-    # end
-    datatype = encoding_to_type(encoding)
-    encsize = sizeof(datatype)
 
+    samplerate, nchannels, encoding = mpg123_getformat(mpg123)
+    datatype = encoding_to_type(encoding)
     info = MP3Info(nframes, nchannels, samplerate, datatype)
+
+    blocksize = mpg123_outblock(mpg123)
+    encsize = sizeof(datatype)
     bufsize = div(blocksize, encsize * nchannels)
-    readbuf = Array{datatype, 2}(undef, nchannels, bufsize)
-    source = MP3FileSource(filename(path), mpg123, info, Int64(0))
+    # readbuf = Array{datatype, Int(nchannels)}(undef, nchannels, bufsize)
+    source = MP3FileSource(filename(path), mpg123, info, bufsize)
     
     # buffer = try
     #     read(source)

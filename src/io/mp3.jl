@@ -68,22 +68,22 @@ end
 # ---------------------------------------------------------------------------- #
 #                                MP3FileSource                                 #
 # ---------------------------------------------------------------------------- #
-struct MP3FileSource{T} <: AbstractSampleSource
+mutable struct MP3FileSource{T,N} <: AbstractSampleSource
     path    :: AbstractString
     mpg123  :: MPG123
     info    :: MP3Info
     pos     :: Int64
-    readbuf :: Array{T,2}
+    readbuf :: Array{T,N}
 
     function MP3FileSource(path::AbstractString, mpg123::MPG123, info::MP3Info, bufsize::Integer)
         readbuf = Array{info.datatype,2}(undef, info.nchannels, bufsize)
-        new{info.datatype}(path, mpg123, info, Int64(0), readbuf)
+        new{info.datatype,Int(info.nchannels)}(path, mpg123, info, Int64(0), readbuf)
     end
 end
 
-@inline nchannels(source::MP3FileSource) = Int(source.info.nchannels)
+@inline nchannels(source::MP3FileSource)  = Int(source.info.nchannels)
 @inline samplerate(source::MP3FileSource) = source.info.samplerate
-@inline nframes(source::MP3FileSource) = source.info.nframes
+@inline nframes(source::MP3FileSource)    = source.info.nframes
 @inline Base.eltype(source::MP3FileSource{T}) where {T} = T
 
 # ---------------------------------------------------------------------------- #
