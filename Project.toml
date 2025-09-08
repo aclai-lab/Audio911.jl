@@ -4,14 +4,9 @@ authors = ["Riccardo PASINI"]
 version = "0.1.1"
 
 [deps]
-FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-FixedPointNumbers = "53c48c17-4a7d-5ca2-90c5-79b7896eea93"
-mpg123_jll = "3205ef68-7822-558b-ad0d-1b4740f12437"
+AudioReader = "a9c2ce0f-e965-4f6d-9ec4-ce2d5ed55f28"
 
 [compat]
-FileIO = "1.17"
-FixedPointNumbers = "0.8"
-mpg123_jll = "1.33"
 julia = "1"
 
 [extras]

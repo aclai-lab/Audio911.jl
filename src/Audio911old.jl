@@ -8,22 +8,6 @@ using StatsBase
 using Statistics, Roots
 using NaNStatistics
 
-using PyCall
-
-function __init__()
-    py"""
-    import librosa as librosa
-    import soundfile as soundfile
-
-    def load_audio(filename, sr):
-        x, sr_def = librosa.load(filename, sr=sr, mono=True)
-        return x, sr_def
-
-    def save_audio(filename, x, sr):
-        soundfile.write(filename, x, samplerate=sr, subtype='PCM_16')
-    """
-end
-
 include("signalDataStructure.jl")
 include("audioFeaturesExtractor.jl")
 # windowing
