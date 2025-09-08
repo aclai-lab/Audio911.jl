@@ -4,7 +4,7 @@ using  Reexport
 # ---------------------------------------------------------------------------- #
 #                                audio reader                                  #
 # ---------------------------------------------------------------------------- #
-@reexport using AudioReader: @format_str, File, AudioFile, load
+@reexport using AudioReader: @format_str, File, AudioFormat, AudioFile, load
 @reexport using AudioReader: data, sr, ismono
 
 # ---------------------------------------------------------------------------- #
@@ -28,7 +28,10 @@ const Maybe{T} = Union{T, Nothing}
 export AbstractWinFunction, WinFunction
 export MovingWindow, WholeWindow, SplitWindow, AdaptiveWindow
 include("windowing/windows.jl")
+export AudioFrames, get_frames
 include("windowing/windowing.jl")
+
+include("fft/fft.jl")
 # include("fft.jl")
 # using FFTW, DSP
 # using LinearAlgebra
@@ -47,7 +50,6 @@ include("windowing/windowing.jl")
 # # fft
 # include("fft/conv.jl")
 # include("fft/f0.jl")
-# include("fft/fft.jl")
 # include("fft/lin.jl")
 # include("fft/mel.jl")
 # include("fft/spectral.jl")
