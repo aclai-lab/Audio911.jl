@@ -181,28 +181,30 @@
 #                                     stft                                     #
 #------------------------------------------------------------------------------#
 function get_stft(
-	frames::AudioFrames,
-	sr::Int64;
-	frequency_range::Tuple{Int64, Int64}=(0, sr÷2),
-	spectrum_type::Symbol=:power, # :power, :magnitude
+	frames          :: AudioFrames,
+	sr              :: Int64;
+	stft_size       :: Int64=get_wsize(frames),
+	frequency_range :: Tuple{Int64, Int64}=(0, sr÷2),
+	spectrum_type   :: Symbol=:power, # :power, :magnitude
 )
-	@assert 0 <= frequency_range[1] < frequency_range[2] <= sr / 2 "Frequency range must be (0, sr÷2)."
-	@assert 0 < get_ovrlap(frames) < window_length "Overlap length must be < window length."
-	@assert stft_length >= size(frames, 1) "stft_length must be > window length. Got stft_length = $stft_length, window length = $(size(frames,1))."
+	win_size = get_wsize(frames)
+	@assert 0 ≤ frequency_range[1] < frequency_range[2] ≤ sr / 2 "Frequency range must be (0, sr÷2)."
+	@assert 0 < get_ovrlap(frames) < win_size "Overlap length must be < window length."
+	@assert stft_size ≥ size(frames, 1) "stft_size must be > window length. Got stft_size = $stft_size, window length = $(size(frames,1))."
 
-	# ensure frames is of length stft_length
+	# ensure frames is of length stft_size
 	# if the FFT window is larger than the window, the audio data will be zero-padded to match the size of the FFT window.
 	# this zero-padding in the time domain results in an interpolation in the frequency domain, 
 	# which can provide a more detailed view of the spectral content of the signal.
-	frames = size(frames, 1) < stft_length ? vcat(frames, zeros(eltype(frames), stft_length - size(frames, 1), size(frames, 2))) : frames[1:stft_length, :]
+	frames = size(frames, 1) < stft_size ? vcat(frames, zeros(eltype(frames), stft_size - size(frames, 1), size(frames, 2))) : frames[1:stft_size, :]
 
 	# get fft
 	fft_spec = fft(frames, (1,))
 
 	# post process
 	# trim to desired range
-	bin_low  = ceil(Int, frequency_range[1] * stft_length / sr + 1)
-	bin_high = floor(Int, frequency_range[2] * stft_length / sr + 1)
+	bin_low  = ceil(Int, frequency_range[1] * stft_size / sr + 1)
+	bin_high = floor(Int, frequency_range[2] * stft_size / sr + 1)
 	bins     = collect(bin_low:bin_high)
 	fft_spec = @views fft_spec[bins, :]
 
@@ -220,13 +222,13 @@ function get_stft(
 	# halve the first bin if it's the lowest bin
 	bin_low == 1 && (@views fft_spec[1, :] *= 0.5)
 	# halve the last bin if it's the Nyquist bin and FFT length is even
-	bin_high == fld(stft_length, 2) + 1 && iseven(stft_length) && (@views fft_spec[end, :] *= 0.5)
+	bin_high == fld(stft_size, 2) + 1 && iseven(stft_size) && (@views fft_spec[end, :] *= 0.5)
 
 	# create frequency vector
-	stft_freq = (sr / stft_length) * (bins .- 1)
+	stft_freq = (sr / stft_size) * (bins .- 1)
 	# shift final bin if fftLength is odd and the final range is full to fs/2.
-	if stft_length % 2 != 0 && bin_high == floor(fftLength / 2 + 1)
-		stft_freq[end] = sr * (stft_length - 1) / (2 * stft_length)
+	if stft_size % 2 != 0 && bin_high == floor(fftLength / 2 + 1)
+		stft_freq[end] = sr * (stft_size - 1) / (2 * stft_size)
 	end
 
 	return fft_spec, stft_freq
@@ -268,7 +270,10 @@ end
 
 function get_stft(
 	afile :: AudioFile;
-    win   :: WinFunction=AdaptiveWindow(nwindows=3, relative_overlap=0.1),
+    win   :: WinFunction=MovingWindow(
+                            window_size=sr(afile)≤8000 ? 256 : 512,
+                            window_step=sr(afile)≤8000 ? 128 : 256
+                        ),
 	type  :: Tuple{Symbol, Symbol}=(:hann, :periodic),
 	kwargs...
 	)

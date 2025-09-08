@@ -20,12 +20,14 @@ frames_data = Audio911.get_frames(audiofile; win, type)
 
 audiofile = load(wav_file; sr=6000)
 frames = Audio911.get_frames(audiofile)
+@test_nowarn audioframes(frames)
 @test get_wsize(frames)  == 256
 @test get_wstep(frames)  == 128
 @test get_ovrlap(frames) == 128
 
 audiofile = load(wav_file; sr=10000)
 frames = Audio911.get_frames(audiofile)
+@test_nowarn audioframes(frames)
 @test get_wsize(frames)  == 512
 @test get_wstep(frames)  == 256
 @test get_ovrlap(frames) == 256

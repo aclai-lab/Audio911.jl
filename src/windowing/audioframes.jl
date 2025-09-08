@@ -116,7 +116,19 @@ struct AudioFrames{T} <: AbstractAudioFrames
     end
 end
 
-Base.length(a::AudioFrames) = length(a.frames)
+Base.length(f::AudioFrames) = length(f.frames)
+Base.eltype(f::AudioFrames) = eltype(eltype(f.frames))
+
+"""
+    audioframes(f::AudioFrames) -> Vector{<:AudioFormat}
+
+Extract the windowed audio frames from an `AudioFrames` container.
+
+# See Also
+- [`get_frames(::AudioFile)`](@ref): Function to create `AudioFrames` from audio data
+- [`AudioFrames`](@ref): Container type for windowed audio data
+"""
+audioframes(f::AudioFrames) = f.frames
 
 """
     get_wsize(f::AudioFrames) -> Int
