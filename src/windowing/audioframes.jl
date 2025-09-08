@@ -229,15 +229,18 @@ window_type = frames.type          # Window shape and periodicity
 - [`WinFunction`](@ref): Base windowing function type
 """
 function get_frames(
-	X    :: AudioFile;
-    win  :: WinFunction=AdaptiveWindow(nwindows=3, relative_overlap=0.1),
-	type :: Tuple{Symbol, Symbol}=(:hann, :periodic),
+	afile :: AudioFile;
+    win   :: WinFunction=MovingWindow(
+                            window_size=sr(afile)≤8000 ? 256 : 512,
+                            window_step=sr(afile)≤8000 ? 128 : 256
+                        ),
+	type  :: Tuple{Symbol, Symbol}=(:hann, :periodic),
 )::AudioFrames
     # run the windowing algo and set windows indexes
-    intervals = win(length(X))
+    intervals = win(length(afile))
 
     frames = map(intervals) do interval
-        frame      = data(X)[interval]
+        frame      = data(afile)[interval]
         window, _  = gencoswin(type[1], length(frame), type[2])
         frame .* window
     end

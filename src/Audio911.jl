@@ -29,9 +29,10 @@ export AbstractWinFunction, WinFunction
 export MovingWindow, WholeWindow, SplitWindow, AdaptiveWindow
 include("windowing/windows.jl")
 export AudioFrames, get_frames
-include("windowing/windowing.jl")
+include("windowing/audioframes.jl")
 
-include("fft/fft.jl")
+export get_stft
+include("fft/stft.jl")
 # include("fft.jl")
 # using FFTW, DSP
 # using LinearAlgebra

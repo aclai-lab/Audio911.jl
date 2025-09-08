@@ -26,8 +26,9 @@ println("Julia version: ", VERSION)
 
 test_suites = [
     ("Audioreader", ["audioreader.jl",]),
-    ("FFT",         ["fft.jl",        ]),
-    # ("Symbolic Analysis",    ["symbolic_analysis.jl", ]),
+    ("Windowing",   ["windowing.jl",  ]),
+    ("STFT",        ["stft.jl",       ]),
+
     # ("Solemodel robustness", ["robustness.jl"         ]),
     # ("Rule extraction",      ["rule_extraction.jl"    ]),
     # ("Association Rules",    ["associationrules.jl"   ]),
