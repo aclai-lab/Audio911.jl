@@ -31,3 +31,7 @@ frames = Audio911.get_frames(audiofile)
 @test get_wsize(frames)  == 512
 @test get_wstep(frames)  == 256
 @test get_ovrlap(frames) == 256
+
+audiofile = load(mp3_file; mono=false)
+frames = Audio911.get_frames(audiofile)
+@test_nowarn audioframes(frames)

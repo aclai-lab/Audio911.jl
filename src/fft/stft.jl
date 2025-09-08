@@ -188,15 +188,16 @@ function get_stft(
 	spectrum_type   :: Symbol=:power, # :power, :magnitude
 )
 	win_size = get_wsize(frames)
+
 	@assert 0 ≤ frequency_range[1] < frequency_range[2] ≤ sr / 2 "Frequency range must be (0, sr÷2)."
 	@assert 0 < get_ovrlap(frames) < win_size "Overlap length must be < window length."
-	@assert stft_size ≥ size(frames, 1) "stft_size must be > window length. Got stft_size = $stft_size, window length = $(size(frames,1))."
+	@assert stft_size ≥ win_size "stft_size must be > window length. Got stft_size = $stft_size, window length = $(win_size)."
 
 	# ensure frames is of length stft_size
 	# if the FFT window is larger than the window, the audio data will be zero-padded to match the size of the FFT window.
 	# this zero-padding in the time domain results in an interpolation in the frequency domain, 
 	# which can provide a more detailed view of the spectral content of the signal.
-	frames = size(frames, 1) < stft_size ? vcat(frames, zeros(eltype(frames), stft_size - size(frames, 1), size(frames, 2))) : frames[1:stft_size, :]
+	frames = win_size < stft_size ? vcat(frames, zeros(eltype(frames), stft_size - win_size, size(frames, 2))) : frames[1:stft_size, :]
 
 	# get fft
 	fft_spec = fft(frames, (1,))

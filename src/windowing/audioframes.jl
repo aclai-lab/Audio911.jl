@@ -244,8 +244,8 @@ function get_frames(
     intervals = win(length(afile))
 
     frames = map(intervals) do interval
-        frame      = data(afile)[interval]
-        window, _  = gencoswin(type[1], length(frame), type[2])
+        frame      = data(afile)[interval, :]
+        window, _  = gencoswin(type[1], length(interval), type[2])
         frame .* window
     end
 
