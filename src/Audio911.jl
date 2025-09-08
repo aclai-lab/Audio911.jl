@@ -33,7 +33,7 @@ const Maybe{T} = Union{T, Nothing}
 export AbstractWinFunction, WinFunction, MovingWindow
 include("windowing/windows.jl")
 export AudioFrames, get_frames
-export audioframes, get_wsize, get_wstep, get_ovrlap
+export audioframes, nchannels, get_wsize, get_wstep, get_ovrlap
 include("windowing/audioframes.jl")
 
 export get_stft

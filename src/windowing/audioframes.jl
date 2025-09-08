@@ -131,6 +131,18 @@ Extract the windowed audio frames from an `AudioFrames` container.
 audioframes(f::AudioFrames) = f.frames
 
 """
+    nchannels(f::AudioFrames) -> Int
+
+Get the number of audio channels from an `AudioFrames` container.
+
+# See Also
+- [`AudioFrames`](@ref): Container type for windowed audio data
+- [`get_frames`](@ref): Function to create audio frames
+- [`Base.length`](@ref): Get number of frames in the container
+"""
+nchannels(f::AudioFrames) = size(f.frames[1], 2)
+
+"""
     get_wsize(f::AudioFrames) -> Int
 
 Get the window size parameter from an `AudioFrames` object.
@@ -235,8 +247,8 @@ window_type = frames.type          # Window shape and periodicity
 function get_frames(
 	afile :: AudioFile;
     win   :: WinFunction=MovingWindow(
-                            window_size=sr(afile)≤8000 ? 256 : 512,
-                            window_step=sr(afile)≤8000 ? 128 : 256
+                            window_size=sr(afile) ≤ 8000 ? 256 : 512,
+                            window_step=sr(afile) ≤ 8000 ? 128 : 256
                         ),
 	type  :: Tuple{Symbol, Symbol}=(:hann, :periodic),
 )::AudioFrames
@@ -244,7 +256,7 @@ function get_frames(
     intervals = win(length(afile))
 
     frames = map(intervals) do interval
-        frame      = data(afile)[interval, :]
+        frame      = ismono(afile) ? data(afile)[interval] : data(afile)[interval, :]
         window, _  = gencoswin(type[1], length(interval), type[2])
         frame .* window
     end

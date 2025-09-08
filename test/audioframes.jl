@@ -35,3 +35,4 @@ frames = Audio911.get_frames(audiofile)
 audiofile = load(mp3_file; mono=false)
 frames = Audio911.get_frames(audiofile)
 @test_nowarn audioframes(frames)
+@test nchannels(frames) == 2
