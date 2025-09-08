@@ -25,3 +25,5 @@ audiofile = load(mp3_file; sr=8000)
 audio      = load(mp3_file; norm=false)
 audio_norm = load(mp3_file; norm=true)
 @test_nowarn sum(abs.(data(audio_norm))) > sum(abs.(data(audio)))
+
+@test_nowarn eltype(audio) == Float32

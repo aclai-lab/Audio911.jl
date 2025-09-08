@@ -5,6 +5,19 @@ using  Reexport
 @reexport using AudioReader: @format_str, File, AudioFile, load
 @reexport using AudioReader: data, sr, ismono
 
+# ---------------------------------------------------------------------------- #
+#                                   types                                      #
+# ---------------------------------------------------------------------------- #
+"""
+    Maybe{T}
+
+Type alias for `Union{T, Nothing}`.
+"""
+const Maybe{T} = Union{T, Nothing}
+
+# ---------------------------------------------------------------------------- #
+#                                    DSP                                       #
+# ---------------------------------------------------------------------------- #
 # using FFTW, DSP
 # using LinearAlgebra
 # using Parameters
