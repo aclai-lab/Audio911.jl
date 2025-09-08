@@ -1,12 +1,18 @@
 name = "Audio911"
 uuid = "5540a74f-91b5-427e-9d31-931d77bf3639"
 authors = ["Riccardo PASINI"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 AudioReader = "a9c2ce0f-e965-4f6d-9ec4-ce2d5ed55f28"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+
+[sources]
+AudioReader = {rev = "main", url = "https://github.com/PasoStudio73/AudioReader.jl"}
 
 [compat]
+AudioReader = "0.0.3"
+Reexport = "1.2"
 julia = "1"
 
 [extras]

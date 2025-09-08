@@ -1,22 +1,39 @@
-using Audio911
-using Test
-using Random
+using Distributed
+addprocs(2)
+
+@everywhere begin
+    using Test
+    using Audio911
+end
+
+test_files_dir() = joinpath(dirname(@__FILE__), "test_files")
+test_file(filename) = joinpath(test_files_dir(), filename)
+
+wav_file     = test_file("test.wav")
+mp3_file     = test_file("test.mp3")
+# ogg_file     = test_file("test.ogg")
+# flac_file    = test_file("test.flac")
 
 function run_tests(list)
     println("\n" * ("#"^50))
     for test in list
         println("TEST: $test")
-        @time include(test)
+        include(test)
     end
 end
 
 println("Julia version: ", VERSION)
 
 test_suites = [
-    ("Core", ["spectral_audioflux.jl"]),
+    ("Audioreader",        ["audioreader.jl",           ]),
+    # ("Train and Test",       ["train_test.jl",        ]),
+    # ("Symbolic Analysis",    ["symbolic_analysis.jl", ]),
+    # ("Solemodel robustness", ["robustness.jl"         ]),
+    # ("Rule extraction",      ["rule_extraction.jl"    ]),
+    # ("Association Rules",    ["associationrules.jl"   ]),
 ]
 
-@testset "Audio911.jl" begin
+@testset "SoleXplorer.jl" begin
     for ts in eachindex(test_suites)
         name = test_suites[ts][1]
         list = test_suites[ts][2]
