@@ -1,3 +1,17 @@
+abstract type AbstractStft end
+
+struct Stft{T} <: AbstractStft
+	fft_spec  :: Matrix{T}
+	stft_freq :: Vector{Float64}
+
+	function Stft(
+		fft_spec  :: Matrix{T},
+		stft_freq :: Vector{Float64}
+	) where T
+		new{T}(fft_spec, stft_freq)
+	end
+end
+
 # function get_onesided_fft_range(fft_length::Int64)
 # 	if mod(fft_length, 2) == 0
 # 		return collect(1:Int(fft_length / 2 + 1))   # EVEN
@@ -186,7 +200,7 @@ function get_stft(
 	stft_size       :: Int64=get_wsize(frames),
 	frequency_range :: Tuple{Int64, Int64}=(0, sr÷2),
 	spectrum_type   :: Symbol=:power, # :power, :magnitude
-)
+)::Stft
 	win_size   = get_wsize(frames)
 	overlap    = get_ovrlap(frames)
 	n_channels = nchannels(frames)
@@ -253,7 +267,7 @@ function get_stft(
 		stft_freq[end] = sr * (stft_size - 1) / (2 * stft_size)
 	end
 
-	return fft_spec, stft_freq
+	return Stft(fft_spec, stft_freq)
 end
 
 function get_stft(
@@ -264,7 +278,7 @@ function get_stft(
                         ),
 	type  :: Tuple{Symbol, Symbol}=(:hann, :periodic),
 	kwargs...
-	)
+	)::Stft
 	frames = get_frames(afile; win, type)
 	get_stft(frames, sr(afile); kwargs...)
 end

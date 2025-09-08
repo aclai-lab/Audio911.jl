@@ -38,7 +38,8 @@ include("windowing/audioframes.jl")
 
 export get_stft
 include("fft/stft.jl")
-# include("fft.jl")
+include("fft/mel.jl")
+
 # using FFTW, DSP
 # using LinearAlgebra
 # using Parameters
@@ -57,7 +58,7 @@ include("fft/stft.jl")
 # include("fft/conv.jl")
 # include("fft/f0.jl")
 # include("fft/lin.jl")
-# include("fft/mel.jl")
+
 # include("fft/spectral.jl")
 # # utils
 # include("utils/histogram.jl")
