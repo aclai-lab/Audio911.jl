@@ -8,7 +8,12 @@ Base type for windowing function implementations.
 """
 abstract type AbstractWinFunction end
 
-abstract type AbstractWindowing end
+"""
+    AbstractAudioFrames
+
+Abstract base type for audio frame containers.
+"""
+abstract type AbstractAudioFrames end
 
 # ---------------------------------------------------------------------------- #
 #                                win functions                                 #
@@ -49,57 +54,11 @@ function MovingWindow(;
     WinFunction(movingwindow, (;window_size, window_step))
 end
 
-"""
-    WholeWindow() -> WinFunction
-
-Create a single window encompassing the entire time series.
-Useful for global feature extraction without temporal partitioning.
-
-# Example
-    win = WholeWindow()
-    intervals = win(100)  # Returns [1:100]
-"""
-WholeWindow(;) = WinFunction(wholewindow, (;))
-
-"""
-    SplitWindow(; nwindows::Int) -> WinFunction
-
-Divide the time series into equal non-overlapping segments.
-
-# Parameters
-- `nwindows`: Number of equal-sized windows to create
-
-# Example
-    win = SplitWindow(nwindows=4)
-    intervals = win(100)  # Four 25-point windows
-"""
-SplitWindow(;nwindows::Int) = WinFunction(splitwindow, (; nwindows))
-
-"""
-    AdaptiveWindow(; nwindows::Int, relative_overlap::AbstractFloat) -> WinFunction
-
-Create overlapping windows with adaptive sizing based on series length.
-
-# Parameters
-- `nwindows`: Target number of windows
-- `relative_overlap`: Fraction of overlap between adjacent windows (0.0-1.0)
-
-# Example
-    win = AdaptiveWindow(nwindows=3, relative_overlap=0.1)
-    intervals = win(100)  # Three adaptive windows with 10% overlap
-"""
-function AdaptiveWindow(;
-    nwindows::Int,
-    relative_overlap::AbstractFloat,
-)
-    WinFunction(adaptivewindow, (; nwindows, relative_overlap))
-end
-
 # ---------------------------------------------------------------------------- #
 #                                 AudioFrames                                  #
 # ---------------------------------------------------------------------------- #
 """
-    AudioFrames{T}
+    AudioFrames{T} <: AbstractAudioFrames
 
 Container for windowed audio data with associated windowing parameters.
 
@@ -143,7 +102,7 @@ window_type = frames.type
 - [`WinFunction`](@ref): Base type for windowing functions
 - [`AudioFormat`](@ref): Type alias for audio data formats
 """
-struct AudioFrames{T}
+struct AudioFrames{T} <: AbstractAudioFrames
     frames :: Vector{<:AudioFormat{T}}
     win    :: WinFunction
 	type   :: Tuple{Symbol, Symbol}
@@ -158,6 +117,39 @@ struct AudioFrames{T}
 end
 
 Base.length(a::AudioFrames) = length(a.frames)
+
+"""
+    get_wsize(f::AudioFrames) -> Int
+
+Get the window size parameter from an `AudioFrames` object.
+
+# See Also
+- [`get_wstep`](@ref): Get window step size
+- [`get_ovrlap`](@ref): Get overlap length
+"""
+get_wsize(f::AudioFrames)  = f.win.params.window_size
+
+"""
+    get_wstep(f::AudioFrames) -> Int
+
+Get the window step parameter from an `AudioFrames` object.
+
+# See Also
+- [`get_wsize`](@ref): Get window size
+- [`get_ovrlap`](@ref): Get overlap length
+"""
+get_wstep(f::AudioFrames)  = f.win.params.window_step
+
+"""
+    get_ovrlap(f::AudioFrames) -> Int
+
+Get the overlap length from an `AudioFrames` object.
+
+# See Also
+- [`get_wsize`](@ref): Get window size  
+- [`get_wstep`](@ref): Get window step size
+"""
+get_ovrlap(f::AudioFrames) = f.win.params.window_size - f.win.params.window_step
 
 #------------------------------------------------------------------------------#
 #                                    frames                                    #

@@ -10,13 +10,13 @@
 # #              fft version 1 as used in audio features extraction              #
 # #------------------------------------------------------------------------------#
 # function _get_fft(x::AbstractArray{Float64}, setup::AudioSetup)
-# 	hop_length = setup.window_length - setup.overlap_length
+# 	hop_length = setup.window_length - setup.get_ovrlap(frames)
 # 	if isempty(setup.window)
 # 		setup.window, _ = gencoswin(setup.window_type[1], setup.window_length, setup.window_type[2])
 # 	end
 
 # 	# split in windows
-# 	y = buffer(x, setup.window_length, setup.window_length - setup.overlap_length)
+# 	y = buffer(x, setup.window_length, setup.window_length - setup.get_ovrlap(frames))
 
 # 	# apply window and take fft
 # 	Z = fft(y .* setup.window, (1,))
@@ -145,19 +145,19 @@
 # 	fft_length::Int64 = sr <= 8000 ? 256 : 512,
 # 	window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
 # 	window_length::Int64 = fft_length,
-# 	overlap_length::Int64 = round(Int, fft_length / 2),
+# 	get_ovrlap(frames)::Int64 = round(Int, fft_length / 2),
 # 	frequency_range::Tuple{Int64, Int64} = (0, floor(Int, sr / 2)),
 # 	spectrum_type::Symbol = :power, # :power, :magnitude
 # )
 # 	@assert sr > 0 "Sample rate must be > 0."
 # 	@assert 0 <= frequency_range[1] < frequency_range[2] <= sr / 2 "Frequency range must be (0, sr/2)."
-# 	@assert 0 < overlap_length < window_length "Overlap length must be < window length."
+# 	@assert 0 < get_ovrlap(frames) < window_length "Overlap length must be < window length."
 
 # 	frames, window = _get_frames(
 # 		eltype(x) == Float64 ? x : Float64.(x),
 # 		window_type = window_type,
 # 		window_length = window_length,
-# 		overlap_length = overlap_length,
+# 		get_ovrlap(frames) = get_ovrlap(frames),
 # 	)
 
 # 	stft_spec, stft_freq = _get_stft(
@@ -181,46 +181,46 @@
 #                                     stft                                     #
 #------------------------------------------------------------------------------#
 function get_stft(
-	x::AudioFrames,
+	frames::AudioFrames,
 	sr::Int64;
-	frequency_range::Tuple{Int64, Int64},
-	spectrum_type::Symbol,
+	frequency_range::Tuple{Int64, Int64}=(0, sr÷2),
+	spectrum_type::Symbol=:power, # :power, :magnitude
 )
-	@assert 0 <= frequency_range[1] < frequency_range[2] <= sr / 2 "Frequency range must be (0, sr/2)."
-	@assert 0 < overlap_length < window_length "Overlap length must be < window length."
-	@assert stft_length >= size(x, 1) "stft_length must be > window length. Got stft_length = $stft_length, window length = $(size(x,1))."
+	@assert 0 <= frequency_range[1] < frequency_range[2] <= sr / 2 "Frequency range must be (0, sr÷2)."
+	@assert 0 < get_ovrlap(frames) < window_length "Overlap length must be < window length."
+	@assert stft_length >= size(frames, 1) "stft_length must be > window length. Got stft_length = $stft_length, window length = $(size(frames,1))."
 
-	# ensure x is of length stft_length
+	# ensure frames is of length stft_length
 	# if the FFT window is larger than the window, the audio data will be zero-padded to match the size of the FFT window.
 	# this zero-padding in the time domain results in an interpolation in the frequency domain, 
 	# which can provide a more detailed view of the spectral content of the signal.
-	x = size(x, 1) < stft_length ? vcat(x, zeros(eltype(x), stft_length - size(x, 1), size(x, 2))) : x[1:stft_length, :]
+	frames = size(frames, 1) < stft_length ? vcat(frames, zeros(eltype(frames), stft_length - size(frames, 1), size(frames, 2))) : frames[1:stft_length, :]
 
 	# get fft
-	Y = fft(x, (1,))
+	fft_spec = fft(frames, (1,))
 
 	# post process
 	# trim to desired range
-	bin_low = ceil(Int, frequency_range[1] * stft_length / sr + 1)
+	bin_low  = ceil(Int, frequency_range[1] * stft_length / sr + 1)
 	bin_high = floor(Int, frequency_range[2] * stft_length / sr + 1)
-	bins = collect(bin_low:bin_high)
-	y = Y[bins, :]
+	bins     = collect(bin_low:bin_high)
+	fft_spec = @views fft_spec[bins, :]
 
 	# convert to half-sided power or magnitude spectrum
 	spectrum_funcs = Dict(
-		:power => x -> real.(x .* conj.(x)),
-		:magnitude => x -> abs.(x),
+		:power => frames -> real.(frames .* conj.(frames)),
+		:magnitude => frames -> abs.(frames),
 	)
 	# check if spectrum_type is valid
 	@assert haskey(spectrum_funcs, spectrum_type) "Unknown spectrum_type: $spectrum_type."
 
-	y = spectrum_funcs[spectrum_type](y)
+	fft_spec = spectrum_funcs[spectrum_type](fft_spec)
 
 	# trim borders
 	# halve the first bin if it's the lowest bin
-	bin_low == 1 && (y[1, :] *= 0.5)
+	bin_low == 1 && (@views fft_spec[1, :] *= 0.5)
 	# halve the last bin if it's the Nyquist bin and FFT length is even
-	bin_high == fld(stft_length, 2) + 1 && iseven(stft_length) && (y[end, :] *= 0.5)
+	bin_high == fld(stft_length, 2) + 1 && iseven(stft_length) && (@views fft_spec[end, :] *= 0.5)
 
 	# create frequency vector
 	stft_freq = (sr / stft_length) * (bins .- 1)
@@ -229,7 +229,7 @@ function get_stft(
 		stft_freq[end] = sr * (stft_length - 1) / (2 * stft_length)
 	end
 
-	return y, stft_freq
+	return fft_spec, stft_freq
 end
 
 # _get_stft2(x::AbstractArray{Float64}, s::AudioSetup) = _get_stft(
@@ -248,13 +248,13 @@ end
 # )
 # 	# @assert sr > 0 "Sample rate must be > 0."
 # 	@assert 0 <= frequency_range[1] < frequency_range[2] <= sr / 2 "Frequency range must be (0, sr/2)."
-# 	@assert 0 < overlap_length < window_length "Overlap length must be < window length."
+# 	@assert 0 < get_ovrlap(frames) < window_length "Overlap length must be < window length."
 
 # 	frames = _get_frames2(
 # 		eltype(x) == Float64 ? x : Float64.(x),
 # 		window_type = window_type,
 # 		window_length = window_length,
-# 		overlap_length = overlap_length,
+# 		get_ovrlap(frames) = get_ovrlap(frames),
 # 	)
 
 # 	stft_spec, stft_freq = _get_stft2(

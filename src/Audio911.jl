@@ -8,9 +8,14 @@ using  Reexport
 @reexport using AudioReader: data, sr, ismono
 
 # ---------------------------------------------------------------------------- #
+#                           audio related packages                             #
+# ---------------------------------------------------------------------------- #
+using FFTW
+
+# ---------------------------------------------------------------------------- #
 #                              external packages                               #
 # ---------------------------------------------------------------------------- #
-using  SoleBase: movingwindow, wholewindow, splitwindow, adaptivewindow
+using  SoleBase: movingwindow
 
 # ---------------------------------------------------------------------------- #
 #                                   types                                      #
@@ -25,10 +30,10 @@ const Maybe{T} = Union{T, Nothing}
 # ---------------------------------------------------------------------------- #
 #                                  modules                                     #
 # ---------------------------------------------------------------------------- #
-export AbstractWinFunction, WinFunction
-export MovingWindow, WholeWindow, SplitWindow, AdaptiveWindow
+export AbstractWinFunction, WinFunction, MovingWindow
 include("windowing/windows.jl")
 export AudioFrames, get_frames
+export get_wsize, get_wstep, get_ovrlap
 include("windowing/audioframes.jl")
 
 export get_stft
