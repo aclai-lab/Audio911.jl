@@ -157,6 +157,8 @@ struct AudioFrames{T}
     end
 end
 
+Base.length(a::AudioFrames) = length(a.frames)
+
 #------------------------------------------------------------------------------#
 #                                    frames                                    #
 #------------------------------------------------------------------------------#
@@ -240,7 +242,6 @@ function get_frames(
         frame .* window
     end
 
-    @show frames isa Vector{<:AudioFormat}
     return AudioFrames(frames, win, type)
 end
 
