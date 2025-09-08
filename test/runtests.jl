@@ -25,8 +25,8 @@ end
 println("Julia version: ", VERSION)
 
 test_suites = [
-    ("Audioreader",        ["audioreader.jl",           ]),
-    # ("Train and Test",       ["train_test.jl",        ]),
+    ("Audioreader", ["audioreader.jl",]),
+    ("FFT",         ["fft.jl",        ]),
     # ("Symbolic Analysis",    ["symbolic_analysis.jl", ]),
     # ("Solemodel robustness", ["robustness.jl"         ]),
     # ("Rule extraction",      ["rule_extraction.jl"    ]),

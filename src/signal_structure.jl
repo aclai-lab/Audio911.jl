@@ -13,7 +13,7 @@ mutable struct Spectrals
 end
 ###
 
-@with_kw mutable struct AudioSetup
+mutable struct AudioSetup
 	sr::Int64
 
 	# fft
@@ -67,7 +67,7 @@ end
 	transform_type::Symbol
 end
 
-@with_kw mutable struct AudioData
+Base.@kwdef mutable struct AudioData
 	x::AbstractVector{Float64}
 	frames::AbstractArray{Float64} = []
 

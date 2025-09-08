@@ -9,21 +9,21 @@ using Audio911
 # @test_nowarn load(flac_file)
 
 audiofile = load(mp3_file)
-@test_nowarn audiofile isa AudioFile
-@test_nowarn ismono(audiofile)
-@test_nowarn sr(audiofile) == 44100
+@test audiofile isa AudioFile
+@test ismono(audiofile)
+@test sr(audiofile) == 44100
 
 audiofile = load(mp3_file; mono=false)
-@test_nowarn audiofile isa AudioFile
-@test_nowarn ismono(audiofile) == false
-@test_nowarn sr(audiofile) == 44100
+@test audiofile isa AudioFile
+@test ismono(audiofile) == false
+@test sr(audiofile) == 44100
 
 audiofile = load(mp3_file; sr=8000)
-@test_nowarn audiofile isa AudioFile
-@test_nowarn sr(audiofile) == 8000
+@test audiofile isa AudioFile
+@test sr(audiofile) == 8000
 
 audio      = load(mp3_file; norm=false)
 audio_norm = load(mp3_file; norm=true)
-@test_nowarn sum(abs.(data(audio_norm))) > sum(abs.(data(audio)))
+@test sum(abs.(data(audio_norm))) > sum(abs.(data(audio)))
 
-@test_nowarn eltype(audio) == Float32
+@test eltype(audio) == Float32

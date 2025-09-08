@@ -1,9 +1,16 @@
 module Audio911
 using  Reexport
 
-# using AudioReader: load
+# ---------------------------------------------------------------------------- #
+#                                audio reader                                  #
+# ---------------------------------------------------------------------------- #
 @reexport using AudioReader: @format_str, File, AudioFile, load
 @reexport using AudioReader: data, sr, ismono
+
+# ---------------------------------------------------------------------------- #
+#                              external packages                               #
+# ---------------------------------------------------------------------------- #
+using  SoleBase: movingwindow, wholewindow, splitwindow, adaptivewindow
 
 # ---------------------------------------------------------------------------- #
 #                                   types                                      #
@@ -16,8 +23,13 @@ Type alias for `Union{T, Nothing}`.
 const Maybe{T} = Union{T, Nothing}
 
 # ---------------------------------------------------------------------------- #
-#                                    DSP                                       #
+#                                  modules                                     #
 # ---------------------------------------------------------------------------- #
+export AbstractWinFunction, WinFunction
+export MovingWindow, WholeWindow, SplitWindow, AdaptiveWindow
+include("windowing/windows.jl")
+include("windowing/windowing.jl")
+# include("fft.jl")
 # using FFTW, DSP
 # using LinearAlgebra
 # using Parameters
@@ -26,12 +38,12 @@ const Maybe{T} = Union{T, Nothing}
 # using Statistics, Roots
 # using NaNStatistics
 
-# include("signalDataStructure.jl")
+# include("signal_structure.jl")
 # include("audioFeaturesExtractor.jl")
 # # windowing
 # include("windowing/cswindows.jl")
 # include("windowing/windows.jl")
-# include("windowing/windowing.jl")
+
 # # fft
 # include("fft/conv.jl")
 # include("fft/f0.jl")
