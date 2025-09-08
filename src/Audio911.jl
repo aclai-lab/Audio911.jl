@@ -2,7 +2,8 @@ module Audio911
 using  Reexport
 
 # using AudioReader: load
-@reexport using AudioReader: @format_str, File, load
+@reexport using AudioReader: @format_str, File, AudioFile, load
+@reexport using AudioReader: data, sr, ismono
 
 # using FFTW, DSP
 # using LinearAlgebra
