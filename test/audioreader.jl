@@ -10,12 +10,12 @@ using Audio911
 
 audiofile = load(mp3_file)
 @test audiofile isa AudioFile
-@test ismono(audiofile)
+@test nchannels(audiofile) == 1
 @test sr(audiofile) == 44100
 
 audiofile = load(mp3_file; mono=false)
 @test audiofile isa AudioFile
-@test ismono(audiofile) == false
+@test nchannels(audiofile) == 2
 @test sr(audiofile) == 44100
 
 audiofile = load(mp3_file; sr=8000)

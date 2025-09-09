@@ -116,11 +116,14 @@ struct AudioFrames{T} <: AbstractAudioFrames
     end
 end
 
+#------------------------------------------------------------------------------#
+#                                    methods                                   #
+#------------------------------------------------------------------------------#
 Base.length(f::AudioFrames) = length(f.frames)
-Base.eltype(f::AudioFrames) = eltype(eltype(f.frames))
+Base.eltype(::AudioFrames{T}) where T = T
 
 """
-    audioframes(f::AudioFrames) -> Vector{<:AudioFormat}
+    get_frames(f::AudioFrames) -> Vector{<:AudioFormat}
 
 Extract the windowed audio frames from an `AudioFrames` container.
 
@@ -128,7 +131,7 @@ Extract the windowed audio frames from an `AudioFrames` container.
 - [`get_frames(::AudioFile)`](@ref): Function to create `AudioFrames` from audio data
 - [`AudioFrames`](@ref): Container type for windowed audio data
 """
-audioframes(f::AudioFrames) = f.frames
+get_frames(f::AudioFrames) = f.frames
 
 """
     nchannels(f::AudioFrames) -> Int
@@ -256,7 +259,7 @@ function get_frames(
     intervals = win(length(afile))
 
     frames = map(intervals) do interval
-        frame      = ismono(afile) ? data(afile)[interval] : data(afile)[interval, :]
+        frame      = nchannels(afile) == 1 ? data(afile)[interval] : data(afile)[interval, :]
         window, _  = gencoswin(type[1], length(interval), type[2])
         frame .* window
     end

@@ -5,7 +5,8 @@ using  Reexport
 #                                audio reader                                  #
 # ---------------------------------------------------------------------------- #
 @reexport using AudioReader: @format_str, File, AudioFormat, AudioFile, load
-@reexport using AudioReader: data, sr, ismono
+@reexport using AudioReader: data, sr
+import AudioReader: nchannels
 
 # ---------------------------------------------------------------------------- #
 #                           audio related packages                             #
@@ -32,11 +33,12 @@ const Maybe{T} = Union{T, Nothing}
 # ---------------------------------------------------------------------------- #
 export AbstractWinFunction, WinFunction, MovingWindow
 include("windowing/windows.jl")
-export AudioFrames, get_frames
-export audioframes, nchannels, get_wsize, get_wstep, get_ovrlap
+export AudioFrames
+export get_frames, get_wsize, get_wstep, get_ovrlap, nchannels
 include("windowing/audioframes.jl")
 
-export get_stft
+export Stft
+export get_stft, get_stft_freq, get_info
 include("fft/stft.jl")
 include("fft/mel.jl")
 
