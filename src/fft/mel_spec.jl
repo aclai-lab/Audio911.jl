@@ -202,29 +202,58 @@
 # 	return filterbank
 # end # function design_filterbank
 
-# # ---------------------------------------------------------------------------- #
-# #                               mel spectrogram                                #
-# # ---------------------------------------------------------------------------- #
-# function get_mel_spec!(
-# 	setup::AudioSetup,
-# 	data::AudioData,
-# )
-# 	filterbank = design_filterbank(data, setup)
+# ---------------------------------------------------------------------------- #
+#                               mel spectrogram                                #
+# ---------------------------------------------------------------------------- #
+function get_mel_spec(
+	stft::Stft;
+	mel_style                :: Symbol = :htk, 				# :htk, :slaney, :tuned
+	mel_bands                :: Int64  = 26,
+	filterbank_design_domain :: Symbol = :linear,
+	filterbank_normalization :: Symbol = :bandwidth, 		# :bandwidth, :area, :none
+	frequency_scale          :: Symbol = :mel, 			    # TODO :mel, :bark, :erb
+	st_peak_range            :: Tuple{Int64, Int64} = (200, 700),
+)
+	# filterbank = design_filterbank(data, setup)
 
-# 	hop_length = setup.window_length - setup.overlap_length
-# 	num_hops = Int(floor((size(data.x, 1) - setup.window_length) / hop_length) + 1)
+	# hop_length = setup.window_length - setup.overlap_length
+	# num_hops = Int(floor((size(data.x, 1) - setup.window_length) / hop_length) + 1)
 
-# 	# apply filterbank
-# 	# if (setup.spectrum_type == :power)
-# 	data.mel_spectrogram = reshape(
-# 		filterbank * data.fft, setup.mel_bands, num_hops)
-# 	# else
-# 	#     #TODO
-# 	#     error("magnitude not yet implemented.")
-# 	# end
+	# # apply filterbank
+	# # if (setup.spectrum_type == :power)
+	# data.mel_spectrogram = reshape(
+	# 	filterbank * data.fft, setup.mel_bands, num_hops)
+	# # else
+	# #     #TODO
+	# #     error("magnitude not yet implemented.")
+	# # end
 
-# 	data.mel_spectrogram = transpose(data.mel_spectrogram)
-# end # melSpectrogram
+	# data.mel_spectrogram = transpose(data.mel_spectrogram)
+end # melSpectrogram
+
+function get_mel_spec(
+	frames          :: AudioFrames;
+	stft_size       :: Int64=get_wsize(frames),
+	frequency_range :: Tuple{Int64, Int64}=(0, sr÷2),
+	spectrum_type   :: Symbol=:power, # :power, :magnitude
+    kwargs...
+)
+    stft = get_stft(frames; stft_size, frequency_range, spectrum_type)
+    get_mel_spec(stft; kwargs...)
+end
+
+function get_mel_spec(
+	afile :: AudioFile;
+    win   :: WinFunction=MovingWindow(
+                            window_size=sr(afile)≤8000 ? 256 : 512,
+                            window_step=sr(afile)≤8000 ? 128 : 256
+                        ),
+	type  :: Tuple{Symbol, Symbol}=(:hann, :periodic),
+	kwargs...
+	)::Stft
+	frames = get_frames(afile; win, type)
+	get_mel_spec(frames; kwargs...)
+end
 
 # # ---------------------------------------------------------------------------- #
 # #                          logaritmic mel spectrogram                          #

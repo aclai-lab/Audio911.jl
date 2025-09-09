@@ -279,6 +279,7 @@ function get_frames(
     end
 
     info = (;
+        sr       = afile.sr,
         win_func = win.func,
         win_size = win.params.window_size,
         win_step = win.params.window_step,

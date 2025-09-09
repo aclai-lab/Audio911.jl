@@ -29,6 +29,22 @@ Type alias for `Union{T, Nothing}`.
 const Maybe{T} = Union{T, Nothing}
 
 # ---------------------------------------------------------------------------- #
+#                              frequency range                                 #
+# ---------------------------------------------------------------------------- #
+abstract type AbstractRange end
+
+struct FreqRange{T} <: AbstractRange
+    low :: T
+    hi  :: T
+
+    function FreqRange(low::T, hi:: T) where T
+        new{T}(low, hi)
+    end
+end
+
+export FreqRange
+
+# ---------------------------------------------------------------------------- #
 #                                  modules                                     #
 # ---------------------------------------------------------------------------- #
 export AbstractWinFunction, WinFunction, MovingWindow

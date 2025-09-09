@@ -59,21 +59,21 @@ get_info(s::Stft) = s.info
 #                                   get stft                                   #
 #------------------------------------------------------------------------------#
 function get_stft(
-	frames          :: AudioFrames,
-	sr              :: Int64;
+	frames          :: AudioFrames;
 	stft_size       :: Int64=get_wsize(frames),
-	frequency_range :: Tuple{Int64, Int64}=(0, sr÷2),
+	frequency_range :: FreqRange=FreqRange(0, get_info(frames).sr÷2),
 	spectrum_type   :: Symbol=:power, # :power, :magnitude
 )::Stft
+	sr = get_info(frames).sr
 	win_size   = get_wsize(frames)
 	overlap    = get_ovrlap(frames)
 	n_channels = nchannels(frames)
 	f          = reduce(hcat, get_frames(frames))
 
     # validate frequency range
-    (0 ≤ frequency_range[1] < frequency_range[2] ≤ sr / 2) ||
+    (0 ≤ frequency_range.low < frequency_range.hi ≤ sr / 2) ||
         throw(ArgumentError("Frequency range must be (0, sr÷2). " *
-				"Got range: $frequency_range, sr÷2 = $(sr÷2)"))
+				"Got range: $(frequency_range.low), $(frequency_range.hi), sr÷2 = $(sr÷2)"))
     
     # validate overlap
     (0 < overlap < win_size) ||
@@ -103,8 +103,8 @@ function get_stft(
 
 	# post process
 	# trim to desired range
-	bin_low  = ceil(Int,  frequency_range[1] * stft_size / sr + 1)
-	bin_high = floor(Int, frequency_range[2] * stft_size / sr + 1)
+	bin_low  = ceil(Int,  frequency_range.low * stft_size / sr + 1)
+	bin_high = floor(Int, frequency_range.hi  * stft_size / sr + 1)
 	bins     = collect(bin_low:bin_high)
 	stft_spec = @views stft_spec[bins, :]
 
@@ -154,7 +154,8 @@ function get_stft(
 	kwargs...
 	)::Stft
 	frames = get_frames(afile; win, type)
-	get_stft(frames, sr(afile); kwargs...)
+
+	get_stft(frames; kwargs...)
 end
 
 # function get_onesided_fft_range(fft_length::Int64)
