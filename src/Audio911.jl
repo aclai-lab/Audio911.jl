@@ -40,7 +40,7 @@ include("windowing/audioframes.jl")
 export Stft
 export get_stft, get_stft_freq, get_info
 include("fft/stft.jl")
-include("fft/mel.jl")
+include("fft/mel_spec.jl")
 
 # using FFTW, DSP
 # using LinearAlgebra
