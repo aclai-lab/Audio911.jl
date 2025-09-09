@@ -42,6 +42,12 @@ struct FreqRange{T} <: AbstractRange
     end
 end
 
+Base.eltype(::Type{FreqRange{T}}) where T = T
+Base.collect(fr::FreqRange) = collect(fr.low:fr.hi)
+
+get_freqs(fr::FreqRange) = (fr.low, fr.hi)
+
+
 export FreqRange
 
 # ---------------------------------------------------------------------------- #
@@ -56,6 +62,8 @@ include("windowing/audioframes.jl")
 export Stft
 export get_stft, get_stft_freq, get_info
 include("fft/stft.jl")
+
+export get_mel_spec
 include("fft/mel_spec.jl")
 
 # using FFTW, DSP

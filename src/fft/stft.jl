@@ -56,6 +56,17 @@ Extract  metadata from an `Stft` container.
 get_info(s::Stft) = s.info
 
 #------------------------------------------------------------------------------#
+#                                  utilities                                   #
+#------------------------------------------------------------------------------#
+function get_onesided_fft_range(stft_size::Int64)
+	if mod(stft_size, 2) == 0
+		return collect(1:Int(stft_size / 2 + 1))   # EVEN
+	else
+		return collect(1:Int((stft_size + 1) / 2))  # ODD
+	end
+end # get_onesided_fft_range
+
+#------------------------------------------------------------------------------#
 #                                   get stft                                   #
 #------------------------------------------------------------------------------#
 function get_stft(
@@ -158,13 +169,7 @@ function get_stft(
 	get_stft(frames; kwargs...)
 end
 
-# function get_onesided_fft_range(fft_length::Int64)
-# 	if mod(fft_length, 2) == 0
-# 		return collect(1:Int(fft_length / 2 + 1))   # EVEN
-# 	else
-# 		return collect(1:Int((fft_length + 1) / 2))  # ODD
-# 	end
-# end # get_onesided_fft_range
+
 
 # #------------------------------------------------------------------------------#
 # #              fft version 1 as used in audio features extraction              #
