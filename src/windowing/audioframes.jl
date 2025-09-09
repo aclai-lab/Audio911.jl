@@ -106,13 +106,15 @@ struct AudioFrames{T} <: AbstractAudioFrames
     frames :: Vector{<:AudioFormat{T}}
     win    :: WinFunction
 	type   :: Tuple{Symbol, Symbol}
+    info   :: NamedTuple
 
     function AudioFrames(
         frames :: Vector{<:AudioFormat{T}},
         win    :: WinFunction,
         type   :: Tuple{Symbol, Symbol},
+        info   :: NamedTuple
     ) where T
-    new{T}(frames, win, type)
+    new{T}(frames, win, type, info)
     end
 end
 
@@ -177,6 +179,18 @@ Get the overlap length from an `AudioFrames` object.
 - [`get_wstep`](@ref): Get window step size
 """
 get_ovrlap(f::AudioFrames) = f.win.params.window_size - f.win.params.window_step
+
+"""
+    get_info(f::AudioFrames) -> NamedTuple
+
+Extract metadata from an `AudioFrames` container.
+
+# See Also
+- [`AudioFrames`](@ref): Container type for windowed audio data
+- [`get_frames`](@ref): Function to create audio frames
+- [`get_wsize`](@ref), [`get_wstep`](@ref), [`get_ovrlap`](@ref): Access specific windowing parameters
+"""
+get_info(f::AudioFrames)   = f.info
 
 #------------------------------------------------------------------------------#
 #                                    frames                                    #
@@ -264,7 +278,13 @@ function get_frames(
         frame .* window
     end
 
-    return AudioFrames(frames, win, type)
+    info = (;
+        win_func = win.func,
+        win_size = win.params.window_size,
+        win_step = win.params.window_step,
+        win_type = type
+    )
+    return AudioFrames(frames, win, type, info)
 end
 
 # function logEnergyCoeffs(
