@@ -1,4 +1,28 @@
 # ---------------------------------------------------------------------------- #
+#                               abstract types                                 #
+# ---------------------------------------------------------------------------- #
+abstract type AbstractMelSpec end
+
+# ---------------------------------------------------------------------------- #
+#                            mel spectrogram struct                            #
+# ---------------------------------------------------------------------------- #
+struct MelSpec{F,T} <: AbstractMelSpec
+	mel_spec :: Matrix{T}
+	mel_freq :: Vector{Float64}
+	fb       :: Matrix{Float64}
+	info     :: NamedTuple
+
+	function MelSpec{F}(
+		mel_spec :: Matrix{T},
+		mel_freq :: Vector{Float64},
+		fb       :: Matrix{Float64},
+		info     :: NamedTuple
+	) where {F,T}
+		new{F,T}(mel_spec, mel_freq, fb, info)
+	end
+end
+
+# ---------------------------------------------------------------------------- #
 #                         mel scale utility functions                          #
 # ---------------------------------------------------------------------------- #
 function hz2mel(
@@ -184,7 +208,7 @@ function design_fb(
 
 	if (fb_norm == :area)
 		weight_per_band = sum(fb, dims = 2)
-		if setup.frequency_scale != :erb
+		if frequency_scale != :erb
 			weight_per_band = weight_per_band / 2
 		end
 	elseif (fb_norm == :bandwidth)
@@ -216,7 +240,7 @@ end
 # ---------------------------------------------------------------------------- #
 #                               mel spectrogram                                #
 # ---------------------------------------------------------------------------- #
-function get_mel_spec(
+function get_melspec(
 	stft::Stft;
     mel_bands        :: Int64=26,
 	mel_style        :: Symbol=:htk, 				 # :htk, :slaney, :tuned
@@ -225,7 +249,11 @@ function get_mel_spec(
 	frequency_scale  :: Symbol=:mel, 			    # TODO :mel, :bark, :erb
 	st_peak_range    :: FreqRange=FreqRange(200, 700),
 )
-	fb = design_fb(
+    data = get_stft(stft)
+    win_size = get_info(stft).win_size
+    win_step = get_info(stft).win_step
+
+	fb, mel_freq = design_fb(
         stft;
         mel_bands,
         mel_style,
@@ -235,22 +263,22 @@ function get_mel_spec(
         st_peak_range
     )
 
-	# hop_length = setup.window_length - setup.overlap_length
-	# num_hops = Int(floor((size(data.x, 1) - setup.window_length) / hop_length) + 1)
+	num_hops = size(data, 2)
 
-	# # apply fb
-	# # if (setup.spectrum_type == :power)
-	# data.mel_spectrogram = reshape(
-	# 	fb * data.fft, setup.mel_bands, num_hops)
-	# # else
-	# #     #TODO
-	# #     error("magnitude not yet implemented.")
-	# # end
+	# apply fb
+	# if (setup.spectrum_type == :power)
+	mel_spec = reshape(fb * data, mel_bands, num_hops)
+	# else
+	#     #TODO
+	#     error("magnitude not yet implemented.")
+	# end
 
-	# data.mel_spectrogram = transpose(data.mel_spectrogram)
-end # melSpectrogram
+	# mel_spec = transpose(mel_spec)
 
-function get_mel_spec(
+    return mel_spec, fb, mel_freq
+end
+
+function get_melspec(
 	frames          :: AudioFrames;
 	stft_size       :: Int64=get_wsize(frames),
 	frequency_range :: FreqRange=FreqRange(0, get_info(frames).sr÷2),
@@ -258,10 +286,10 @@ function get_mel_spec(
     kwargs...
 )
     stft = get_stft(frames; stft_size, frequency_range, spectrum_type)
-    get_mel_spec(stft; kwargs...)
+    get_melspec(stft; kwargs...)
 end
 
-function get_mel_spec(
+function get_melspec(
 	afile :: AudioFile;
     win   :: WinFunction=MovingWindow(
                             window_size=sr(afile)≤8000 ? 256 : 512,
@@ -271,7 +299,7 @@ function get_mel_spec(
 	kwargs...
 	)
 	frames = get_frames(afile; win, type)
-	get_mel_spec(frames; kwargs...)
+	get_melspec(frames; kwargs...)
 end
 
 # # ---------------------------------------------------------------------------- #

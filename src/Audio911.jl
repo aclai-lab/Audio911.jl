@@ -63,7 +63,7 @@ export Stft
 export get_stft, get_stft_freq, get_info
 include("fft/stft.jl")
 
-export get_mel_spec
+export get_melspec
 include("fft/mel_spec.jl")
 
 # using FFTW, DSP

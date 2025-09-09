@@ -13,7 +13,7 @@ SoleBase = "4475fa32-7023-44a0-aa70-4813b230e492"
 AudioReader = {rev = "main", url = "https://github.com/PasoStudio73/AudioReader.jl"}
 
 [compat]
-AudioReader = "0.0.3"
+AudioReader = "0.0.4"
 FFTW = "1.9.0"
 Reexport = "1.2"
 SoleBase = "0.13.2"
