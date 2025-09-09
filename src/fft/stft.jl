@@ -1,16 +1,16 @@
 abstract type AbstractStft end
 
-struct Stft{T} <: AbstractStft
+struct Stft{F,T} <: AbstractStft
 	stft_spec :: Matrix{T}
 	stft_freq :: Vector{Float64}
 	info      :: NamedTuple
 
-	function Stft(
+	function Stft{F}(
 		stft_spec :: Matrix{T},
 		stft_freq :: Vector{Float64},
 		info      :: NamedTuple
-	) where T
-		new{T}(stft_spec, stft_freq, info)
+	) where {F,T}
+		new{F,T}(stft_spec, stft_freq, info)
 	end
 end
 
@@ -141,7 +141,7 @@ function get_stft(
 	)
 	info = merge(info, get_info(frames))
 
-	return Stft(stft_spec, stft_freq, info)
+	return Stft{AudioFrames}(stft_spec, stft_freq, info)
 end
 
 function get_stft(
