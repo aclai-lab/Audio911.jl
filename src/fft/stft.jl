@@ -95,7 +95,7 @@ function get_stft(
 	# this zero-padding in the time domain results in an interpolation in the frequency domain, 
 	# which can provide a more detailed view of the spectral content of the signal.
 	@inline @views f = win_size < stft_size ? 
-		vcat(f, zeros(eltype(frames), stft_size - win_size, 1)) : 
+		vcat(f, zeros(eltype(frames), stft_size - win_size, size(f, 2))) : 
 		f[1:stft_size, :]
 
 	# get fft
@@ -139,6 +139,7 @@ function get_stft(
 		frequency_range,
 		spectrum_type,
 	)
+	info = merge(info, get_info(frames))
 
 	return Stft(stft_spec, stft_freq, info)
 end
