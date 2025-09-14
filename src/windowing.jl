@@ -325,7 +325,10 @@ function get_frames(
     end
 
     # get window from DSP
-    window = type(get_size(win))
+    # zerophase and circshift are used for compatibility with Matlab's `periodic` windows.
+    win_size = get_size(win)
+    window = type(win_size; zerophase=true)
+    window = circshift(window, -(win_size >> 1))
 
     # collect infos
     info = (;
