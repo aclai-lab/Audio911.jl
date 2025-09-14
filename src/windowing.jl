@@ -303,12 +303,13 @@ window_type = frames.type          # Window shape and periodicity
 # See also: [`AudioFrames`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref)
 """
 function get_frames(
-	afile :: AudioFile;
-    win   :: WinFunction=MovingWindow(
+	afile    :: AudioFile;
+    win      :: WinFunction=MovingWindow(
                 window_size=samplerate(afile) ≤ 8000 ? 256 : 512,
                 window_step=samplerate(afile) ≤ 8000 ? 128 : 256
             ),
-	type  :: Base.Callable,
+	type     :: Base.Callable=hanning,
+    periodic :: Bool=true
 )::AudioFrames
     # setup parameters
     afile_length = length(afile)
@@ -326,10 +327,13 @@ function get_frames(
     end
 
     # get window from DSP
-    # zerophase and circshift are used for compatibility with Matlab's `periodic` windows.
     win_size = get_size(win)
-    window = type(win_size; zerophase=true)
-    window = circshift(window, -(win_size >> 1))
+    window = if periodic
+        # zerophase and circshift are used for compatibility with Matlab's `periodic` windows.
+        circshift(type(win_size; zerophase=true), -(win_size >> 1))
+    else
+        type(win_size)
+    end
 
     # collect infos
     info = (;
