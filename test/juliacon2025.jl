@@ -17,4 +17,3 @@ frames = get_frames(audio; win, type=hanning)
 stft = get_stft(frames; spectrum_type=:magnitude)
 stft = get_stft(frames; frequency_range=(100,8000), spectrum_type=:magnitude)
 mel_spec = get_melspec(stft)
-

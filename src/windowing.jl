@@ -18,6 +18,7 @@ abstract type AbstractAudioFrames end
 # ---------------------------------------------------------------------------- #
 #                                    types                                     #
 # ---------------------------------------------------------------------------- #
+# availables window functions from package DSP
 const AVAIL_WINDOWS = (
     rect, hanning, hamming, tukey, cosine, lanczos, triang,
     bartlett, gaussian, bartlett_hann, blackman, kaiser, dpss
@@ -146,7 +147,7 @@ window_func = frames.info.win        # Windowing function used
 """
 struct AudioFrames{T} <: AbstractAudioFrames
     frames :: Matrix{T}
-    window :: Vector{Float64}
+    window :: Vector{T}
     info   :: NamedTuple
 
     function AudioFrames(
@@ -181,7 +182,7 @@ Extract the window from an `AudioFrames` container.
 
 # See also: [`get_frames`](@ref), [`get_wframes`](@ref), [`AudioFrames`](@ref)
 """
-get_window(f::AudioFrames) = w.window
+get_window(f::AudioFrames) = f.window
 
 """
     get_wframes(f::AudioFrames) -> Matrix
@@ -317,19 +318,22 @@ function get_frames(
     in(type, AVAIL_WINDOWS) || throw(ArgumentError("Window type $(type) not supported." * 
         " Available windows: $(AVAIL_WINDOWS)"))
 
-    # run the windowing algo and set windows indexes
+    # buffer audio file
     intervals = win(afile_length)
-    window = type(win.params.window_size)
-
     frames = map(intervals) do interval
         nchannels(afile) == 1 ? data(afile)[interval] : data(afile)[interval, :]
     end
 
+    # get window from DSP
+    window = type(get_size(win))
+
+    # collect infos
     info = (;
-        sr       = samplerate(afile),
-        win = win,
+        sr   = samplerate(afile),
+        win  = win,
         type = type
     )
+
     return AudioFrames(frames, window, info)
 end
 
