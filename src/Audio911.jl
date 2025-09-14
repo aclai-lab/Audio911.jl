@@ -54,8 +54,8 @@ export FreqRange
 #                                  modules                                     #
 # ---------------------------------------------------------------------------- #
 # reexport DSP's window functions
-@reexport using DSP: rect, hanning, hamming, tukey, cosine, lanczos, triang
-@reexport using DSP: bartlett, gaussian, bartlett_hann, blackman, kaiser, dpss
+@reexport using DSP: rect, hanning, hamming, cosine, lanczos, triang
+@reexport using DSP: bartlett, bartlett_hann, blackman
 
 export AbstractWinFunction, WinFunction, MovingWindow
 export AudioFrames

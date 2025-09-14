@@ -13,8 +13,22 @@ sr = samplerate(audio)
 
 win = Audio911.MovingWindow(window_size=481, window_step=160)
 frames = get_frames(audio; win, type=hamming)
-frame1 = get_frames(audio; win, type=hamming, periodic=false)
 
 stft = get_stft(frames; spectrum_type=:magnitude)
 stft = get_stft(frames; frequency_range=(100,8000), spectrum_type=:magnitude)
 mel_spec = get_melspec(stft)
+
+frames = get_frames(audio; win, type=rect)
+frames = get_frames(audio; win, type=hanning)
+frames = get_frames(audio; win, type=hamming)
+# frames = get_frames(audio; win, type=tukey)
+frames = get_frames(audio; win, type=cosine)
+frames = get_frames(audio; win, type=lanczos)
+frames = get_frames(audio; win, type=triang)
+frames = get_frames(audio; win, type=bartlett)
+# frames = get_frames(audio; win, type=gaussian)
+frames = get_frames(audio; win, type=bartlett_hann)
+frames = get_frames(audio; win, type=blackman)
+# frames = get_frames(audio; win, type=kaiser)
+# frames = get_frames(audio; win, type=dpss)
+

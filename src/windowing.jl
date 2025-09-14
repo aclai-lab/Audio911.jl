@@ -20,8 +20,8 @@ abstract type AbstractAudioFrames end
 # ---------------------------------------------------------------------------- #
 # availables window functions from package DSP
 const AVAIL_WINDOWS = (
-    rect, hanning, hamming, tukey, cosine, lanczos, triang,
-    bartlett, gaussian, bartlett_hann, blackman, kaiser, dpss
+    rect, hanning, hamming, cosine, lanczos, triang,
+    bartlett, bartlett_hann, blackman
 )
 
 # ---------------------------------------------------------------------------- #
