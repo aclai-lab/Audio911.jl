@@ -40,6 +40,7 @@ struct WinFunction <: AbstractWinFunction
     func   :: Function
     params :: NamedTuple
 end
+
 # Make it callable - npoints is passed at execution time
 (w::WinFunction)(npoints::Int; kwargs...) = w.func(npoints; w.params..., kwargs...)
 
@@ -86,7 +87,7 @@ Create a moving window that slides across the time series.
 function MovingWindow(;
     window_size::Int,
     window_step::Int,
-)
+)::WinFunction
     WinFunction(movingwindow, (;window_size, window_step))
 end
 
