@@ -78,9 +78,10 @@ end # get_onesided_fft_range
 function get_stft(
 	frames          :: AudioFrames;
 	stft_size       :: Int64=get_wsize(frames),
-	frequency_range :: FreqRange=FreqRange(0, get_info(frames).sr÷2),
+	frequency_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_info(frames).sr÷2),
 	spectrum_type   :: Symbol=:power, # :power, :magnitude
 )::Stft
+	frequency_range isa Tuple && (frequency_range = FreqRange(first(frequency_range), last(frequency_range)))
 	sr = get_info(frames).sr
 	win_size   = get_wsize(frames)
 	overlap    = get_ovrlap(frames)
@@ -164,8 +165,8 @@ end
 function get_stft(
 	afile :: AudioFile;
     win   :: WinFunction=MovingWindow(
-                            window_size=sr(afile)≤8000 ? 256 : 512,
-                            window_step=sr(afile)≤8000 ? 128 : 256
+                            window_size=samplerate(afile)≤8000 ? 256 : 512,
+                            window_step=samplerate(afile)≤8000 ? 128 : 256
                         ),
 	type  :: Tuple{Symbol, Symbol}=(:hann, :periodic),
 	kwargs...

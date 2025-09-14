@@ -292,8 +292,8 @@ end
 function get_melspec(
 	afile :: AudioFile;
     win   :: WinFunction=MovingWindow(
-                            window_size=sr(afile)≤8000 ? 256 : 512,
-                            window_step=sr(afile)≤8000 ? 128 : 256
+                            window_size=samplerate(afile)≤8000 ? 256 : 512,
+                            window_step=samplerate(afile)≤8000 ? 128 : 256
                         ),
 	type  :: Tuple{Symbol, Symbol}=(:hann, :periodic),
 	kwargs...

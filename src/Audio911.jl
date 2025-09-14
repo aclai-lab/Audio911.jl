@@ -5,13 +5,13 @@ using  Reexport
 #                                audio reader                                  #
 # ---------------------------------------------------------------------------- #
 @reexport using AudioReader: @format_str, File, AudioFormat, AudioFile, load
-@reexport using AudioReader: data, sr
+@reexport using AudioReader: data, samplerate
 import AudioReader: nchannels
 
 # ---------------------------------------------------------------------------- #
 #                           audio related packages                             #
 # ---------------------------------------------------------------------------- #
-using FFTW
+using FFTW, DSP
 
 # ---------------------------------------------------------------------------- #
 #                              external packages                               #
@@ -53,18 +53,23 @@ export FreqRange
 # ---------------------------------------------------------------------------- #
 #                                  modules                                     #
 # ---------------------------------------------------------------------------- #
+# reexport DSP's window functions
+@reexport using DSP: rect, hanning, hamming, tukey, cosine, lanczos, triang
+@reexport using DSP: bartlett, gaussian, bartlett_hann, blackman, kaiser, dpss
+
 export AbstractWinFunction, WinFunction, MovingWindow
-include("windowing/windows.jl")
 export AudioFrames
-export get_frames, get_wsize, get_wstep, get_ovrlap, nchannels
-include("windowing/audioframes.jl")
+export get_frames, get_window, get_wframes
+export nchannels, get_size, get_step, get_overlap
+export get_info
+include("windowing.jl")
 
 export Stft
 export get_stft, get_stft_freq, get_info
-include("fft/stft.jl")
+include("stft/stft.jl")
 
 export get_melspec
-include("fft/mel_spec.jl")
+include("stft/mel_spec.jl")
 
 # using FFTW, DSP
 # using LinearAlgebra

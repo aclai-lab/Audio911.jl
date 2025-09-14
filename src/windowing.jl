@@ -16,6 +16,14 @@ Abstract base type for audio frame containers.
 abstract type AbstractAudioFrames end
 
 # ---------------------------------------------------------------------------- #
+#                                    types                                     #
+# ---------------------------------------------------------------------------- #
+const AVAIL_WINDOWS = (
+    rect, hanning, hamming, tukey, cosine, lanczos, triang,
+    bartlett, gaussian, bartlett_hann, blackman, kaiser, dpss
+)
+
+# ---------------------------------------------------------------------------- #
 #                                win functions                                 #
 # ---------------------------------------------------------------------------- #
 """
@@ -33,6 +41,33 @@ struct WinFunction <: AbstractWinFunction
 end
 # Make it callable - npoints is passed at execution time
 (w::WinFunction)(npoints::Int; kwargs...) = w.func(npoints; w.params..., kwargs...)
+
+"""
+    get_size(w::WinFunction) -> Int
+
+Get the window size parameter from a `WinFunction` object.
+
+# See also: [`get_step`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref)
+"""
+get_size(w::WinFunction) = w.params.window_size
+
+"""
+    get_step(w::WinFunction) -> Int
+
+Get the window step parameter from a `WinFunction` object.
+
+# See also: [`get_size`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref): Moving window constructor
+"""
+get_step(w::WinFunction) = w.params.window_step
+
+"""
+    get_overlap(w::WinFunction) -> Int
+
+Get the overlap length between consecutive windows from a `WinFunction` object.
+
+# See also: [`get_size`](@ref), [`get_step`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref)
+"""
+get_overlap(w::WinFunction) = get_size(w) - get_step(w)
 
 """
     MovingWindow(; window_size::Int, window_step::Int) -> WinFunction
@@ -63,22 +98,31 @@ end
 Container for windowed audio data with associated windowing parameters.
 
 This struct holds the result of applying a windowing function to audio data,
-storing both the windowed frames and the parameters used to generate them.
+storing the windowed frames as a matrix where each column represents one frame,
+along with the window function and metadata used to generate them.
 
 # Type Parameters
 - `T`: The numeric type of the audio data elements (e.g., `Float32`, `Float64`)
 
 # Fields
-- `frames::Vector{<:AudioFormat{T}}`: Vector of windowed audio frames, where each frame 
-  is either a `Vector{T}` (mono) or `Matrix{T}` (multi-channel)
-- `win::WinFunction`: The windowing function used to generate the frames 
-  (e.g., `MovingWindow`, `AdaptiveWindow`, `SplitWindow`, `WholeWindow`)
-- `type::Tuple{Symbol, Symbol}`: Window type specification as `(window_shape, periodicity)`,
-  where `window_shape` can be `:hann`, `:hamming`, `:blackman`, etc., and `periodicity` 
-  can be `:periodic` or `:symmetric`
+- `frames::Matrix{T}`: Matrix of windowed audio frames where each column is one frame.
+  For mono audio, each column contains the windowed samples for that frame.
+  For multi-channel audio, the matrix structure preserves channel information.
+- `window::Vector{Float64}`: The actual window function values that were applied to each frame
+- `info::NamedTuple`: Metadata containing:
+  - `sr::Int`: Sample rate of the original audio
+  - `win::WinFunction`: The windowing function object used
+  - `type::Symbol`: window type function from DSP package
 
 # Constructor
-    AudioFrames(frames, win, type)
+    AudioFrames(frames::Vector{<:AudioFormat{T}}, window::Vector{Float64}, info::NamedTuple)
+
+The constructor automatically converts a vector of individual frames into a matrix format
+where each column represents one frame, using `reduce(hcat, frames)` for efficient storage.
+
+# Matrix Structure
+- **Rows**: Sample indices within each frame (window_size samples per frame)
+- **Columns**: Frame indices (number of frames depends on audio length and windowing parameters)
 
 # Example
 ```julia
@@ -86,35 +130,32 @@ storing both the windowed frames and the parameters used to generate them.
 audiofile = load("audio.wav")
 
 # Create windowing function
-win = AdaptiveWindow(nwindows=3, relative_overlap=0.1)
+win = MovingWindow(window_size=512, window_step=256)
 
-# Generate frames
-frames = get_frames(audiofile; win=win, type=(:hann, :periodic))
+# Generate frames with Hann window
+frames = get_frames(audiofile; win=win, type=hanning)
 
-# Access the windowed data
-windowed_data = frames.frames
-window_function = frames.win
-window_type = frames.type
+# Access the data
+frames_matrix = frames.frames        # Matrix where each column is a frame
+window_values = frames.window        # Window function values applied
+sample_rate = frames.info.sr         # Original sample rate
+window_func = frames.info.win        # Windowing function used
 ```
 
-# See Also
-- [`get_frames`](@ref): Function to create `AudioFrames` from audio data
-- [`WinFunction`](@ref): Base type for windowing functions
-- [`AudioFormat`](@ref): Type alias for audio data formats
+# See also: [`get_frames`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref), [`AudioFormat`](@ref)
 """
 struct AudioFrames{T} <: AbstractAudioFrames
-    frames :: Vector{<:AudioFormat{T}}
-    win    :: WinFunction
-	type   :: Tuple{Symbol, Symbol}
+    frames :: Matrix{T}
+    window :: Vector{Float64}
     info   :: NamedTuple
 
     function AudioFrames(
         frames :: Vector{<:AudioFormat{T}},
-        win    :: WinFunction,
-        type   :: Tuple{Symbol, Symbol},
+        window :: Vector{Float64},
         info   :: NamedTuple
     ) where T
-    new{T}(frames, win, type, info)
+        frames_matrix = reduce(hcat, frames)
+        new{T}(frames_matrix, window, info)
     end
 end
 
@@ -127,68 +168,72 @@ Base.eltype(::AudioFrames{T}) where T = T
 """
     get_frames(f::AudioFrames) -> Vector{<:AudioFormat}
 
-Extract the windowed audio frames from an `AudioFrames` container.
+Extract the buffered audio frames from an `AudioFrames` container.
 
-# See Also
-- [`get_frames(::AudioFile)`](@ref): Function to create `AudioFrames` from audio data
-- [`AudioFrames`](@ref): Container type for windowed audio data
+# See also: [`get_frames(::AudioFile)`](@ref), [`AudioFrames`](@ref)
 """
 get_frames(f::AudioFrames) = f.frames
+
+"""
+    get_window(f::AudioFrames) -> Vector{Float64}
+
+Extract the window from an `AudioFrames` container.
+
+# See also: [`get_frames`](@ref), [`get_wframes`](@ref), [`AudioFrames`](@ref)
+"""
+get_window(f::AudioFrames) = w.window
+
+"""
+    get_wframes(f::AudioFrames) -> Matrix
+
+Get the windowed frames with the window function applied element-wise.
+
+# See also: [`get_frames`](@ref), [`get_window`](@ref), [`AudioFrames`](@ref)
+"""
+get_wframes(f::AudioFrames) = get_frames(f) .* get_window(f)
 
 """
     nchannels(f::AudioFrames) -> Int
 
 Get the number of audio channels from an `AudioFrames` container.
 
-# See Also
-- [`AudioFrames`](@ref): Container type for windowed audio data
-- [`get_frames`](@ref): Function to create audio frames
-- [`Base.length`](@ref): Get number of frames in the container
+# See also: [`AudioFrames`](@ref), [`get_frames`](@ref), [`Base.length`](@ref)
 """
 nchannels(f::AudioFrames) = size(f.frames[1], 2)
 
 """
-    get_wsize(f::AudioFrames) -> Int
+    get_size(f::AudioFrames) -> Int
 
 Get the window size parameter from an `AudioFrames` object.
 
-# See Also
-- [`get_wstep`](@ref): Get window step size
-- [`get_ovrlap`](@ref): Get overlap length
+# See also: [`get_wstep`](@ref), [`get_overlap`](@ref)
 """
-get_wsize(f::AudioFrames)  = f.win.params.window_size
+get_size(f::AudioFrames)  = f.info.win.params.window_size
 
 """
     get_wstep(f::AudioFrames) -> Int
 
 Get the window step parameter from an `AudioFrames` object.
 
-# See Also
-- [`get_wsize`](@ref): Get window size
-- [`get_ovrlap`](@ref): Get overlap length
+# See also: [`get_size`](@ref), [`get_overlap`](@ref)
 """
-get_wstep(f::AudioFrames)  = f.win.params.window_step
+get_step(f::AudioFrames)  = f.info.win.params.window_step
 
 """
-    get_ovrlap(f::AudioFrames) -> Int
+    get_overlap(f::AudioFrames) -> Int
 
 Get the overlap length from an `AudioFrames` object.
 
-# See Also
-- [`get_wsize`](@ref): Get window size  
-- [`get_wstep`](@ref): Get window step size
+# See also: [`get_size`](@ref), [`get_step`](@ref)
 """
-get_ovrlap(f::AudioFrames) = f.win.params.window_size - f.win.params.window_step
+get_overlap(f::AudioFrames) = get_size(f) - get_step(f)
 
 """
     get_info(f::AudioFrames) -> NamedTuple
 
 Extract metadata from an `AudioFrames` container.
 
-# See Also
-- [`AudioFrames`](@ref): Container type for windowed audio data
-- [`get_frames`](@ref): Function to create audio frames
-- [`get_wsize`](@ref), [`get_wstep`](@ref), [`get_ovrlap`](@ref): Access specific windowing parameters
+# See also: [`AudioFrames`](@ref)
 """
 get_info(f::AudioFrames)   = f.info
 
@@ -213,10 +258,7 @@ with the processed data and metadata.
   - `MovingWindow`: Sliding window with fixed size and step
   - `SplitWindow`: Equal non-overlapping segments
   - `WholeWindow`: Single window encompassing entire audio
-- `type::Tuple{Symbol, Symbol}`: Window function specification as `(shape, periodicity)`. 
-  Default is `(:hann, :periodic)`
-  - First element (shape): `:hann`, `:hamming`, `:blackman`, `:bartlett`, etc.
-  - Second element (periodicity): `:periodic` or `:symmetric`
+- `type::Base.Callable`: 
 
 # Returns
 - `AudioFrames{T}`: Container holding the windowed frames, windowing function, and parameters
@@ -256,36 +298,39 @@ window_type = frames.type          # Window shape and periodicity
 - The window function is automatically sized to match each frame's length
 - All frames are returned as vectors (mono audio) or matrices (multi-channel)
 
-# See Also
-- [`AudioFrames`](@ref): Container type for windowed audio data
-- [`AdaptiveWindow`](@ref), [`MovingWindow`](@ref), [`SplitWindow`](@ref), [`WholeWindow`](@ref): Windowing strategies
-- [`WinFunction`](@ref): Base windowing function type
+# See also: [`AudioFrames`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref)
 """
 function get_frames(
 	afile :: AudioFile;
     win   :: WinFunction=MovingWindow(
-                            window_size=sr(afile) ≤ 8000 ? 256 : 512,
-                            window_step=sr(afile) ≤ 8000 ? 128 : 256
-                        ),
-	type  :: Tuple{Symbol, Symbol}=(:hann, :periodic),
+                window_size=samplerate(afile) ≤ 8000 ? 256 : 512,
+                window_step=samplerate(afile) ≤ 8000 ? 128 : 256
+            ),
+	type  :: Base.Callable,
 )::AudioFrames
+    # setup parameters
+    afile_length = length(afile)
+
+    # check invalid parameters
+    afile_length < win.params.window_size && throw(ArgumentError("Audio file length ($afile_length)" * 
+        " is shorter than window size ($(win.params.window_size))"))
+    in(type, AVAIL_WINDOWS) || throw(ArgumentError("Window type $(type) not supported." * 
+        " Available windows: $(AVAIL_WINDOWS)"))
+
     # run the windowing algo and set windows indexes
-    intervals = win(length(afile))
+    intervals = win(afile_length)
+    window = type(win.params.window_size)
 
     frames = map(intervals) do interval
-        frame      = nchannels(afile) == 1 ? data(afile)[interval] : data(afile)[interval, :]
-        window, _  = gencoswin(type[1], length(interval), type[2])
-        frame .* window
+        nchannels(afile) == 1 ? data(afile)[interval] : data(afile)[interval, :]
     end
 
     info = (;
-        sr       = afile.sr,
-        win_func = win.func,
-        win_size = win.params.window_size,
-        win_step = win.params.window_step,
-        win_type = type
+        sr       = samplerate(afile),
+        win = win,
+        type = type
     )
-    return AudioFrames(frames, win, type, info)
+    return AudioFrames(frames, window, info)
 end
 
 # function logEnergyCoeffs(

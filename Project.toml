@@ -5,12 +5,17 @@ version = "0.1.3"
 
 [deps]
 AudioReader = "a9c2ce0f-e965-4f6d-9ec4-ce2d5ed55f28"
+DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 SoleBase = "4475fa32-7023-44a0-aa70-4813b230e492"
 
+[sources]
+AudioReader = {rev = "main", url = "https://github.com/PasoStudio73/AudioReader.jl"}
+
 [compat]
 AudioReader = "0.1"
+DSP = "0.8"
 FFTW = "1.9"
 Reexport = "1.2"
 SoleBase = "0.13"
