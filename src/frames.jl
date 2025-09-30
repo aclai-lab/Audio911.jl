@@ -159,12 +159,20 @@ struct AudioFrames{T} <: AbstractAudioFrames
         frames_matrix = reduce(hcat, frames)
         new{T}(frames_matrix, window, info)
     end
+
+    function AudioFrames(
+        frames :: Matrix{<:AudioFormat{T}},
+        window :: Vector{Float64},
+        info   :: NamedTuple
+    ) where T
+        new{T}(frames, window, info)
+    end
 end
 
 #------------------------------------------------------------------------------#
 #                                    methods                                   #
 #------------------------------------------------------------------------------#
-Base.length(f::AudioFrames) = length(f.frames)
+Base.length(f::AudioFrames) = size(f.frames, 2)
 Base.eltype(::AudioFrames{T}) where T = T
 
 """
@@ -192,7 +200,7 @@ Get the windowed frames with the window function applied element-wise.
 
 # See also: [`get_frames`](@ref), [`get_window`](@ref), [`AudioFrames`](@ref)
 """
-get_wframes(f::AudioFrames) = get_frames(f) .* get_window(f)
+get_winframes(f::AudioFrames) = get_frames(f) .* get_window(f)
 
 """
     nchannels(f::AudioFrames) -> Int
@@ -325,8 +333,11 @@ function get_frames(
     frames = map(intervals) do interval
         nchannels(afile) == 1 ? data(afile)[interval] : data(afile)[interval, :]
     end
+    @show size(frames,1)
+    @show size(frames,2)
+    @show length(frames[1])
 
-    # get window from DSP
+    # get window from DSP package
     win_size = get_size(win)
     window = if periodic
         # zerophase and circshift are used for compatibility with Matlab's `periodic` windows.

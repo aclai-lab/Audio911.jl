@@ -30,10 +30,7 @@ Base.eltype(::Stft{T}) where T = T
 
 Extract the STFT spectrogram matrix from an `Stft` container.
 
-# See Also
-- [`get_stft_freq`](@ref): Get frequency vector for the spectrogram
-- [`get_info`](@ref): Get STFT computation parameters
-- [`Stft`](@ref): STFT container type
+# See also: [`Stft`](@ref), [`get_stft_freq`](@ref), [`get_info`](@ref)
 """
 get_stft(s::Stft) = s.stft_spec
 
@@ -42,10 +39,7 @@ get_stft(s::Stft) = s.stft_spec
 
 Extract the frequency vector from an `Stft` container.
 
-# See Also
-- [`get_stft`](@ref): Get the STFT spectrogram matrix
-- [`get_info`](@ref): Get STFT computation parameters  
-- [`Stft`](@ref): STFT container type
+# See also: [`Stft`](@ref), [`get_stft`](@ref), [`get_info`](@ref)
 """
 get_stft_freq(s::Stft) = s.stft_freq
 
@@ -54,10 +48,7 @@ get_stft_freq(s::Stft) = s.stft_freq
 
 Extract  metadata from an `Stft` container.
 
-# See Also
-- [`get_stft`](@ref): Get the STFT spectrogram matrix
-- [`get_stft_freq`](@ref): Get frequency vector
-- [`Stft`](@ref): STFT container type
+# See also: [`Stft`](@ref), [`get_stft`](@ref), [`get_stft_freq`](@ref)
 """
 get_info(s::Stft) = s.info
 

@@ -11,7 +11,7 @@ import AudioReader: nchannels
 # ---------------------------------------------------------------------------- #
 #                           audio related packages                             #
 # ---------------------------------------------------------------------------- #
-using FFTW, DSP
+using  FFTW, DSP
 
 # ---------------------------------------------------------------------------- #
 #                              external packages                               #
@@ -47,7 +47,6 @@ Base.collect(fr::FreqRange) = collect(fr.low:fr.hi)
 
 get_freqs(fr::FreqRange) = (fr.low, fr.hi)
 
-
 export FreqRange
 
 # ---------------------------------------------------------------------------- #
@@ -62,7 +61,7 @@ export AudioFrames
 export get_frames, get_window, get_wframes
 export nchannels, get_size, get_step, get_overlap
 export get_info
-include("windowing.jl")
+include("frames.jl")
 
 export Stft
 export get_stft, get_stft_freq, get_info

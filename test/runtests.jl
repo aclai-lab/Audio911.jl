@@ -1,10 +1,5 @@
-using Distributed
-addprocs(2)
-
-@everywhere begin
-    using Test
-    using Audio911
-end
+using Test
+using Audio911
 
 test_files_dir() = joinpath(dirname(@__FILE__), "test_files")
 test_file(filename) = joinpath(test_files_dir(), filename)
@@ -26,7 +21,7 @@ println("Julia version: ", VERSION)
 
 test_suites = [
     ("Audioreader", ["audioreader.jl",]),
-    ("Audioframes", ["audioframes.jl",]),
+    ("Frames",      ["frames.jl",     ]),
     ("STFT",        ["stft.jl",       ]),
 
     # ("Solemodel robustness", ["robustness.jl"         ]),
