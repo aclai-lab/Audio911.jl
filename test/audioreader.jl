@@ -1,11 +1,11 @@
 using Test
 using Audio911
 
-test_files_dir() = joinpath(dirname(@__FILE__), "test_files")
+test_files_dir()    = joinpath(dirname(@__FILE__), "test_files")
 test_file(filename) = joinpath(test_files_dir(), filename)
 
-wav_file     = test_file("test.wav")
-mp3_file     = test_file("test.mp3")
+wav_file = test_file("test.wav")
+mp3_file = test_file("test.mp3")
 
 @test_nowarn File{format"WAV"}(wav_file)
 @test_nowarn File{format"MP3"}(mp3_file)

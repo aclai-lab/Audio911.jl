@@ -127,10 +127,10 @@ Create a moving window function that slides across the time series.
     intervals = win(100)  # For 100-point time series
 """
 function MovingWindow(;
-    window_size::Int,
-    window_step::Int,
+    size::Int,
+    step::Int,
 )::WinFunction
-    WinFunction(movingwindow, (;window_size, window_step))
+    WinFunction(movingwindow, (window_size=size, window_step=step))
 end
 
 # ---------------------------------------------------------------------------- #
@@ -217,8 +217,8 @@ end
 Base.length(f::AudioFrames) = size(f.frames, 2)
 Base.eltype(::AudioFrames{T}) where T = T
 
-get_size(f::AudioFrames)  = f.info.win.params.window_size
-get_step(f::AudioFrames)  = f.info.win.params.window_step
+get_size(f::AudioFrames)  = f.info.win.params.size
+get_step(f::AudioFrames)  = f.info.win.params.step
 get_overlap(f::AudioFrames) = get_size(f) - get_step(f)
 
 get_frames(f::AudioFrames) = f.frames
@@ -291,9 +291,9 @@ window_type = frames.type          # Window shape and periodicity
 """
 function get_frames(
 	afile    :: AudioFile;
-    win      :: WinFunction=MovingWindow(
-                window_size=samplerate(afile) ≤ 8000 ? 256 : 512,
-                window_step=samplerate(afile) ≤ 8000 ? 128 : 256
+    winfunc      :: WinFunction=MovingWindow(
+                size=samplerate(afile) ≤ 8000 ? 256 : 512,
+                step=samplerate(afile) ≤ 8000 ? 128 : 256
             ),
 	type     :: Base.Callable=hanning,
     periodic :: Bool=true
@@ -302,19 +302,19 @@ function get_frames(
     afile_length = length(afile)
 
     # check invalid parameters
-    afile_length < win.params.window_size && throw(ArgumentError("Audio file length ($afile_length)" * 
-        " is shorter than window size ($(win.params.window_size))"))
+    afile_length < get_size(winfunc) && throw(ArgumentError("Audio file length ($afile_length)" * 
+        " is shorter than window size ($(get_size(winfunc)))"))
     in(type, AVAIL_WINDOWS) || throw(ArgumentError("Window type $(type) not supported." * 
         " Available windows: $(AVAIL_WINDOWS)"))
 
     # buffer audio file
-    intervals = win(afile_length)
+    intervals = winfunc(afile_length)
     frames = map(intervals) do interval
         nchannels(afile) == 1 ? data(afile)[interval] : data(afile)[interval, :]
     end
 
     # get window from DSP package
-    win_size = get_size(win)
+    win_size = get_size(winfunc)
     window = if periodic
         # zerophase and circshift are used for compatibility with Matlab's `periodic` windows.
         circshift(type(win_size; zerophase=true), -(win_size >> 1))
@@ -325,7 +325,7 @@ function get_frames(
     # collect infos
     info = (;
         sr   = samplerate(afile),
-        win  = win,
+        win  = winfunc,
         type = type
     )
 
