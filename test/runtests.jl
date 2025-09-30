@@ -1,13 +1,4 @@
 using Test
-using Audio911
-
-test_files_dir() = joinpath(dirname(@__FILE__), "test_files")
-test_file(filename) = joinpath(test_files_dir(), filename)
-
-wav_file     = test_file("test.wav")
-mp3_file     = test_file("test.mp3")
-# ogg_file     = test_file("test.ogg")
-# flac_file    = test_file("test.flac")
 
 function run_tests(list)
     println("\n" * ("#"^50))
@@ -23,10 +14,6 @@ test_suites = [
     ("Audioreader", ["audioreader.jl",]),
     ("Frames",      ["frames.jl",     ]),
     ("STFT",        ["stft.jl",       ]),
-
-    # ("Solemodel robustness", ["robustness.jl"         ]),
-    # ("Rule extraction",      ["rule_extraction.jl"    ]),
-    # ("Association Rules",    ["associationrules.jl"   ]),
 ]
 
 @testset "SoleXplorer.jl" begin

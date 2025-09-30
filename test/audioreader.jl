@@ -1,3 +1,4 @@
+using Test
 using Audio911
 
 @test_nowarn File{format"WAV"}(wav_file)

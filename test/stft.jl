@@ -1,3 +1,4 @@
+using Test
 using Audio911
 
 test_files_dir() = joinpath(dirname(@__FILE__), "test_files")

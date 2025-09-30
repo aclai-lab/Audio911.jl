@@ -1,19 +1,78 @@
 # ---------------------------------------------------------------------------- #
-#                               abstract types                                 #
+#                               abstract type                                  #
 # ---------------------------------------------------------------------------- #
 """
-    AbstractWinFunction
+    AbstractFrame
 
 Base type for windowing function implementations.
 """
-abstract type AbstractWinFunction end
+abstract type AbstractFrame end
+
+# ---------------------------------------------------------------------------- #
+#                              abstract methods                                #
+# ---------------------------------------------------------------------------- #
+"""
+    get_size(f::AbstractFrame) -> Int
+
+Get the window size parameter from a `AbstractFrame` object.
+
+# See also: [`AbstractFrame`](@ref), [`get_step`](@ref), [`get_overlap`](@ref)
+"""
+get_size(f::AbstractFrame) = error("get_size is not implemented for type $(typeof(f)).")
 
 """
-    AbstractAudioFrames
+    get_step(f::AbstractFrame) -> Int
 
-Abstract base type for audio frame containers.
+Get the window step parameter from a `AbstractFrame` object.
+
+# See also: [`AbstractFrame`](@ref), [`get_size`](@ref), [`get_overlap`](@ref)
 """
-abstract type AbstractAudioFrames end
+get_step(f::AbstractFrame) = error("get_step is not implemented for type $(typeof(f)).")
+
+"""
+    get_overlap(f::AbstractFrame) -> Int
+
+Get the overlap length between consecutive windows from a `AbstractFrame` object.
+
+# See also: [`AbstractFrame`](@ref), [`get_size`](@ref), [`get_step`](@ref)
+"""
+get_overlap(f::AbstractFrame) = error("get_overlap is not implemented for type $(typeof(f)).")
+
+"""
+    get_frames(f::AbstractFrame) -> Vector{<:AudioFormat}
+
+Extract the buffered audio frames from an `AbstractFrame` container.
+
+# See also: [`AbstractFrame`](@ref), [`get_winframes`](@ref), [`get_window`](@ref)
+"""
+get_frames(f::AbstractFrame) = error("get_frames is not implemented for type $(typeof(f)).")
+
+"""
+    get_window(f::AbstractFrame) -> Vector{Float64}
+
+Extract the window from an `AbstractFrame` container.
+
+# See also: [`AbstractFrame`](@ref), [`get_frames`](@ref), [`get_winframes`](@ref)
+"""
+get_window(f::AbstractFrame) = error("get_window is not implemented for type $(typeof(f)).")
+
+"""
+    get_wframes(f::AbstractFrame) -> Matrix
+
+Get the windowed frames with the window function applied element-wise.
+
+# See also: [`AbstractFrame`](@ref), [`get_frames`](@ref), [`get_window`](@ref)
+"""
+get_winframes(f::AbstractFrame) = error("get_winframes is not implemented for type $(typeof(f)).")
+
+"""
+    get_info(f::AbstractFrame) -> NamedTuple
+
+Extract metadata from an `AbstractFrame` container.
+
+# See also: [`AbstractFrame`](@ref)
+"""
+get_info(f::AbstractFrame) = error("get_info is not implemented for type $(typeof(f)).")
 
 # ---------------------------------------------------------------------------- #
 #                                    types                                     #
@@ -28,15 +87,15 @@ const AVAIL_WINDOWS = (
 #                                win functions                                 #
 # ---------------------------------------------------------------------------- #
 """
-    WinFunction <: AbstractWinFunction
+    WinFunction <: AbstractFrame
 
 Callable wrapper for windowing algorithms with parameters.
 
 # Fields
-- `func::Function`: The windowing implementation function
+- `func::Function`    : The windowing implementation function
 - `params::NamedTuple`: Algorithm-specific parameters
 """
-struct WinFunction <: AbstractWinFunction
+struct WinFunction <: AbstractFrame
     func   :: Function
     params :: NamedTuple
 end
@@ -44,37 +103,20 @@ end
 # Make it callable - npoints is passed at execution time
 (w::WinFunction)(npoints::Int; kwargs...) = w.func(npoints; w.params..., kwargs...)
 
-"""
-    get_size(w::WinFunction) -> Int
-
-Get the window size parameter from a `WinFunction` object.
-
-# See also: [`get_step`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref)
-"""
-get_size(w::WinFunction) = w.params.window_size
-
-"""
-    get_step(w::WinFunction) -> Int
-
-Get the window step parameter from a `WinFunction` object.
-
-# See also: [`get_size`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref): Moving window constructor
-"""
-get_step(w::WinFunction) = w.params.window_step
-
-"""
-    get_overlap(w::WinFunction) -> Int
-
-Get the overlap length between consecutive windows from a `WinFunction` object.
-
-# See also: [`get_size`](@ref), [`get_step`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref)
-"""
+# ---------------------------------------------------------------------------- #
+#                                   methods                                    #
+# ---------------------------------------------------------------------------- #
+get_size(w::WinFunction)    = w.params.window_size
+get_step(w::WinFunction)    = w.params.window_step
 get_overlap(w::WinFunction) = get_size(w) - get_step(w)
 
+# ---------------------------------------------------------------------------- #
+#                                 constructor                                  #
+# ---------------------------------------------------------------------------- #
 """
     MovingWindow(; window_size::Int, window_step::Int) -> WinFunction
 
-Create a moving window that slides across the time series.
+Create a moving window function that slides across the time series.
 
 # Parameters
 - `window_size`: Number of time points in each window
@@ -95,7 +137,7 @@ end
 #                                 AudioFrames                                  #
 # ---------------------------------------------------------------------------- #
 """
-    AudioFrames{T} <: AbstractAudioFrames
+    AudioFrames{T} <: AbstractFrame
 
 Container for windowed audio data with associated windowing parameters.
 
@@ -146,7 +188,7 @@ window_func = frames.info.win        # Windowing function used
 
 # See also: [`get_frames`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref), [`AudioFormat`](@ref)
 """
-struct AudioFrames{T} <: AbstractAudioFrames
+struct AudioFrames{T} <: AbstractFrame
     frames :: Matrix{T}
     window :: Vector{T}
     info   :: NamedTuple
@@ -175,76 +217,13 @@ end
 Base.length(f::AudioFrames) = size(f.frames, 2)
 Base.eltype(::AudioFrames{T}) where T = T
 
-"""
-    get_frames(f::AudioFrames) -> Vector{<:AudioFormat}
-
-Extract the buffered audio frames from an `AudioFrames` container.
-
-# See also: [`get_frames(::AudioFile)`](@ref), [`AudioFrames`](@ref)
-"""
-get_frames(f::AudioFrames) = f.frames
-
-"""
-    get_window(f::AudioFrames) -> Vector{Float64}
-
-Extract the window from an `AudioFrames` container.
-
-# See also: [`get_frames`](@ref), [`get_wframes`](@ref), [`AudioFrames`](@ref)
-"""
-get_window(f::AudioFrames) = f.window
-
-"""
-    get_wframes(f::AudioFrames) -> Matrix
-
-Get the windowed frames with the window function applied element-wise.
-
-# See also: [`get_frames`](@ref), [`get_window`](@ref), [`AudioFrames`](@ref)
-"""
-get_winframes(f::AudioFrames) = get_frames(f) .* get_window(f)
-
-"""
-    nchannels(f::AudioFrames) -> Int
-
-Get the number of audio channels from an `AudioFrames` container.
-
-# See also: [`AudioFrames`](@ref), [`get_frames`](@ref), [`Base.length`](@ref)
-"""
-nchannels(f::AudioFrames) = size(f.frames[1], 2)
-
-"""
-    get_size(f::AudioFrames) -> Int
-
-Get the window size parameter from an `AudioFrames` object.
-
-# See also: [`get_wstep`](@ref), [`get_overlap`](@ref)
-"""
 get_size(f::AudioFrames)  = f.info.win.params.window_size
-
-"""
-    get_wstep(f::AudioFrames) -> Int
-
-Get the window step parameter from an `AudioFrames` object.
-
-# See also: [`get_size`](@ref), [`get_overlap`](@ref)
-"""
 get_step(f::AudioFrames)  = f.info.win.params.window_step
-
-"""
-    get_overlap(f::AudioFrames) -> Int
-
-Get the overlap length from an `AudioFrames` object.
-
-# See also: [`get_size`](@ref), [`get_step`](@ref)
-"""
 get_overlap(f::AudioFrames) = get_size(f) - get_step(f)
 
-"""
-    get_info(f::AudioFrames) -> NamedTuple
-
-Extract metadata from an `AudioFrames` container.
-
-# See also: [`AudioFrames`](@ref)
-"""
+get_frames(f::AudioFrames) = f.frames
+get_window(f::AudioFrames) = f.window
+get_winframes(f::AudioFrames) = get_frames(f) .* get_window(f)
 get_info(f::AudioFrames)   = f.info
 
 #------------------------------------------------------------------------------#
@@ -333,9 +312,6 @@ function get_frames(
     frames = map(intervals) do interval
         nchannels(afile) == 1 ? data(afile)[interval] : data(afile)[interval, :]
     end
-    @show size(frames,1)
-    @show size(frames,2)
-    @show length(frames[1])
 
     # get window from DSP package
     win_size = get_size(win)
@@ -355,130 +331,3 @@ function get_frames(
 
     return AudioFrames(frames, window, info)
 end
-
-# function logEnergyCoeffs(
-#         x::AbstractArray{T}
-# ) where {T <: Real}
-#     DT = eltype(x)
-#     E = sum(x .^ 2, dims = 1) # eleva tutti gli elementi ^2 e li somma per colonna
-#     E[E .== 0] .= floatmin(DT) # se un valore è zero, lo sostituisce col valore più piccolo positivo possibile, in accordo col tipo utilizzato
-#     logE = log.(E) # fa il log di tutti gli elementi
-# end # logEnergyCoeffs
-
-# function windowing(
-#         x::Union{AbstractVector{T}, AbstractArray{T}},
-#         fftLength::Int64 = 256,
-#         winType::Symbol = :hann,
-#         winParam::Symbol = :symmetric,
-#         logEnergy::Bool = false
-# ) where {T <: Real}
-#     xLength = size(x, 1) # lunghezza audio
-#     nChan = size(x, 2) # numero canali (mono, stereo)
-#     DT = eltype(x) # restituisce il tipo degli elementi
-
-#     # parto con un if then ma sarebbe bello implementare un Dict
-#     if (winType == :hann || winType == :hamming || winType == :blackman ||
-#         winType == :flattopwin)
-#         win, hL = gencoswin(winType, fftLength, winParam)
-#     elseif (winType == :rect)
-#         win, hL = rectwin(fftLength)
-#     end
-
-#     wincast = convert.(DT, win[:]) # casta al tipo originale del file audio
-#     nHops = Integer(floor((xLength - fftLength) / hL) + 1) # numero delle window necessarie
-#     y = buffer(x, fftLength, hL)
-
-#     # calcola il vettore coefficienti energia. in matlab lo fa qui, ma forse è logico spostarlo dopo il windowing?
-#     if (logEnergy == true)
-#         logE = logEnergyCoeffs(y)
-#     end
-
-#     return y' .* wincast'
-# end # function windowing
-
-# function fade(
-#         x::Union{AbstractVector{T}, AbstractArray{T}},
-#         fftLength::Int64,
-#         type::Symbol
-# ) where {T <: Real}
-#     xLength = size(x, 1) # lunghezza audio
-#     nChan = size(x, 2) # numero canali (mono, stereo)
-#     DT = eltype(x) # restituisce il tipo degli elementi
-
-#     win, hL = gencoswin(:hann, fftLength, :symmetric)
-
-#     wincast = convert.(DT, win[:]) # casta al tipo originale del file audio
-
-#     # for c = 1:numChan
-#     if (type == :in)
-#         for w in 1:Int(round(fftLength / 2))
-#             x[w] *= wincast[w]
-#         end
-#     elseif (type == :out)
-#         for w in Int(round(fftLength / 2)):-1:fftLength
-#             x[end - fftLength + w] *= wincast[w]
-#         end
-#     end
-#     # end
-
-#     return x
-# end # function fade
-
-#------------------------------------------------------------------------------#
-#                                   windowing                                  #
-#------------------------------------------------------------------------------#
-# function _get_frames(
-# 	x::AbstractVector{Float64};
-# 	window_type::Tuple{Symbol, Symbol},
-# 	window_length::Int64,
-# 	overlap_length::Int64,
-# )
-# 	frames = buffer(x, window_length, window_length - overlap_length)
-# 	window, _ = gencoswin(window_type[1], window_length, window_type[2])
-
-# 	return frames, window
-# end
-
-# function _get_frames(x::AbstractVector{Float64}, s::AudioSetup)
-# 	_get_frames(x, window_type = s.window_type, window_length = s.window_length, overlap_length = s.overlap_length)
-# end
-
-# function get_frames(
-# 	x::AbstractVector{<:AbstractFloat},
-# 	window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-# 	window_length::Int64 = 256,
-# 	overlap_length::Int64 = 128,
-# )
-# 	@assert 0 < overlap_length < window_length "Overlap length must be < window length."
-
-# 	frames, window = _get_frames(
-# 		eltype(x) == Float64 ? x : Float64.(x),
-# 		window_type = window_type,
-# 		window_length = window_length,
-# 		overlap_length = overlap_length,
-# 	)
-# end
-
-# get_frames!(a::AudioObj; kwargs...) = a.data.frames, a.setup.window = get_frames(a.data.x; kwargs...)
-
-# function _get_frames2(x::AbstractVector{Float64}, s::AudioSetup)
-# 	_get_frames2(x, window_type = s.window_type, window_length = s.window_length, overlap_length = s.overlap_length)
-# end
-
-# function get_frames2(
-# 	x::AbstractVector{<:AbstractFloat},
-# 	window_type::Tuple{Symbol, Symbol} = (:hann, :periodic),
-# 	window_length::Int64 = 256,
-# 	overlap_length::Int64 = 128,
-# )
-# 	@assert 0 < overlap_length < window_length "Overlap length must be < window length."
-
-# 	frames = _get_frames2(
-# 		eltype(x) == Float64 ? x : Float64.(x),
-# 		window_type = window_type,
-# 		window_length = window_length,
-# 		overlap_length = overlap_length,
-# 	)
-# end
-
-# get_frames2!(a::AudioObj; kwargs...) = a.data.frames, a.setup.window = get_frames2(a.data.x; kwargs...)
