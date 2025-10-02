@@ -7,12 +7,7 @@ test_file(filename) = joinpath(test_files_dir(), filename)
 wav_file = test_file("test.wav")
 mp3_file = test_file("test.mp3")
 
-audiofile = load(wav_file)
-winfunc   = MovingWindow(size=512, step=256)
+audiofile = load(wav_file; mono=true, sr=8000, norm=false)
 
-audioframes = get_frames(
-	audiofile;
-    winfunc,
-	type=hamming,
-    periodic=true
-)
+winfunc = MovingWindow(size=256, step=128)
+frames  = AudioFrames(audiofile; winfunc, type=hamming, periodic=true)

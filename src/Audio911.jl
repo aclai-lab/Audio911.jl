@@ -6,7 +6,7 @@ using  Reexport
 # ---------------------------------------------------------------------------- #
 @reexport using AudioReader: @format_str, File, AudioFormat, AudioFile, load
 @reexport using AudioReader: data, samplerate
-import AudioReader: nchannels
+import AudioReader: convert2mono
 
 # ---------------------------------------------------------------------------- #
 #                           audio related packages                             #
@@ -59,7 +59,7 @@ export FreqRange
 export AbstractFrames
 export WinFunction, MovingWindow, AudioFrames
 export get_size, get_step, get_overlap
-export get_frames, get_window, get_wframes
+export get_frames, get_window, get_winframes, get_winsize
 export nchannels
 export get_info
 include("frames.jl")

@@ -57,13 +57,22 @@ Extract the window from an `AbstractFrame` container.
 get_window(f::AbstractFrame) = error("get_window is not implemented for type $(typeof(f)).")
 
 """
-    get_wframes(f::AbstractFrame) -> Matrix
+    get_winframes(f::AbstractFrame) -> Matrix
 
 Get the windowed frames with the window function applied element-wise.
 
 # See also: [`AbstractFrame`](@ref), [`get_frames`](@ref), [`get_window`](@ref)
 """
 get_winframes(f::AbstractFrame) = error("get_winframes is not implemented for type $(typeof(f)).")
+
+"""
+    get_winsize(f::AbstractFrame) -> Int
+
+Get the length of the window function from an `AbstractFrame` container.
+
+# See also: [`AudioFrames`](@ref), [`get_window`](@ref), [`get_winframes`](@ref)
+"""
+get_winsize(f::AbstractFrame) = error("get_winsize is not implemented for type $(typeof(f)).")
 
 """
     get_info(f::AbstractFrame) -> NamedTuple
@@ -212,21 +221,6 @@ struct AudioFrames{T} <: AbstractFrame
 end
 
 #------------------------------------------------------------------------------#
-#                                    methods                                   #
-#------------------------------------------------------------------------------#
-Base.length(f::AudioFrames) = size(f.frames, 2)
-Base.eltype(::AudioFrames{T}) where T = T
-
-get_size(f::AudioFrames)  = f.info.win.params.size
-get_step(f::AudioFrames)  = f.info.win.params.step
-get_overlap(f::AudioFrames) = get_size(f) - get_step(f)
-
-get_frames(f::AudioFrames) = f.frames
-get_window(f::AudioFrames) = f.window
-get_winframes(f::AudioFrames) = get_frames(f) .* get_window(f)
-get_info(f::AudioFrames)   = f.info
-
-#------------------------------------------------------------------------------#
 #                                    frames                                    #
 #------------------------------------------------------------------------------#
 """
@@ -289,32 +283,34 @@ window_type = frames.type          # Window shape and periodicity
 
 # See also: [`AudioFrames`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref)
 """
-function get_frames(
-	afile    :: AudioFile;
-    winfunc      :: WinFunction=MovingWindow(
-                size=samplerate(afile) ≤ 8000 ? 256 : 512,
-                step=samplerate(afile) ≤ 8000 ? 128 : 256
-            ),
-	type     :: Base.Callable=hanning,
-    periodic :: Bool=true
-)::AudioFrames
+function AudioFrames(
+    audiofile :: AudioFormat,
+    sr        :: Int64;
+    win       :: WinFunction=MovingWindow(
+        size=sr ≤ 8000 ? 256 : 512,
+        step=sr ≤ 8000 ? 128 : 256
+    ),
+	type      :: Base.Callable=hanning,
+    periodic  :: Bool=true
+)
+    # auto mono conversion
+    size(audiofile, 2) > 1 && (audiofile = convert2mono(audiofile))
+    
     # setup parameters
-    afile_length = length(afile)
+    file_length = length(audiofile)
 
     # check invalid parameters
-    afile_length < get_size(winfunc) && throw(ArgumentError("Audio file length ($afile_length)" * 
-        " is shorter than window size ($(get_size(winfunc)))"))
+    file_length < get_size(win) && throw(ArgumentError("Audio file length ($file_length)" * 
+        " is shorter than window size ($(get_size(win)))"))
     in(type, AVAIL_WINDOWS) || throw(ArgumentError("Window type $(type) not supported." * 
         " Available windows: $(AVAIL_WINDOWS)"))
 
     # buffer audio file
-    intervals = winfunc(afile_length)
-    frames = map(intervals) do interval
-        nchannels(afile) == 1 ? data(afile)[interval] : data(afile)[interval, :]
-    end
+    intervals = win(file_length)
+    frames = [audiofile[i] for i in intervals]
 
     # get window from DSP package
-    win_size = get_size(winfunc)
+    win_size = get_size(win)
     window = if periodic
         # zerophase and circshift are used for compatibility with Matlab's `periodic` windows.
         circshift(type(win_size; zerophase=true), -(win_size >> 1))
@@ -323,11 +319,24 @@ function get_frames(
     end
 
     # collect infos
-    info = (;
-        sr   = samplerate(afile),
-        win  = winfunc,
-        type = type
-    )
+    info = (; sr, win, type)
 
     return AudioFrames(frames, window, info)
 end
+
+AudioFrames(a::AudioFile; kwargs...) = AudioFrames(data(a), samplerate(a); kwargs...)
+
+#------------------------------------------------------------------------------#
+#                                    methods                                   #
+#------------------------------------------------------------------------------#
+Base.length(f::AudioFrames) = size(f.frames, 2)
+Base.eltype(::AudioFrames{T}) where T = T
+
+get_size(f::AudioFrames)  = f.info.win.params.window_size
+get_step(f::AudioFrames)  = f.info.win.params.window_step
+get_overlap(f::AudioFrames) = get_size(f) - get_step(f)
+
+get_frames(f::AudioFrames) = f.frames
+get_window(f::AudioFrames) = f.window
+get_winframes(f::AudioFrames) = get_frames(f) .* get_window(f)
+get_info(f::AudioFrames)   = f.info
