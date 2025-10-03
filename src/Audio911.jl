@@ -46,7 +46,10 @@ Base.eltype(::Type{FreqRange{T}}) where T = T
 Base.collect(fr::FreqRange) = collect(fr.low:fr.hi)
 
 get_freqs(fr::FreqRange) = (fr.low, fr.hi)
+get_low(fr::FreqRange)   = fr.low
+get_hi(fr::FreqRange)    = fr.hi
 
+export get_freqs, get_low, get_hi
 export FreqRange
 
 # ---------------------------------------------------------------------------- #
@@ -67,8 +70,10 @@ include("frames.jl")
 export AbstractSpectrogram
 export get_spec, get_freq, get_info
 export power, magnitude
+export none, winpower, winmagnitude
 export Stft
 include("stft.jl")
+# include("lin_spec.jl")
 
 # export get_melspec
 # include("mel_spec.jl")

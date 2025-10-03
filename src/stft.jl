@@ -68,19 +68,19 @@ A concrete implementation of `AbstractSpectrogram` that stores Short-Time Fourie
 - `T`: Element type of the spectral data matrix (e.g., `Float64`, `ComplexF64`)
 
 # Fields
-- `stft_spec::Matrix{T}`: The STFT spectral data matrix where each column represents 
+- `spec::Matrix{T}`: The STFT spectral data matrix where each column represents 
   a time frame and each row represents a frequency bin
-- `stft_freq::Vector{Float64}`: Frequency vector corresponding to the spectral bins (Hz)
+- `freq::Vector{Float64}`: Frequency vector corresponding to the spectral bins (Hz)
 - `info::NamedTuple`: Metadata containing analysis parameters including:
   - `sr`: Sample rate
   - `stft_size`: FFT size used for analysis
   - `win_size`: Window size
   - `overlap`: Overlap between windows
-  - `frequency_range`: Frequency range analyzed
+  - `freq_range`: Frequency range analyzed
   - `spectrum_type`: Type of spectrum (`:power` or `:magnitude`)
 
 # Constructor
-    Stft{F}(stft_spec::Matrix{T}, stft_freq::Vector{Float64}, info::NamedTuple) where {F,T}
+    Stft{F}(spec::Matrix{T}, freq::Vector{Float64}, info::NamedTuple) where {F,T}
 
 # Examples
 ```julia
@@ -98,32 +98,49 @@ metadata    = get_info(stft)     # Get analysis parameters
 [`AbstractSpectrogram`](@ref), [`get_spec`](@ref), [`get_freq`](@ref), [`get_info`](@ref)
 """
 struct Stft{F,T} <: AbstractSpectrogram
-	stft_spec :: Matrix{T}
-	stft_freq :: StepRangeLen
-	info      :: NamedTuple
+	spec :: Matrix{T}
+	freq :: StepRangeLen
+	info :: NamedTuple
 
 	function Stft{F}(
-		stft_spec :: Matrix{T},
-		stft_freq :: StepRangeLen,
-		info      :: NamedTuple
+		spec :: Matrix{T},
+		freq :: StepRangeLen,
+		info :: NamedTuple
 	) where {F,T}
-		new{F,T}(stft_spec, stft_freq, info)
+		new{F,T}(spec, freq, info)
 	end
 end
 
 #------------------------------------------------------------------------------#
 #                           spectrum normalizations                            #
 #------------------------------------------------------------------------------#
+function none() end
+
+winpower(f, w)     = f / sum(w)^2 .* 2
+winmagnitude(f, w) = f ./ sum(w) .* 2
+
 power(f) = @. real(f * conj(f))
 magnitude(f) = @. abs(f)
 
 #------------------------------------------------------------------------------#
 #                                  utilities                                   #
 #------------------------------------------------------------------------------#
-function get_onesided_fft_range(stft_size::Int64)::UnitRange
+function get_onesided_stft_range(stft_size::Int64)::UnitRange
 	return iseven(stft_size) ?
 		(1:stft_size >> 1 + 1) : # even
         (1:(stft_size + 1) >> 1) # odd
+end
+
+function get_freq_range(
+    freq_range :: FreqRange,
+    stft_size       :: Int64,
+    sr              :: Int64
+)
+    # convert frequencies to bin indices
+    bin_low = cld(get_low(freq_range) * stft_size, sr) + 1
+    bin_high = fld(get_hi(freq_range) * stft_size, sr) + 1
+
+    return bin_low, bin_high
 end
 
 #------------------------------------------------------------------------------#
@@ -132,10 +149,10 @@ end
 function Stft(
 	frames          :: AudioFrames;
 	stft_size       :: Int64=get_winsize(frames),
-	# frequency_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_info(frames).sr÷2),
+	freq_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_info(frames).sr>>1),
 	spectrum_type   :: Base.Callable=power, # power, magnitude
+	win_norm        :: Base.Callable=none
 )::Stft
-	# frequency_range isa Tuple && (frequency_range = FreqRange(first(frequency_range), last(frequency_range)))
 	sr = get_info(frames).sr
 	win_size   = get_winsize(frames)
 	overlap    = get_overlap(frames)
@@ -160,10 +177,19 @@ function Stft(
 		winframes[1:stft_size, :]
 
 	# fft -> one side -> spectrum normalization
-	stft_spec = @views fft(winframes, (1,))[get_onesided_fft_range(stft_size), :] |> spectrum_type
+	spec = @views fft(winframes, (1,))[get_onesided_stft_range(stft_size), :] |> spectrum_type
 
 	# frequency vector
-	stft_freq = (0:size(stft_spec, 1)-1) .* (sr / stft_size)
+	freq = (0:size(spec, 1)-1) .* (sr / stft_size)
+
+	freq_range isa Tuple && (freq_range = FreqRange(first(freq_range), last(freq_range)))
+
+	if freq_range != FreqRange(0, sr >> 1)
+		bin_low, bin_high = get_freq_range(freq_range, stft_size, sr)
+		win_norm == none && (norm_factor(f, _) = @. f * 2)
+		spec = win_norm(@view(spec[bin_low:bin_high, :]), get_window(frames))
+		freq = freq[bin_low:bin_high]
+	end
 
 	info = (;
 		sr,
@@ -174,7 +200,7 @@ function Stft(
 	)
 	info = merge(info, get_info(frames))
 
-	return Stft{AudioFrames}(stft_spec, stft_freq, info)
+	return Stft{AudioFrames}(spec, freq, info)
 end
 
 function Stft(
@@ -196,6 +222,6 @@ end
 #------------------------------------------------------------------------------#
 Base.eltype(::Stft{T}) where T = T
 
-get_spec(s::Stft) = s.stft_spec
-get_freq(s::Stft) = s.stft_freq
+get_spec(s::Stft) = s.spec
+get_freq(s::Stft) = s.freq
 get_info(s::Stft) = s.info

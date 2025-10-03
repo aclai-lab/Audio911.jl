@@ -14,7 +14,7 @@ audiofile = load(wav_file; mono=true, sr=8000, norm=false)
 @test_nowarn Stft(audiofile; win=MovingWindow(size=1024, step=512))
 @test_nowarn Stft(audiofile; win=MovingWindow(size=512, step=256))
 
-win = MovingWindow(size=256, step=128)
+win = MovingWindow(size=512, step=256)
 frames = AudioFrames(audiofile; win, type=hamming, periodic=true)
 
 @test_nowarn Stft(frames)
@@ -25,3 +25,5 @@ frames = AudioFrames(audiofile; win, type=hamming, periodic=true)
 
 @test_nowarn Stft(frames; spectrum_type=power)
 @test_nowarn Stft(frames; spectrum_type=magnitude)
+
+stft = Stft(frames; spectrum_type=power)
