@@ -120,6 +120,15 @@ get_step(w::WinFunction)    = w.params.window_step
 get_overlap(w::WinFunction) = get_size(w) - get_step(w)
 
 # ---------------------------------------------------------------------------- #
+#                                     info                                     #
+# ---------------------------------------------------------------------------- #
+struct FramesInfo <: AbstractInfo
+    sr   :: Int64
+    win  :: WinFunction
+    type :: Base.Callable
+end
+
+# ---------------------------------------------------------------------------- #
 #                                 constructor                                  #
 # ---------------------------------------------------------------------------- #
 """
@@ -200,12 +209,12 @@ window_func = frames.info.win        # Windowing function used
 struct AudioFrames{T} <: AbstractFrame
     frames :: Matrix{T}
     window :: Vector{T}
-    info   :: NamedTuple
+    info   :: FramesInfo
 
     function AudioFrames(
         frames :: Vector{<:AudioFormat{T}},
         window :: Vector{Float64},
-        info   :: NamedTuple
+        info   :: FramesInfo
     ) where T
         frames_matrix = reduce(hcat, frames)
         new{T}(frames_matrix, window, info)
@@ -214,7 +223,7 @@ struct AudioFrames{T} <: AbstractFrame
     function AudioFrames(
         frames :: Matrix{<:AudioFormat{T}},
         window :: Vector{Float64},
-        info   :: NamedTuple
+        info   :: FramesInfo
     ) where T
         new{T}(frames, window, info)
     end
@@ -319,7 +328,7 @@ function AudioFrames(
     end
 
     # collect infos
-    info = (; sr, win, type)
+    info = FramesInfo(sr, win, type)
 
     return AudioFrames(frames, window, info)
 end
@@ -332,12 +341,12 @@ AudioFrames(a::AudioFile; kwargs...) = AudioFrames(data(a), samplerate(a); kwarg
 Base.length(f::AudioFrames) = size(f.frames, 2)
 Base.eltype(::AudioFrames{T}) where T = T
 
-get_size(f::AudioFrames)  = f.info.win.params.window_size
-get_step(f::AudioFrames)  = f.info.win.params.window_step
+get_size(f::AudioFrames)    = f.info.win.params.window_size
+get_step(f::AudioFrames)    = f.info.win.params.window_step
 get_overlap(f::AudioFrames) = get_size(f) - get_step(f)
 
-get_frames(f::AudioFrames) = f.frames
-get_window(f::AudioFrames) = f.window
-get_winsize(f::AudioFrames) = length(f.window)
+get_frames(f::AudioFrames)    = f.frames
+get_window(f::AudioFrames)    = f.window
+get_winsize(f::AudioFrames)   = length(f.window)
 get_winframes(f::AudioFrames) = get_frames(f) .* get_window(f)
-get_info(f::AudioFrames)   = f.info
+get_info(f::AudioFrames)      = f.info

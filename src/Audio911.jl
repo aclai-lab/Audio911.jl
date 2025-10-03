@@ -21,6 +21,8 @@ using  SoleBase: movingwindow
 # ---------------------------------------------------------------------------- #
 #                                   types                                      #
 # ---------------------------------------------------------------------------- #
+abstract type AbstractInfo end
+
 """
     Maybe{T}
 
@@ -69,11 +71,15 @@ include("frames.jl")
 
 export AbstractSpectrogram
 export get_spec, get_freq, get_info
-export power, magnitude
-export none, winpower, winmagnitude
+include("spectrograms/types.jl")
+
 export Stft
-include("stft.jl")
-# include("lin_spec.jl")
+export power, magnitude
+include("spectrograms/stft.jl")
+
+export LinSpec
+export none, winpower, winmagnitude
+include("spectrograms/lin_spec.jl")
 
 # export get_melspec
 # include("mel_spec.jl")

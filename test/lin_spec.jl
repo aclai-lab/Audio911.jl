@@ -11,8 +11,9 @@ audiofile = load(wav_file; mono=true, norm=false)
 
 win = MovingWindow(size=512, step=256)
 frames = AudioFrames(audiofile; win, type=hamming, periodic=true)
+stft = Stft(frames; spectrum_type=power)
 
-stft = Stft(frames; spectrum_type=magnitude, freq_range=(100,1000), win_norm=winmagnitude)
+lin_spec = LinSpec(stft; freq_range=(100,1000), win_norm=true)
 
 ##############################################
 function get_freq_range(

@@ -1,58 +1,14 @@
 # ---------------------------------------------------------------------------- #
-#                               abstract types                                 #
+#                                    info                                      #
 # ---------------------------------------------------------------------------- #
-"""
-    AbstractSpectrogram
-
-Abstract supertype for all spectrogram representations in the Audio911.jl package.
-
-This type serves as the base for concrete spectrogram implementations that store
-time-frequency representations of audio signals. Subtypes should implement
-methods for accessing spectral data, frequency information, and metadata.
-
-# Concrete Subtypes
-- [`Stft`](@ref): Short-Time Fourier Transform spectrogram representation
-
-# Interface
-Concrete subtypes are expected to provide:
-- Spectral data matrix (typically complex or real-valued)
-- Frequency vector corresponding to spectral bins
-- Metadata about the analysis parameters
-
-# See also
-[`Stft`](@ref), [`get_stft`](@ref), [`get_freq`](@ref), [`get_info`](@ref)
-"""
-abstract type AbstractSpectrogram end
-
-#------------------------------------------------------------------------------#
-#                            spectrogram methods                               #
-#------------------------------------------------------------------------------#
-"""
-    get_spec(s::AbstractSpectrogram) -> Matrix{T}
-
-Extract the spectrogram matrix from an `AbstractSpectrogram` container.
-
-# See also: [`get_freq`](@ref), [`get_info`](@ref)
-"""
-get_spec(s::AbstractSpectrogram) = error("get_spec is not implemented for type $(typeof(s)).")
-
-"""
-    get_freq(s::AbstractSpectrogram) -> Vector{Float64}
-
-Extract the frequency vector from an `AbstractSpectrogram` container.
-
-# See also: [`get_spec`](@ref), [`get_info`](@ref)
-"""
-get_freq(s::AbstractSpectrogram) = error("get_freq is not implemented for type $(typeof(s)).")
-
-"""
-    get_info(s::AbstractSpectrogram) -> NamedTuple
-
-Extract metadata from an `AbstractSpectrogram` container.
-
-# See also: [`get_spec`](@ref), [`get_freq`](@ref)
-"""
-get_info(s::AbstractSpectrogram) = error("get_info is not implemented for type $(typeof(s)).")
+struct StftInfo <: AbstractInfo
+    sr            :: Int64
+    stft_size     :: Int64
+    win_size      :: Int64
+    overlap       :: Int64
+    spectrum_type :: Base.Callable
+    window        :: Vector{<:Real}
+end
 
 # ---------------------------------------------------------------------------- #
 #                                 stft struct                                  #
@@ -100,12 +56,12 @@ metadata    = get_info(stft)     # Get analysis parameters
 struct Stft{F,T} <: AbstractSpectrogram
 	spec :: Matrix{T}
 	freq :: StepRangeLen
-	info :: NamedTuple
+	info :: StftInfo
 
 	function Stft{F}(
 		spec :: Matrix{T},
 		freq :: StepRangeLen,
-		info :: NamedTuple
+		info :: StftInfo
 	) where {F,T}
 		new{F,T}(spec, freq, info)
 	end
@@ -114,12 +70,7 @@ end
 #------------------------------------------------------------------------------#
 #                           spectrum normalizations                            #
 #------------------------------------------------------------------------------#
-function none() end
-
-winpower(f, w)     = f / sum(w)^2 .* 2
-winmagnitude(f, w) = f ./ sum(w) .* 2
-
-power(f) = @. real(f * conj(f))
+power(f)     = @. real(f * conj(f))
 magnitude(f) = @. abs(f)
 
 #------------------------------------------------------------------------------#
@@ -131,27 +82,13 @@ function get_onesided_stft_range(stft_size::Int64)::UnitRange
         (1:(stft_size + 1) >> 1) # odd
 end
 
-function get_freq_range(
-    freq_range :: FreqRange,
-    stft_size       :: Int64,
-    sr              :: Int64
-)
-    # convert frequencies to bin indices
-    bin_low = cld(get_low(freq_range) * stft_size, sr) + 1
-    bin_high = fld(get_hi(freq_range) * stft_size, sr) + 1
-
-    return bin_low, bin_high
-end
-
 #------------------------------------------------------------------------------#
 #                                   get stft                                   #
 #------------------------------------------------------------------------------#
 function Stft(
 	frames          :: AudioFrames;
 	stft_size       :: Int64=get_winsize(frames),
-	freq_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_info(frames).sr>>1),
 	spectrum_type   :: Base.Callable=power, # power, magnitude
-	win_norm        :: Base.Callable=none
 )::Stft
 	sr = get_info(frames).sr
 	win_size   = get_winsize(frames)
@@ -182,23 +119,14 @@ function Stft(
 	# frequency vector
 	freq = (0:size(spec, 1)-1) .* (sr / stft_size)
 
-	freq_range isa Tuple && (freq_range = FreqRange(first(freq_range), last(freq_range)))
-
-	if freq_range != FreqRange(0, sr >> 1)
-		bin_low, bin_high = get_freq_range(freq_range, stft_size, sr)
-		win_norm == none && (norm_factor(f, _) = @. f * 2)
-		spec = win_norm(@view(spec[bin_low:bin_high, :]), get_window(frames))
-		freq = freq[bin_low:bin_high]
-	end
-
-	info = (;
+	info = StftInfo(
 		sr,
 		stft_size,
 		win_size,
 		overlap,
 		spectrum_type,
+		get_window(frames)
 	)
-	info = merge(info, get_info(frames))
 
 	return Stft{AudioFrames}(spec, freq, info)
 end
@@ -206,9 +134,9 @@ end
 function Stft(
 	afile    :: AudioFile;
     win      :: WinFunction=MovingWindow(
-            size=samplerate(afile)≤8000 ? 256 : 512,
-            step=samplerate(afile)≤8000 ? 128 : 256
-            ),
+		size=samplerate(afile)≤8000 ? 256 : 512,
+		step=samplerate(afile)≤8000 ? 128 : 256
+	),
 	type     :: Base.Callable=hanning,
     periodic :: Bool=true,
 	kwargs...
@@ -225,3 +153,8 @@ Base.eltype(::Stft{T}) where T = T
 get_spec(s::Stft) = s.spec
 get_freq(s::Stft) = s.freq
 get_info(s::Stft) = s.info
+
+get_sr(s::Stft)        = s.info.sr
+get_stft_size(s::Stft) = s.info.stft_size
+get_spec_type(s::Stft) = s.info.spectrum_type
+get_window(s::Stft)    = s.info.window
