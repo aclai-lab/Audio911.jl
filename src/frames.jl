@@ -338,5 +338,6 @@ get_overlap(f::AudioFrames) = get_size(f) - get_step(f)
 
 get_frames(f::AudioFrames) = f.frames
 get_window(f::AudioFrames) = f.window
+get_winsize(f::AudioFrames) = length(f.window)
 get_winframes(f::AudioFrames) = get_frames(f) .* get_window(f)
 get_info(f::AudioFrames)   = f.info

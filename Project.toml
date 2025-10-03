@@ -12,7 +12,7 @@ SoleBase = "4475fa32-7023-44a0-aa70-4813b230e492"
 
 [compat]
 AudioReader = "0.1"
-DSP = "0.8"
+DSP = "0.7, 0.8"
 FFTW = "1.9"
 Reexport = "1.2"
 SoleBase = "0.13"

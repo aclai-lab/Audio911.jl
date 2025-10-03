@@ -13,7 +13,7 @@ println("Julia version: ", VERSION)
 test_suites = [
     ("Audioreader", ["audioreader.jl",]),
     ("Frames",      ["frames.jl",     ]),
-    # ("STFT",        ["stft.jl",       ]),
+    ("STFT",        ["stft.jl",       ]),
 ]
 
 @testset "SoleXplorer.jl" begin

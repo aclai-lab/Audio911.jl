@@ -12,8 +12,6 @@ mp3_file = test_file("test.mp3")
 
 @test_nowarn load(wav_file)
 @test_nowarn load(mp3_file)
-# @test_nowarn load(ogg_file)
-# @test_nowarn load(flac_file)
 
 audiofile = load(mp3_file)
 @test audiofile isa AudioFile

@@ -112,15 +112,6 @@ struct Stft{F,T} <: AbstractSpectrogram
 end
 
 #------------------------------------------------------------------------------#
-#                                 stft methods                                 #
-#------------------------------------------------------------------------------#
-Base.eltype(::Stft{T}) where T = T
-
-get_spec(s::Stft) = s.stft_spec
-get_freq(s::Stft) = s.stft_freq
-get_info(s::Stft) = s.info
-
-#------------------------------------------------------------------------------#
 #                           spectrum normalizations                            #
 #------------------------------------------------------------------------------#
 power(f) = @. real(f * conj(f))
@@ -138,7 +129,7 @@ end
 #------------------------------------------------------------------------------#
 #                                   get stft                                   #
 #------------------------------------------------------------------------------#
-function get_stft(
+function Stft(
 	frames          :: AudioFrames;
 	stft_size       :: Int64=get_winsize(frames),
 	# frequency_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_info(frames).sr÷2),
@@ -186,15 +177,25 @@ function get_stft(
 	return Stft{AudioFrames}(stft_spec, stft_freq, info)
 end
 
-function get_stft(
-	afile :: AudioFile;
-    win   :: WinFunction=MovingWindow(
-                            window_size=samplerate(afile)≤8000 ? 256 : 512,
-                            window_step=samplerate(afile)≤8000 ? 128 : 256
-                        ),
-	type  :: Tuple{Symbol, Symbol}=(:hann, :periodic),
+function Stft(
+	afile    :: AudioFile;
+    win      :: WinFunction=MovingWindow(
+            size=samplerate(afile)≤8000 ? 256 : 512,
+            step=samplerate(afile)≤8000 ? 128 : 256
+            ),
+	type     :: Base.Callable=hanning,
+    periodic :: Bool=true,
 	kwargs...
 	)::Stft
-	frames = get_frames(afile; win, type)
-	get_stft(frames; kwargs...)
+	frames = AudioFrames(afile; win, type, periodic)
+	Stft(frames; kwargs...)
 end
+
+#------------------------------------------------------------------------------#
+#                                 stft methods                                 #
+#------------------------------------------------------------------------------#
+Base.eltype(::Stft{T}) where T = T
+
+get_spec(s::Stft) = s.stft_spec
+get_freq(s::Stft) = s.stft_freq
+get_info(s::Stft) = s.info

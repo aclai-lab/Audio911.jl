@@ -6,7 +6,7 @@ using  Reexport
 # ---------------------------------------------------------------------------- #
 @reexport using AudioReader: @format_str, File, AudioFormat, AudioFile, load
 @reexport using AudioReader: data, samplerate
-import AudioReader: convert2mono
+import AudioReader: nchannels, convert2mono
 
 # ---------------------------------------------------------------------------- #
 #                           audio related packages                             #
@@ -64,10 +64,11 @@ export nchannels
 export get_info
 include("frames.jl")
 
-# export AbstractSpectrogram
-# export get_spec, get_freq, get_info
-# export Stft
-# include("stft.jl")
+export AbstractSpectrogram
+export get_spec, get_freq, get_info
+export power, magnitude
+export Stft
+include("stft.jl")
 
 # export get_melspec
 # include("mel_spec.jl")
