@@ -229,9 +229,9 @@ struct AudioFrames{T} <: AbstractFrame
     end
 end
 
-#------------------------------------------------------------------------------#
+# ---------------------------------------------------------------------------- #
 #                                    frames                                    #
-#------------------------------------------------------------------------------#
+# ---------------------------------------------------------------------------- #
 """
     get_frames(X; win=AdaptiveWindow(nwindows=3, relative_overlap=0.1), type=(:hann, :periodic)) -> AudioFrames
 
@@ -333,11 +333,11 @@ function AudioFrames(
     return AudioFrames(frames, window, info)
 end
 
-AudioFrames(a::AudioFile; kwargs...) = AudioFrames(data(a), samplerate(a); kwargs...)
+AudioFrames(a::AudioFile; kwargs...) = AudioFrames(get_data(a), get_sr(a); kwargs...)
 
-#------------------------------------------------------------------------------#
+# ---------------------------------------------------------------------------- #
 #                                    methods                                   #
-#------------------------------------------------------------------------------#
+# ---------------------------------------------------------------------------- #
 Base.length(f::AudioFrames) = size(f.frames, 2)
 Base.eltype(::AudioFrames{T}) where T = T
 
@@ -350,3 +350,34 @@ get_window(f::AudioFrames)    = f.window
 get_winsize(f::AudioFrames)   = length(f.window)
 get_winframes(f::AudioFrames) = get_frames(f) .* get_window(f)
 get_info(f::AudioFrames)      = f.info
+
+# ---------------------------------------------------------------------------- #
+#                                   base.show                                  #
+# ---------------------------------------------------------------------------- #
+function Base.show(io::IO, ::MIME"text/plain", f::AudioFrames{T}) where T
+    n_frames = length(f)
+    frame_size = get_size(f)
+    step_size = get_step(f)
+    overlap = get_overlap(f)
+    sr = f.info.sr
+    win_type = f.info.type
+    
+    # Calculate total duration
+    total_samples = frame_size + (n_frames - 1) * step_size
+    duration = total_samples / sr
+    
+    println(io, "AudioFrames{$T}")
+    println(io, "  Frames:      $n_frames")
+    println(io, "  Frame size:  $frame_size samples")
+    println(io, "  Step:        $step_size samples")
+    println(io, "  Overlap:     $overlap samples ($(round(100 * overlap / frame_size, digits=1))%)")
+    println(io, "  Window:      $win_type")
+    println(io, "  Sample rate: $sr Hz")
+    print(io,   "  Duration:    $(round(duration, digits=3)) s")
+end
+
+function Base.show(io::IO, f::AudioFrames{T}) where T
+    n_frames = length(f)
+    frame_size = get_size(f)
+    print(io, "AudioFrames{$T}($n_frames frames × $frame_size samples)")
+end

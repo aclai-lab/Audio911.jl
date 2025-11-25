@@ -134,8 +134,8 @@ end
 function Stft(
 	afile    :: AudioFile;
     win      :: WinFunction=MovingWindow(
-		size=samplerate(afile)≤8000 ? 256 : 512,
-		step=samplerate(afile)≤8000 ? 128 : 256
+		size=get_sr(afile)≤8000 ? 256 : 512,
+		step=get_sr(afile)≤8000 ? 128 : 256
 	),
 	type     :: Base.Callable=hanning,
     periodic :: Bool=true,
@@ -150,11 +150,11 @@ end
 #------------------------------------------------------------------------------#
 Base.eltype(::Stft{T}) where T = T
 
-get_spec(s::Stft) = s.spec
-get_freq(s::Stft) = s.freq
-get_info(s::Stft) = s.info
+@inline get_spec(s::Stft) = s.spec
+@inline get_freq(s::Stft) = s.freq
+@inline get_info(s::Stft) = s.info
 
-get_sr(s::Stft)        = s.info.sr
-get_stft_size(s::Stft) = s.info.stft_size
-get_spec_type(s::Stft) = s.info.spectrum_type
-get_window(s::Stft)    = s.info.window
+@inline get_sr(s::Stft)        = s.info.sr
+@inline get_stft_size(s::Stft) = s.info.stft_size
+@inline get_spec_type(s::Stft) = s.info.spectrum_type
+@inline get_window(s::Stft)    = s.info.window
