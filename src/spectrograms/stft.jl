@@ -133,9 +133,9 @@ end
 
 function Stft(
 	afile    :: AudioFile;
-    win      :: WinFunction=MovingWindow(
-		size=get_sr(afile)≤8000 ? 256 : 512,
-		step=get_sr(afile)≤8000 ? 128 : 256
+    win      :: Base.Callable=movingwindow(
+		winsize=get_sr(afile)≤8000 ? 256 : 512,
+		winstep=get_sr(afile)≤8000 ? 128 : 256
 	),
 	type     :: Base.Callable=hanning,
     periodic :: Bool=true,

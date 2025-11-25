@@ -62,8 +62,6 @@ function LinSpec(
 	spectrum_type = get_spec_type(stft)
 	window        = get_window(stft)
 
-	@show length(window)
-
 	freq_range isa Tuple && (freq_range = FreqRange(first(freq_range), last(freq_range)))
 
 	if freq_range != FreqRange(0, sr >> 1)
@@ -85,6 +83,6 @@ end
 #------------------------------------------------------------------------------#
 Base.eltype(::LinSpec{T}) where T = T
 
-get_spec(s::LinSpec) = s.spec
+get_data(s::LinSpec) = s.spec'
 get_freq(s::LinSpec) = s.freq
 get_info(s::LinSpec) = s.info

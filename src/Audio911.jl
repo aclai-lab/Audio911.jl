@@ -5,8 +5,10 @@ using  Reexport
 #                                audio reader                                  #
 # ---------------------------------------------------------------------------- #
 @reexport using AudioReader: @format_str, File, AudioFormat, AudioFile, load
-@reexport using AudioReader: get_data, get_sr, get_origin_sr, get_nchannels, is_norm
-import AudioReader: get_sr
+@reexport using AudioReader: get_origin_sr, get_nchannels, is_norm
+export get_data, get_sr
+using  AudioReader: AudioFormat, _convert_mono
+import AudioReader: get_data, get_sr
 
 # ---------------------------------------------------------------------------- #
 #                           audio related packages                             #
@@ -16,7 +18,8 @@ using  FFTW, DSP
 # ---------------------------------------------------------------------------- #
 #                              external packages                               #
 # ---------------------------------------------------------------------------- #
-using  SoleBase: movingwindow
+using  DataTreatments
+@reexport using DataTreatments: movingwindow
 
 # ---------------------------------------------------------------------------- #
 #                                   types                                      #
@@ -62,9 +65,9 @@ export FreqRange
 @reexport using DSP: bartlett, bartlett_hann, blackman
 
 export AbstractFrames
-export WinFunction, MovingWindow, AudioFrames
+export AudioFrames
 export get_size, get_step, get_overlap
-export get_frames, get_window, get_winframes, get_winsize
+export get_window, get_winframes, get_winsize
 export nchannels
 export get_info
 include("frames.jl")

@@ -1,21 +1,24 @@
 name = "Audio911"
 uuid = "5540a74f-91b5-427e-9d31-931d77bf3639"
-authors = ["Riccardo PASINI"]
 version = "0.1.0"
+authors = ["Riccardo PASINI"]
 
 [deps]
 AudioReader = "a9c2ce0f-e965-4f6d-9ec4-ce2d5ed55f28"
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
+DataTreatments = "1b3ff5f2-9b56-42a2-b38a-76a033f741ca"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
-SoleBase = "4475fa32-7023-44a0-aa70-4813b230e492"
+
+[sources]
+DataTreatments = {rev = "main", url = "/home/paso/Documents/Aclai/PasoStudio73/DataTreatments.jl"}
 
 [compat]
 AudioReader = "0.2"
-DSP = "0.7, 0.8"
+DSP = "0.8"
+DataTreatments = "0.1"
 FFTW = "1.9"
 Reexport = "1.2"
-SoleBase = "0.13"
 julia = "1"
 
 [extras]
