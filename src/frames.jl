@@ -373,7 +373,6 @@ function Base.show(io::IO, ::MIME"text/plain", f::AudioFrames{T}) where T
     println(io, "  Overlap:     $overlap samples ($(round(100 * overlap / frame_size, digits=1))%)")
     println(io, "  Window:      $win_type")
     println(io, "  Sample rate: $sr Hz")
-    print(io,   "  Duration:    $(round(duration, digits=3)) s")
 end
 
 function Base.show(io::IO, f::AudioFrames{T}) where T
