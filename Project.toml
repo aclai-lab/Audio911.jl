@@ -11,7 +11,7 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 SoleBase = "4475fa32-7023-44a0-aa70-4813b230e492"
 
 [compat]
-AudioReader = "0.1"
+AudioReader = "0.2"
 DSP = "0.7, 0.8"
 FFTW = "1.9"
 Reexport = "1.2"
@@ -19,7 +19,8 @@ SoleBase = "0.13"
 julia = "1"
 
 [extras]
+MAT = "23992714-dd62-5051-b70f-ba57cb901cac"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["MAT", "Test"]

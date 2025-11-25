@@ -5,8 +5,8 @@ using  Reexport
 #                                audio reader                                  #
 # ---------------------------------------------------------------------------- #
 @reexport using AudioReader: @format_str, File, AudioFormat, AudioFile, load
-@reexport using AudioReader: data, samplerate
-import AudioReader: nchannels, convert2mono
+@reexport using AudioReader: get_data, get_sr, get_origin_sr, get_nchannels, is_norm
+import AudioReader: get_sr
 
 # ---------------------------------------------------------------------------- #
 #                           audio related packages                             #
