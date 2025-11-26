@@ -9,7 +9,7 @@ struct FbSetup <: AbstractInfo
     semitonerange :: Tuple{Int64, Int64}
 end
 
-struct FbData{T<:AbstractFloat} <:AbstractInfo
+struct FbData{T<:Float64} <:AbstractInfo
     fbank :: AbstractArray{T}
 	freq  :: AbstractVector{T}
     bw    :: AbstractVector{T}
@@ -24,7 +24,7 @@ end
 # ---------------------------------------------------------------------------- #
 #                         scale convertions functions                          #
 # ---------------------------------------------------------------------------- #
-function hz2mel(hz::Union{Tuple{Int64, Int64}, StepRangeLen{<:AbstractFloat}, Vector{<:AbstractFloat}}, style::Symbol)
+function hz2mel(hz::Union{Tuple{Int64, Int64}, StepRangeLen{Float64}, Vector{Float64}}, style::Symbol)
     style == :htk    && return @. 2595 * log10(1 + hz / 700)
     style == :slaney && begin
         lin_step = 200 / 3
@@ -143,7 +143,7 @@ end
 # ---------------------------------------------------------------------------- #
 function FBank(
         sr            :: Int64;
-        sfreq         :: Union{StepRangeLen{<:AbstractFloat},Nothing}=nothing,
+        sfreq         :: Union{StepRangeLen{<:Float64},Nothing}=nothing,
         nfft          :: Int64=512,
         nbands        :: Int64=26,
         scale         :: Symbol=:htk, # :htk, :slaney, :erb, :bark, :semitones
@@ -165,16 +165,18 @@ function FBank(
         coeffs = compute_gammatone_coeffs(sr, filter_freq)
 
         iirfreqz = (b, a, n) -> fft([b; zeros(n - length(b))]) ./ fft([a; zeros(n - length(a))])
-        sosfilt = (c, n) -> reduce((x, y) -> x .* y, map(row -> iirfreqz(row[1:3], row[4:6], n), eachrow(c)))
-        apply_sosfilt = (i) -> abs.(sosfilt(coeffs[:, :, i], nfft))
+        sosfilt = (c, n)     -> reduce((x, y) -> x .* y, map(row -> iirfreqz(row[1:3], row[4:6], n), eachrow(c)))
+        apply_sosfilt = (i)  -> abs.(sosfilt(coeffs[:, :, i], nfft))
 
         filterbank = hcat(map(apply_sosfilt, 1:nbands)...)'
         bw = 1.019 * 24.7 * (0.00437 * filter_freq .+ 1)
 
         (norm != :none) && normalize!(filterbank, norm, bw)
 
-        rem(nfft, 2) == 0 ? filterbank[:, 2:(nfft ÷ 2)] .*= 2 : filterbank[:, 2:(nfft ÷ 2 + 1)] .*= 2
-        filterbank = filterbank[:, 1:(nfft ÷ 2 + 1)]
+        @views rem(nfft, 2) == 0 ? filterbank[:, 2:(nfft ÷ 2)] .*= 2 : filterbank[:, 2:(nfft ÷ 2 + 1)] .*= 2
+        filterbank = @view filterbank[:, 1:(nfft ÷ 2 + 1)]
+        # rem(nfft, 2) == 0 ? filterbank[:, 2:(nfft ÷ 2)] .*= 2 : filterbank[:, 2:(nfft ÷ 2 + 1)] .*= 2
+        # filterbank = filterbank[:, 1:(nfft ÷ 2 + 1)]
 
     else
         if (scale == :htk || scale == :slaney)
@@ -190,7 +192,7 @@ function FBank(
             error("Unknown filterbank frequency scale '$scale', available scales are: :htk, :slaney, :erb, :bark, :semitones, , :semitones_tuned.")
         end
 
-        filter_freq = band_edges[2:(end - 1)]
+        filter_freq = @view band_edges[2:(end - 1)]
         nbands = length(filter_freq)
 
         p = [findfirst(sfreq .> edge) for edge in band_edges]
@@ -200,7 +202,7 @@ function FBank(
         filterbank = zeros(nbands, length(sfreq))
 
         # bandwidth
-        bw = band_edges[3:end] .- band_edges[1:(end - 2)]
+        bw = @views band_edges[3:end] .- band_edges[1:(end - 2)]
 
         # Apply warping transformation if domain is warped
         if domain == :warped
@@ -216,10 +218,10 @@ function FBank(
         for k in 1:nbands
             # rising side of triangle
             rise_range = p[k]:(p[k + 1] - 1)
-            @. filterbank[k, rise_range] = (sfreq[rise_range] - band_edges[k]) / (band_edges[k + 1] - band_edges[k])
+            @views @. filterbank[k, rise_range] = (sfreq[rise_range] - band_edges[k]) / (band_edges[k + 1] - band_edges[k])
             # falling side of triangle
             fall_range = p[k + 1]:(p[k + 2] - 1)
-            @. filterbank[k, fall_range] = (band_edges[k + 2] - sfreq[fall_range]) / (band_edges[k + 2] - band_edges[k + 1])
+            @views @. filterbank[k, fall_range] = (band_edges[k + 2] - sfreq[fall_range]) / (band_edges[k + 2] - band_edges[k + 1])
         end
 
         # normalization
