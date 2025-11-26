@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------- #
 struct FbSetup <: AbstractInfo
     nbands        :: Int64
-    scale         :: Symbol # :htk, :slaney, :erb, :bark, :semitones, :tuned_semitones
+    scale         :: Symbol # :htk, :slaney, :erb, :bark, :semitones
     norm          :: Symbol # :bandwidth, :area, :none
     freqrange     :: Tuple{Int, Int}
     semitonerange :: Tuple{Int, Int}
@@ -12,6 +12,7 @@ end
 struct FbData{T<:AbstractFloat} <:AbstractInfo
     fbank :: AbstractArray{T}
 	freq  :: AbstractVector{T}
+    bw    :: AbstractVector{T}
 end
 
 struct FBank <: AbstractFBank
@@ -23,7 +24,7 @@ end
 # ---------------------------------------------------------------------------- #
 #                         scale convertions functions                          #
 # ---------------------------------------------------------------------------- #
-function hz2mel(hz::Tuple{Int64, Int64}, style::Symbol)
+function hz2mel(hz::Union{Tuple{Int64, Int64}, StepRangeLen{<:AbstractFloat}, Vector{<:AbstractFloat}}, style::Symbol)
     style == :htk    && return @. 2595 * log10(1 + hz / 700)
     style == :slaney && begin
         lin_step = 200 / 3
@@ -138,31 +139,27 @@ function compute_gammatone_coeffs(sr::Int64, bands::AbstractVector{Float64})
         ]..., dims=3)
 end
 
-# -------------------------------------------------------------------------- #
-#                                  f0 log mel                                #
-# -------------------------------------------------------------------------- #
-function calc_f0(source::AbstractVector{<:AbstractFloat}, sfreq::StepRangeLen{<:AbstractFloat}, f0_semitone_range::Tuple{Int, Int},)
-	x1 = findfirst((x)-> x >= f0_semitone_range[1], sfreq)
-	x2 = findfirst((x)-> x >= f0_semitone_range[2], sfreq)
-
-	peak_pos = argmax(source[x1:x2-1])
-	sfreq[x1+peak_pos-1]
-end
-
 # ---------------------------------------------------------------------------- #
 #                           design filterbank matrix                           #
 # ---------------------------------------------------------------------------- #
 function FBank(
-        source::AbstractVector{<:T},
-        sfreq         :: StepRangeLen{<:T},
-        sr            :: Int64,
-        nfft          :: Int64;
+        sr            :: Int64;
+        sfreq         :: Union{StepRangeLen{<:AbstractFloat},Nothing}=nothing,
+        nfft          :: Int64=512,
         nbands        :: Int64=26,
-        scale         :: Symbol=:htk, # :mel_htk, :mel_slaney, :erb, :bark, :semitones, :tuned_semitones
+        scale         :: Symbol=:htk, # :htk, :slaney, :erb, :bark, :semitones, :tuned_semitones
         norm          :: Symbol=:bandwidth,  # :bandwidth, :area, :none
-        freqrange     :: Tuple{Int64, Int64} = (0, round(Int, sr / 2)),
-        semitonerange :: Tuple{Int64, Int64} = (200, 700),
-) where T <: AbstractFloat
+        domain        :: Symbol=:linear,
+        freqrange     :: Tuple{Int64, Int64}=(0, round(Int, sr / 2)),
+        semitonerange :: Tuple{Int64, Int64}=(200, 700),
+)
+    if isnothing(sfreq)
+	    spec_length = get_onesided_stft_range(nfft)[end]
+	    sfreq = (0:spec_length - 1) .* (sr / nfft)
+    end
+
+    domain == :warped && (linfq = (0:nfft - 1) .* (sr / nfft))
+
     if scale == :erb
         erb_range = hz2erb(freqrange)
         filter_freq = erb2hz(erb_range, nbands)
@@ -182,19 +179,13 @@ function FBank(
 
     else
         if (scale == :htk || scale == :slaney)
-            mel_range = hz2mel(freqrange, scale)
+            mel_range  = hz2mel(freqrange, scale)
             band_edges = mel2hz(mel_range, nbands, scale)
-            @show mel_range
-            @show band_edges
         elseif  scale == :bark
             bark_range = hz2bark(freqrange)
             band_edges = bark2hz(bark_range, nbands)
         elseif scale == :semitones
-            st_range = hz2semitone(freqrange)
-            band_edges = semitone2hz(st_range, nbands)
-        elseif scale == :tuned_semitones
-            freqrange = (round(Int, calc_f0(source, sfreq, semitonerange)), freqrange[2])
-            st_range = hz2semitone(freqrange)
+            st_range   = hz2semitone(freqrange)
             band_edges = semitone2hz(st_range, nbands)
         else
             error("Unknown filterbank frequency scale '$scale', available scales are: :htk, :slaney, :erb, :bark, :semitones, , :semitones_tuned.")
@@ -207,30 +198,41 @@ function FBank(
         isnothing(p[end]) ? p[end] = length(sfreq) : nothing
 
         # create triangular filters for each band
-        bw = diff(band_edges)
         filterbank = zeros(nbands, length(sfreq))
+
+        # bandwidth
+        bw = band_edges[3:end] .- band_edges[1:(end - 2)]
+
+        # Apply warping transformation if domain is warped
+        if domain == :warped
+            band_edges, sfreq = if scale == :htk || scale == :slaney
+                hz2mel(band_edges, scale), hz2mel(sfreq, scale)
+            elseif scale == :bark
+                hz2bark(band_edges), hz2bark(sfreq)
+            else
+                band_edges, sfreq
+            end
+        end
 
         for k in 1:nbands
             # rising side of triangle
-            @. filterbank[k, p[k]:(p[k + 1] - 1)] = (sfreq[p[k]:(p[k + 1] - 1)] - band_edges[k]) / bw[k]
+            @. filterbank[k, p[k]:(p[k + 1] - 1)] = (sfreq[p[k]:(p[k + 1] - 1)] - band_edges[k]) / (band_edges[k + 1] - band_edges[k])
             # falling side of triangle
-            @. filterbank[k, p[k + 1]:(p[k + 2] - 1)] = (band_edges[k + 2] - sfreq[p[k + 1]:(p[k + 2] - 1)]) / bw[k + 1]
+            @. filterbank[k, p[k + 1]:(p[k + 2] - 1)] = (band_edges[k + 2] - sfreq[p[k + 1]:(p[k + 2] - 1)]) / (band_edges[k + 2] - band_edges[k + 1])
         end
-
-        bw = (band_edges[3:end] - band_edges[1:(end - 2)])
 
         # normalization
         norm != :none && normalize!(filterbank, norm, bw)
     end
     
-    FBank(sr, FbSetup(nbands, scale, norm, freqrange, semitonerange), FbData(filterbank, filter_freq))
+    FBank(sr, FbSetup(nbands, scale, norm, freqrange, semitonerange), FbData(filterbank, filter_freq, bw))
 end
 
-FBank(s::AbstractSpectrogram; kwargs...) = 
-    FBank(vec(sum(get_data(s), dims=2)), get_freq(s), get_sr(s), get_stft_size(s); kwargs...)
+FBank(s::AbstractSpectrogram; kwargs...) = FBank(get_sr(s); sfreq=get_freq(s), nfft=get_nfft(s), kwargs...)
 
 @inline get_data(f::FBank)          = f.data.fbank
 @inline get_freq(f::FBank)          = f.data.freq
+@inline get_bandwidth(f::FBank)     = f.data.bw
 @inline get_sr(f::FBank)            = f.sr
 @inline get_nbands(f::FBank)        = f.setup.nbands
 @inline get_scale(f::FBank)         = f.setup.scale

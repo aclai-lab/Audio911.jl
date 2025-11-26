@@ -131,6 +131,7 @@ abstract type AbstractFBank end
 
 get_data(f::AbstractFBank)          = error("get_data is not implemented for type $(typeof(s)).")
 get_freq(f::AbstractFBank)          = error("get_freq is not implemented for type $(typeof(s)).")
+get_bandwidth(f::AbstractFBank)     = error("get_bandwidth is not implemented for type $(typeof(s)).")
 get_sr(f::AbstractFBank)            = error("get_sr is not implemented for type $(typeof(s)).")
 get_nbands(f::AbstractFBank)        = error("get_nbands is not implemented for type $(typeof(s)).")
 get_scale(f::AbstractFBank)         = error("get_scale is not implemented for type $(typeof(s)).")

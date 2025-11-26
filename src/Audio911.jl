@@ -44,6 +44,7 @@ export get_freq, get_sr, get_nfft, get_spectype
 export get_windows
 
 export AbstractFBank
+export get_bandwidth
 export get_nbands, get_scale, get_norm
 export get_freqrange, get_semitonerange
 include("types.jl")
