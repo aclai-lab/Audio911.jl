@@ -5,8 +5,8 @@ struct FbSetup <: AbstractInfo
     nbands        :: Int64
     scale         :: Symbol        # :htk, :slaney, :erb, :bark, :semitones
     norm          :: Base.Callable # :bandwidth, :area, :none_func
-    freqrange     :: Tuple{Int, Int}
-    semitonerange :: Tuple{Int, Int}
+    freqrange     :: Tuple{Int64, Int64}
+    semitonerange :: Tuple{Int64, Int64}
 end
 
 struct FbData{T<:AbstractFloat} <:AbstractInfo
