@@ -88,7 +88,7 @@ export Stft
 export power, magnitude
 include("fft/stft.jl")
 
-export area, bandwidth
+export area, bandwidth, none_norm
 export FBank
 include("fft/fbank.jl")
 

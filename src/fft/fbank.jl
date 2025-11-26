@@ -3,8 +3,8 @@
 # ---------------------------------------------------------------------------- #
 struct FbSetup <: AbstractInfo
     nbands        :: Int64
-    scale         :: Symbol # :htk, :slaney, :erb, :bark, :semitones
-    norm          :: Symbol # :bandwidth, :area, :none
+    scale         :: Symbol        # :htk, :slaney, :erb, :bark, :semitones
+    norm          :: Base.Callable # :bandwidth, :area, :none_func
     freqrange     :: Tuple{Int, Int}
     semitonerange :: Tuple{Int, Int}
 end
@@ -79,14 +79,13 @@ end
 # ---------------------------------------------------------------------------- #
 #                                 normalization                                #
 # ---------------------------------------------------------------------------- #
-function normalize!(filterbank::AbstractArray{Float64}, norm::Symbol, bw::AbstractVector{Float64})
-    norm_funcs = Dict(
-        :area => () -> sum(filterbank, dims = 2),
-        :bandwidth => () -> bw / 2,
-        :none => () -> 1
-    )
+# normalization functions
+const area      = (filterbank, bw) -> sum(filterbank, dims=2)
+const bandwidth = (filterbank, bw) -> bw / 2
+const none_norm = (filterbank, bw) -> 1
 
-    weight_per_band = get(norm_funcs, norm, norm_funcs[:none])()
+function normalize!(filterbank::AbstractArray{Float64}, norm_func::Function, bw::AbstractVector{Float64})
+    weight_per_band = norm_func(filterbank, bw)
     @. filterbank /= (weight_per_band + (weight_per_band == 0))
 end
 
@@ -147,8 +146,8 @@ function FBank(
         sfreq         :: Union{StepRangeLen{<:AbstractFloat},Nothing}=nothing,
         nfft          :: Int64=512,
         nbands        :: Int64=26,
-        scale         :: Symbol=:htk, # :htk, :slaney, :erb, :bark, :semitones, :tuned_semitones
-        norm          :: Symbol=:bandwidth,  # :bandwidth, :area, :none
+        scale         :: Symbol=:htk, # :htk, :slaney, :erb, :bark, :semitones
+        norm          :: Function=bandwidth,  # area, bandwidth, or none_norm
         domain        :: Symbol=:linear,
         freqrange     :: Tuple{Int64, Int64}=(0, round(Int, sr / 2)),
         semitonerange :: Tuple{Int64, Int64}=(200, 700),
@@ -216,13 +215,15 @@ function FBank(
 
         for k in 1:nbands
             # rising side of triangle
-            @. filterbank[k, p[k]:(p[k + 1] - 1)] = (sfreq[p[k]:(p[k + 1] - 1)] - band_edges[k]) / (band_edges[k + 1] - band_edges[k])
+            rise_range = p[k]:(p[k + 1] - 1)
+            @. filterbank[k, rise_range] = (sfreq[rise_range] - band_edges[k]) / (band_edges[k + 1] - band_edges[k])
             # falling side of triangle
-            @. filterbank[k, p[k + 1]:(p[k + 2] - 1)] = (band_edges[k + 2] - sfreq[p[k + 1]:(p[k + 2] - 1)]) / (band_edges[k + 2] - band_edges[k + 1])
+            fall_range = p[k + 1]:(p[k + 2] - 1)
+            @. filterbank[k, fall_range] = (band_edges[k + 2] - sfreq[fall_range]) / (band_edges[k + 2] - band_edges[k + 1])
         end
 
         # normalization
-        norm != :none && normalize!(filterbank, norm, bw)
+        (norm != :none) && normalize!(filterbank, norm, bw)
     end
     
     FBank(sr, FbSetup(nbands, scale, norm, freqrange, semitonerange), FbData(filterbank, filter_freq, bw))

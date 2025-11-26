@@ -75,7 +75,7 @@ fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 #     MelStyle="oshaughnessy")
 # save fb03.mat filterBank Fc BW
 
-@btime fbank = FBank(16000; nfft=1024, nbands=26, scale=:htk, norm=:bandwidth, domain=:warped, freqrange=(100,1000))
+@btime fbank = FBank(16000; nfft=1024, nbands=26, scale=:htk, norm=bandwidth, domain=:warped, freqrange=(100,1000))
 fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
 matfile = matlab_file("fb03.mat")
@@ -99,3 +99,5 @@ fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 # 48.916 μs (855 allocations: 143.64 KiB)
 # 46.765 μs (758 allocations: 138.75 KiB)
 # 46.141 μs (758 allocations: 138.75 KiB)
+# 43.705 μs (602 allocations: 133.88 KiB)
+# 39.110 μs (584 allocations: 132.70 KiB)
