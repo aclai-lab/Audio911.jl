@@ -208,4 +208,88 @@ fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 @test isapprox(f, vec(fm))
 @test isapprox(bw, vec(bwm))
 
+# [filterBank, Fc, BW] = designAuditoryFilterBank(fs_wav, ...
+#     FrequencyScale="mel", FFTLength=1024, ...
+#     NumBands=26, FrequencyRange=[100,1000], ...
+#     Normalization="none", FilterBankDesignDomain="linear", ...
+#     MelStyle="oshaughnessy")
+# save fb08.mat filterBank Fc BW
+
+fbank = FBank(16000; nfft=1024, nbands=26, norm=none_norm, domain=:linear, freqrange=(100,1000))
+fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
+
+matfile = matlab_file("fb08.mat")
+mat = MAT.matread(matfile)
+fbm, fm, bwm = mat["filterBank"], mat["Fc"], mat["BW"]
+
+@test isapprox(fb, fbm)
+@test isapprox(f, vec(fm))
+@test isapprox(bw, vec(bwm))
+
+audiofile = Audio911.load(wav_file, format=Float64)
+frames = AudioFrames(audiofile; win=movingwindow(winsize=1024, winstep=512), type=hamming, periodic=true)
+stft = Stft(frames; spectrum=power)
+fbank = FBank(stft; nbands=26, norm=none_norm, domain=:linear, freqrange=(100,1000))
+fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
+
+@test isapprox(fb, fbm)
+@test isapprox(f, vec(fm))
+@test isapprox(bw, vec(bwm))
+
+# [filterBank, Fc, BW] = designAuditoryFilterBank(fs_wav, ...
+#     FrequencyScale="mel", FFTLength=733, ...
+#     NumBands=15, FrequencyRange=[53,1743], ...
+#     Normalization="none", FilterBankDesignDomain="warped", ...
+#     MelStyle="slaney")
+# save fb09.mat filterBank Fc BW
+
+fbank = FBank(16000; nfft=733, nbands=15, scale=:slaney, norm=none_norm, domain=:warped, freqrange=(53,1743))
+fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
+
+matfile = matlab_file("fb09.mat")
+mat = MAT.matread(matfile)
+fbm, fm, bwm = mat["filterBank"], mat["Fc"], mat["BW"]
+
+@test isapprox(fb, fbm)
+@test isapprox(f, vec(fm))
+@test isapprox(bw, vec(bwm))
+
+audiofile = Audio911.load(wav_file, format=Float64)
+frames = AudioFrames(audiofile; win=movingwindow(winsize=733, winstep=733÷2), type=hamming, periodic=true)
+stft = Stft(frames; spectrum=power)
+fbank = FBank(stft; nbands=15, scale=:slaney, norm=none_norm, domain=:warped, freqrange=(53,1743))
+fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
+
+@test isapprox(fb, fbm)
+@test isapprox(f, vec(fm))
+@test isapprox(bw, vec(bwm))
+
+# [filterBank, Fc, BW] = designAuditoryFilterBank(fs_wav, ...
+#     FrequencyScale="mel", FFTLength=733, ...
+#     NumBands=15, FrequencyRange=[53,1743], ...
+#     Normalization="none", FilterBankDesignDomain="linear", ...
+#     MelStyle="slaney")
+# save fb10.mat filterBank Fc BW
+
+fbank = FBank(16000; nfft=733, nbands=15, scale=:slaney, norm=none_norm, domain=:linear, freqrange=(53,1743))
+fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
+
+matfile = matlab_file("fb10.mat")
+mat = MAT.matread(matfile)
+fbm, fm, bwm = mat["filterBank"], mat["Fc"], mat["BW"]
+
+@test isapprox(fb, fbm)
+@test isapprox(f, vec(fm))
+@test isapprox(bw, vec(bwm))
+
+audiofile = Audio911.load(wav_file, format=Float64)
+frames = AudioFrames(audiofile; win=movingwindow(winsize=733, winstep=733÷2), type=hamming, periodic=true)
+stft = Stft(frames; spectrum=power)
+fbank = FBank(stft; nbands=15, scale=:slaney, norm=none_norm, domain=:linear, freqrange=(53,1743))
+fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
+
+@test isapprox(fb, fbm)
+@test isapprox(f, vec(fm))
+@test isapprox(bw, vec(bwm))
+
 @test_nowarn FBank(16000; nfft=1024, nbands=26, scale=:semitones, norm=bandwidth, freqrange=(100,1000))

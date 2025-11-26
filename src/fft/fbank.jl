@@ -4,7 +4,7 @@
 struct FbSetup <: AbstractInfo
     nbands        :: Int64
     scale         :: Symbol        # :htk, :slaney, :erb, :bark, :semitones
-    norm          :: Base.Callable # :bandwidth, :area, :none_func
+    norm          :: Base.Callable # bandwidth, area, none_norm
     freqrange     :: Tuple{Int64, Int64}
     semitonerange :: Tuple{Int64, Int64}
 end
