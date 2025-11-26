@@ -90,7 +90,7 @@ function Stft(
 	stft_size       :: Int64=get_winsize(frames),
 	spectrum_type   :: Base.Callable=power, # power, magnitude
 )::Stft
-	sr = get_info(frames).sr
+	sr         = get_info(frames).sr
 	win_size   = get_winsize(frames)
 	overlap    = get_overlap(frames)
 	winframes  = get_winframes(frames)

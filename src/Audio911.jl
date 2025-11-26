@@ -24,14 +24,16 @@ using  DataTreatments
 # ---------------------------------------------------------------------------- #
 #                                   types                                      #
 # ---------------------------------------------------------------------------- #
-abstract type AbstractInfo end
-
 """
     Maybe{T}
 
 Type alias for `Union{T, Nothing}`.
 """
 const Maybe{T} = Union{T, Nothing}
+
+export AbstractInfo, AbstractFrame, AbstractSpectrogram
+export get_spec, get_freq, get_info
+include("types.jl")
 
 # ---------------------------------------------------------------------------- #
 #                              frequency range                                 #
@@ -71,10 +73,6 @@ export get_window, get_winframes, get_winsize
 export nchannels
 export get_info
 include("frames.jl")
-
-export AbstractSpectrogram
-export get_spec, get_freq, get_info
-include("spectrograms/types.jl")
 
 export Stft
 export power, magnitude

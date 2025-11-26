@@ -1,25 +1,28 @@
 # ---------------------------------------------------------------------------- #
-#                               abstract types                                 #
+#                                    info                                      #
 # ---------------------------------------------------------------------------- #
-abstract type AbstractMelSpec end
+struct MelSpecInfo <: AbstractInfo
+    sr            :: Int64
+    freq_range    :: FreqRange
+    spectrum_type :: Base.Callable
+	win_norm      :: Bool
+end
 
 # ---------------------------------------------------------------------------- #
-#                            mel spectrogram struct                            #
+#                          linear spectrogram struct                           #
 # ---------------------------------------------------------------------------- #
-struct MelSpec{F,T} <: AbstractMelSpec
-	mel_spec :: Matrix{T}
-	mel_freq :: Vector{Float64}
-	fb       :: Matrix{Float64}
-	info     :: NamedTuple
+struct MelSpec{F,T} <: AbstractSpectrogram
+    spec :: Matrix{T}
+    freq :: StepRangeLen
+    info :: MelSpecInfo
 
-	function MelSpec{F}(
-		mel_spec :: Matrix{T},
-		mel_freq :: Vector{Float64},
-		fb       :: Matrix{Float64},
-		info     :: NamedTuple
-	) where {F,T}
-		new{F,T}(mel_spec, mel_freq, fb, info)
-	end
+    function MelSpec{F}(
+        spec :: Matrix{T},
+        freq :: StepRangeLen,
+        info :: MelSpecInfo
+    ) where {F,T}
+        new{F,T}(spec, freq, info)
+    end
 end
 
 # ---------------------------------------------------------------------------- #
@@ -95,153 +98,44 @@ end
 # 	return loudest_peak, min_index + loudest_index
 # end
 
-# ---------------------------------------------------------------------------- #
-#                           design fb matrix                           #
-# ---------------------------------------------------------------------------- #
-### da generalizzare per 
-### frequency_scale :mel, :bark, :erb
-### filterbanl_design_domain :linear, :warped (da verificare se serve)
-function design_fb(
-    stft             :: Stft;
-    mel_bands        :: Int64=26,
-    mel_style        :: Symbol=:htk, 				 # :htk, :slaney, :tuned
-    fb_design_domain :: Symbol=:linear,
-	fb_norm          :: Symbol=:bandwidth, 		  # :bandwidth, :area, :none
-	frequency_scale  :: Symbol=:mel, 			    # TODO :mel, :bark, :erb
-    st_peak_range    :: FreqRange=FreqRange(200, 700),
-)
-    frequency_range = get_info(stft).frequency_range
-    stft_size       = get_info(stft).stft_size
-    sr              = get_info(stft).sr
 
-	# set the design domain ### da implementare in futuro
-	design_domain = fb_design_domain == :linear ? :linear : frequency_scale
-
-	# compute band edges
-	# TODO da inserire il caso :erb e :bark
-
-    # quel lin spectrogram andrà studiato bene
-	# if mel_style == :tuned
-	# 	if isempty(data.lin_spectrogram)
-	# 		lin_spectrogram!(setup, data)
-	# 	end
-	# 	_, loudest_index = catch_loudest_index(data.lin_spectrogram, data.lin_frequencies, st_peak_range)
-	# 	melRange = hz2mel((round(Int, data.lin_frequencies[loudest_index]), frequency_range[2]), :htk)
-	# else
-		melRange = hz2mel(frequency_range, mel_style)
-	# end
-
-	# mimic audioflux linear mel_style
-	if mel_style == :linear
-		lin_fq = collect(0:(stft_size-1)) / stft_size * sr
-		band_edges = lin_fq[1:(mel_bands+2)]
-	elseif mel_style == :htk || mel_style == :slaney
-		band_edges = mel2hz(LinRange(melRange.low, melRange.hi, mel_bands + 2), mel_style)
-	# elseif setup.mel_style == :tuned
-	# 	band_edges = mel2hz(LinRange(melRange[1], melRange[end], mel_bands + 2), :htk)
-	else
-		error("Unknown mel_style $(mel_style).")
-	end
-
-	### parte esclusiva per mel fb si passa a file designmelfb.m
-	# determine the number of bands
-	num_edges = length(band_edges)
-
-	# determine the number of valid bands
-	valid_num_edges = sum((band_edges .- (sr / 2)) .< sqrt(eps(Float64)))
-	valid_num_bands = valid_num_edges - 2
-
-	# preallocate the filter bank
-	fb = zeros(Float64, stft_size, mel_bands)
-	mel_freq = band_edges[2:(end-1)]
-
-	# Set this flag to true if the number of FFT length is insufficient to
-	# compute the specified number of mel bands
-	FFTLengthTooSmall = false
-
-	# if :hz 
-	linFq = collect(0:(stft_size-1)) / stft_size * sr
-
-	# Determine inflection points
-	@assert(valid_num_edges <= num_edges)
-	p = zeros(Float64, valid_num_edges, 1)
-
-	for edge_n in 1:valid_num_edges
-		for index in eachindex(linFq)
-			if linFq[index] > band_edges[edge_n]
-				p[edge_n] = index
-				break
-			end
-		end
-	end
-
-	FqMod = linFq
-
-	# Create triangular filters for each band
-	bw = diff(band_edges)
-
-	for k in 1:Int(valid_num_bands)
-		# Rising side of triangle
-		for j in Int(p[k]):(Int(p[k+1])-1)
-			fb[j, k] = (FqMod[j] - band_edges[k]) / bw[k]
-		end
-		# Falling side of triangle
-		for j in Int(p[k+1]):(Int(p[k+2])-1)
-			fb[j, k] = (band_edges[k+2] - FqMod[j]) / bw[k+1]
-		end
-		emptyRange1 = p[k] .> p[k+1] - 1
-		emptyRange2 = p[k+1] .> p[k+2] - 1
-		if (!FFTLengthTooSmall && (emptyRange1 || emptyRange2))
-			FFTLengthTooSmall = true
-		end
-	end
-
-	# mirror two sided
-	range = get_onesided_fft_range(stft_size)
-	range = range[2:end]
-	fb[end:-1:(end-length(range)+1), :] = fb[range, :]
-
-	fb = fb'
-
-	# normalizzazione    
-	BW = band_edges[3:end] - band_edges[1:(end-2)]
-
-	if (fb_norm == :area)
-		weight_per_band = sum(fb, dims = 2)
-		if frequency_scale != :erb
-			weight_per_band = weight_per_band / 2
-		end
-	elseif (fb_norm == :bandwidth)
-		weight_per_band = BW / 2
-	else
-		weight_per_band = ones(1, mel_bands)
-	end
-
-	for i in 1:(mel_bands)
-		if (weight_per_band[i] != 0)
-			fb[i, :] = fb[i, :] ./ weight_per_band[i]
-		end
-	end
-
-	# get one side
-	range = get_onesided_fft_range(stft_size)
-	fb = fb[:, range]
-	# manca la parte relativa a :erb e :bark
-
-	# setta fattore di normalizzazione
-	# if setup.window_norm
-	# 	win_norm_factor = get_mel_norm_factor(setup.spectrum_type, data.fft_window)
-	# 	fb = fb * win_norm_factor
-	# end
-
-	return fb, mel_freq
-end
 
 # ---------------------------------------------------------------------------- #
 #                               mel spectrogram                                #
 # ---------------------------------------------------------------------------- #
+function LinSpec(
+	stft       :: Stft;
+	freq_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_info(frames).sr>>1),
+	win_norm   :: Bool=false
+)::LinSpec
+	spec = get_spec(stft)
+	freq = get_freq(stft)
+
+	sr            = get_sr(stft)
+	stft_size     = get_stft_size(stft)
+	spectrum_type = get_spec_type(stft)
+	window        = get_window(stft)
+
+	freq_range isa Tuple && (freq_range = FreqRange(first(freq_range), last(freq_range)))
+
+	if freq_range != FreqRange(0, sr >> 1)
+		bin_low, bin_high = get_freq_range(freq_range, stft_size, sr)
+		spec = @views spec[bin_low:bin_high, :]
+		freq = freq[bin_low:bin_high]
+	end
+
+	win_norm_func = eval(Symbol("win" * string(spectrum_type)))
+	win_norm && (spec = win_norm_func(spec, window))
+
+	info = LinSpecInfo(sr, freq_range, spectrum_type, win_norm)
+
+	return LinSpec{typeof(stft)}(spec .* 2, freq, info)
+end
+
 function get_melspec(
 	stft::Stft;
+	freq_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_info(frames).sr>>1),
+	win_norm   :: Bool=false,
     mel_bands        :: Int64=26,
 	mel_style        :: Symbol=:htk, 				 # :htk, :slaney, :tuned
 	fb_design_domain :: Symbol=:linear,
