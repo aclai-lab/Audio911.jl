@@ -19,11 +19,11 @@ frames = AudioFrames(audiofile; win, type=hamming, periodic=true)
 
 @test_nowarn Stft(frames)
 
-@test_nowarn Stft(frames; stft_size=1024)
-@test_nowarn Stft(frames; stft_size=2048)
-@test_throws ArgumentError Stft(frames; stft_size=128)
+@test_nowarn Stft(frames; nfft=1024)
+@test_nowarn Stft(frames; nfft=2048)
+@test_throws ArgumentError Stft(frames; nfft=128)
 
-@test_nowarn Stft(frames; spectrum_type=power)
-@test_nowarn Stft(frames; spectrum_type=magnitude)
+@test_nowarn Stft(frames; spectrum=power)
+@test_nowarn Stft(frames; spectrum=magnitude)
 
-stft = Stft(frames; spectrum_type=power)
+stft = Stft(frames; spectrum=power)

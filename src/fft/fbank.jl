@@ -1,9 +1,4 @@
 # ---------------------------------------------------------------------------- #
-#                               abstract types                                 #
-# ---------------------------------------------------------------------------- #
-abstract type AbstractFBank end
-
-# ---------------------------------------------------------------------------- #
 #                                mel filterbank                                #
 # ---------------------------------------------------------------------------- #
 struct FbSetup <: AbstractInfo
@@ -29,8 +24,8 @@ end
 #                         scale convertions functions                          #
 # ---------------------------------------------------------------------------- #
 function hz2mel(hz::Tuple{Int64, Int64}, style::Symbol)
-    style == :mel_htk && return @. 2595 * log10(1 + hz / 700)
-    style == :mel_slaney && begin
+    style == :htk    && return @. 2595 * log10(1 + hz / 700)
+    style == :slaney && begin
         lin_step = 200 / 3
         return @. ifelse(hz < 1000, hz / lin_step,
             log(hz * 0.001) / (log(6.4) / 27) + (1000 / lin_step))
@@ -40,8 +35,8 @@ end
 
 function mel2hz(mel_range::Tuple{Float64, Float64}, n_bands::Int64, style::Symbol)
     mel = LinRange(mel_range[1], mel_range[2], n_bands + 2)
-    style == :mel_htk && return @. 700 * (exp10(mel / 2595) - 1)
-    style == :mel_slaney && begin
+    style == :htk    && return @. 700 * (exp10(mel / 2595) - 1)
+    style == :slaney && begin
         lin_step = 200 / 3
         cp_mel = 1000 / lin_step
         return @. ifelse(
@@ -157,16 +152,16 @@ end
 # ---------------------------------------------------------------------------- #
 #                           design filterbank matrix                           #
 # ---------------------------------------------------------------------------- #
-function _get_melfb(
+function FBank(
         source::AbstractVector{<:T},
-        sr::Int;
-        sfreq::StepRangeLen{<:T},
-        nfft::Int,
-        nbands::Int = 26,
-        scale::Symbol = :mel_htk, # :mel_htk, :mel_slaney, :erb, :bark, :semitones, :tuned_semitones
-        norm::Symbol = :bandwidth,  # :bandwidth, :area, :none
-        freqrange::Tuple{Int, Int} = (0, round(Int, sr / 2)),
-        semitonerange::Tuple{Int, Int} = (200, 700),
+        sfreq         :: StepRangeLen{<:T},
+        sr            :: Int64,
+        nfft          :: Int64;
+        nbands        :: Int64=26,
+        scale         :: Symbol=:htk, # :mel_htk, :mel_slaney, :erb, :bark, :semitones, :tuned_semitones
+        norm          :: Symbol=:bandwidth,  # :bandwidth, :area, :none
+        freqrange     :: Tuple{Int64, Int64} = (0, round(Int, sr / 2)),
+        semitonerange :: Tuple{Int64, Int64} = (200, 700),
 ) where T <: AbstractFloat
     if scale == :erb
         erb_range = hz2erb(freqrange)
@@ -186,9 +181,11 @@ function _get_melfb(
         filterbank = filterbank[:, 1:(nfft ÷ 2 + 1)]
 
     else
-        if (scale == :mel_htk || scale == :mel_slaney)
+        if (scale == :htk || scale == :slaney)
             mel_range = hz2mel(freqrange, scale)
             band_edges = mel2hz(mel_range, nbands, scale)
+            @show mel_range
+            @show band_edges
         elseif  scale == :bark
             bark_range = hz2bark(freqrange)
             band_edges = bark2hz(bark_range, nbands)
@@ -200,7 +197,7 @@ function _get_melfb(
             st_range = hz2semitone(freqrange)
             band_edges = semitone2hz(st_range, nbands)
         else
-            error("Unknown filterbank frequency scale '($scale)', available scales are: :mel_htk, :mel_slaney, :erb, :bark, :semitones, , :semitones_tuned.")
+            error("Unknown filterbank frequency scale '$scale', available scales are: :htk, :slaney, :erb, :bark, :semitones, , :semitones_tuned.")
         end
 
         filter_freq = band_edges[2:(end - 1)]
@@ -226,32 +223,34 @@ function _get_melfb(
         norm != :none && normalize!(filterbank, norm, bw)
     end
     
-    MelFb(sr, MelFbSetup(nbands, scale, norm, freqrange, semitonerange), MelFbData(filterbank, filter_freq))
+    FBank(sr, FbSetup(nbands, scale, norm, freqrange, semitonerange), FbData(filterbank, filter_freq))
 end
 
-get_melfb(s::AbstractSpectrogram; kwargs...) = 
-    _get_melfb(vec(sum(s.data.spec, dims=2)), get_sr(s); sfreq=get_freq(s), nfft=get_stft_size(s), kwargs...)
+FBank(s::AbstractSpectrogram; kwargs...) = 
+    FBank(vec(sum(get_data(s), dims=2)), get_freq(s), get_sr(s), get_stft_size(s); kwargs...)
 
-function Base.show(io::IO, mel_fb::MelFb)
-    print(io, "MelFbank(")
-    print(io, "sr=$(mel_fb.sr), ")
-    print(io, "nbands=$(mel_fb.setup.nbands), ")
-    print(io, "scale=:$(mel_fb.setup.scale), ")
-    print(io, "norm=:$(mel_fb.setup.norm), ")
-    print(io, "freqrange=$(mel_fb.setup.freqrange), ")
-    print(io, "fbank=$(size(mel_fb.data.fbank)), ")
-    print(io, "freq=$(length(mel_fb.data.freq)) frequencies)")
-end
+@inline get_data(f::FBank)          = f.data.fbank
+@inline get_freq(f::FBank)          = f.data.freq
+@inline get_sr(f::FBank)            = f.sr
+@inline get_nbands(f::FBank)        = f.setup.nbands
+@inline get_scale(f::FBank)         = f.setup.scale
+@inline get_norm(f::FBank)          = f.setup.norm
+@inline get_freqrange(f::FBank)     = f.setup.freqrange
+@inline get_semitonerange(f::FBank) = f.setup.semitonerange
 
-function Base.display(mel_fb::MelFb)
-    f_length = size(mel_fb.data.fbank, 2)
-    freqs = range(0, round(Int, mel_fb.sr / 2), length=f_length)
-
-    p = plot(title = "Filter Bank Responses", xlabel = "Frequency (Hz)", ylabel = "Amplitude", legend = false)
-
-    for i in eachrow(mel_fb.data.fbank)
-        plot!(p, freqs, i[1:f_length], label = "", alpha = 0.6)
+function Base.show(io::IO, fb::FBank)
+    println(io, "FBank:")
+    println(io, "  Sample Rate: $(fb.sr) Hz")
+    println(io, "  Number of Bands: $(fb.setup.nbands)")
+    println(io, "  Scale: $(fb.setup.scale)")
+    println(io, "  Normalization: $(fb.setup.norm)")
+    println(io, "  Frequency Range: $(fb.setup.freqrange[1])-$(fb.setup.freqrange[2]) Hz")
+    if fb.setup.scale in [:semitones, :tuned_semitones]
+        println(io, "  Semitone Range: $(fb.setup.semitonerange[1])-$(fb.setup.semitonerange[2])")
     end
+    print(io, "  Filterbank Size: $(size(fb.data.fbank))")
+end
 
-    display(p)
+function Base.show(io::IO, ::MIME"text/plain", fb::FBank)
+    show(io, fb)
 end

@@ -36,7 +36,7 @@ mat = MAT.matread(matfile)
 mat_lin_spec = mat["features"]
 
 frames = AudioFrames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
-stft = Stft(frames; spectrum_type=power)
+stft = Stft(frames; spectrum=power)
 lin_spec = LinSpec(stft; freq_range=(100,1000), win_norm=true)
 
 @test isapprox(get_data(lin_spec), mat_lin_spec)
@@ -55,7 +55,7 @@ mat = MAT.matread(matfile)
 mat_lin_spec = mat["features"]
 
 frames = AudioFrames(audiofile; win=movingwindow(winsize=256, winstep=128), type=bartlett, periodic=false)
-stft = Stft(frames; spectrum_type=magnitude)
+stft = Stft(frames; spectrum=magnitude)
 lin_spec = LinSpec(stft; freq_range=(200,800), win_norm=false)
 
 @test isapprox(get_data(lin_spec), mat_lin_spec)
@@ -74,7 +74,7 @@ mat = MAT.matread(matfile)
 mat_lin_spec = mat["features"]
 
 frames = AudioFrames(audiofile; win=movingwindow(winsize=417, winstep=417-111), type=hanning, periodic=false)
-stft = Stft(frames; spectrum_type=power)
+stft = Stft(frames; spectrum=power)
 lin_spec = LinSpec(stft; freq_range=(97,1243), win_norm=false)
 
 @test isapprox(get_data(lin_spec), mat_lin_spec)

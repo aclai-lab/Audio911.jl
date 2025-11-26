@@ -54,12 +54,12 @@ function LinSpec(
 	freq_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_info(frames).sr>>1),
 	win_norm   :: Bool=false
 )::LinSpec
-	spec = get_spec(stft)
+	spec = get_data(stft)
 	freq = get_freq(stft)
 
 	sr            = get_sr(stft)
-	stft_size     = get_stft_size(stft)
-	spectrum_type = get_spec_type(stft)
+	stft_size     = get_nfft(stft)
+	spectrum_type = get_spectype(stft)
 	window        = get_window(stft)
 
 	freq_range isa Tuple && (freq_range = FreqRange(first(freq_range), last(freq_range)))

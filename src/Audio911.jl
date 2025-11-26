@@ -6,7 +6,7 @@ using  Reexport
 # ---------------------------------------------------------------------------- #
 @reexport using AudioReader: @format_str, File, AudioFormat, AudioFile, load
 @reexport using AudioReader: get_origin_sr, get_nchannels, is_norm
-export get_data, get_sr
+# export get_data, get_sr
 using  AudioReader: AudioFormat, _convert_mono
 import AudioReader: get_data, get_sr
 
@@ -31,8 +31,21 @@ Type alias for `Union{T, Nothing}`.
 """
 const Maybe{T} = Union{T, Nothing}
 
-export AbstractInfo, AbstractFrame, AbstractSpectrogram
-export get_spec, get_freq, get_info
+export AbstractInfo
+
+export AbstractFrames
+export get_data
+export get_size, get_step, get_overlap
+export get_window, get_winframes, get_winsize
+export get_info
+
+export AbstractSpectrogram
+export get_freq, get_sr, get_nfft, get_spectype
+export get_windows
+
+export AbstractFBank
+export get_nbands, get_scale, get_norm
+export get_freqrange, get_semitonerange
 include("types.jl")
 
 # ---------------------------------------------------------------------------- #
@@ -68,21 +81,20 @@ export FreqRange
 
 export AbstractFrames
 export AudioFrames
-export get_size, get_step, get_overlap
-export get_window, get_winframes, get_winsize
-export nchannels
-export get_info
 include("frames.jl")
 
 export Stft
 export power, magnitude
-include("spectrograms/stft.jl")
+include("fft/stft.jl")
+
+export area, bandwidth
+export FBank
+include("fft/fbank.jl")
 
 export LinSpec
-export none, winpower, winmagnitude
-include("spectrograms/lin_spec.jl")
+export winpower, winmagnitude
+include("fft/lin_spec.jl")
 
 # export get_melspec
-# include("mel_spec.jl")
 
 end

@@ -14,11 +14,16 @@ Base type for windowing function implementations.
 abstract type AbstractFrame end
 
 """
+    get_data(f::AbstractFrame) -> Vector{<:AudioFormat}
+
+Extract the buffered audio frames from an `AbstractFrame` container.
+"""
+get_data(f::AbstractFrame) = error("get_data is not implemented for type $(typeof(f)).")
+
+"""
     get_size(f::AbstractFrame) -> Int
 
 Get the window size parameter from a `AbstractFrame` object.
-
-# See also: [`AbstractFrame`](@ref), [`get_step`](@ref), [`get_overlap`](@ref)
 """
 get_size(f::AbstractFrame) = error("get_size is not implemented for type $(typeof(f)).")
 
@@ -26,8 +31,6 @@ get_size(f::AbstractFrame) = error("get_size is not implemented for type $(typeo
     get_step(f::AbstractFrame) -> Int
 
 Get the window step parameter from a `AbstractFrame` object.
-
-# See also: [`AbstractFrame`](@ref), [`get_size`](@ref), [`get_overlap`](@ref)
 """
 get_step(f::AbstractFrame) = error("get_step is not implemented for type $(typeof(f)).")
 
@@ -35,26 +38,13 @@ get_step(f::AbstractFrame) = error("get_step is not implemented for type $(typeo
     get_overlap(f::AbstractFrame) -> Int
 
 Get the overlap length between consecutive windows from a `AbstractFrame` object.
-
-# See also: [`AbstractFrame`](@ref), [`get_size`](@ref), [`get_step`](@ref)
 """
 get_overlap(f::AbstractFrame) = error("get_overlap is not implemented for type $(typeof(f)).")
-
-"""
-    get_data(f::AbstractFrame) -> Vector{<:AudioFormat}
-
-Extract the buffered audio frames from an `AbstractFrame` container.
-
-# See also: [`AbstractFrame`](@ref), [`get_winframes`](@ref), [`get_window`](@ref)
-"""
-get_data(f::AbstractFrame) = error("get_data is not implemented for type $(typeof(f)).")
 
 """
     get_window(f::AbstractFrame) -> Vector{Float64}
 
 Extract the window from an `AbstractFrame` container.
-
-# See also: [`AbstractFrame`](@ref), [`get_data`](@ref), [`get_winframes`](@ref)
 """
 get_window(f::AbstractFrame) = error("get_window is not implemented for type $(typeof(f)).")
 
@@ -62,8 +52,6 @@ get_window(f::AbstractFrame) = error("get_window is not implemented for type $(t
     get_winframes(f::AbstractFrame) -> Matrix
 
 Get the windowed frames with the window function applied element-wise.
-
-# See also: [`AbstractFrame`](@ref), [`get_data`](@ref), [`get_window`](@ref)
 """
 get_winframes(f::AbstractFrame) = error("get_winframes is not implemented for type $(typeof(f)).")
 
@@ -71,8 +59,6 @@ get_winframes(f::AbstractFrame) = error("get_winframes is not implemented for ty
     get_winsize(f::AbstractFrame) -> Int
 
 Get the length of the window function from an `AbstractFrame` container.
-
-# See also: [`AudioFrames`](@ref), [`get_window`](@ref), [`get_winframes`](@ref)
 """
 get_winsize(f::AbstractFrame) = error("get_winsize is not implemented for type $(typeof(f)).")
 
@@ -80,8 +66,6 @@ get_winsize(f::AbstractFrame) = error("get_winsize is not implemented for type $
     get_info(f::AbstractFrame) -> NamedTuple
 
 Extract metadata from an `AbstractFrame` container.
-
-# See also: [`AbstractFrame`](@ref)
 """
 get_info(f::AbstractFrame) = error("get_info is not implemented for type $(typeof(f)).")
 
@@ -115,25 +99,41 @@ abstract type AbstractSpectrogram end
     get_spec(s::AbstractSpectrogram) -> Matrix{T}
 
 Extract the spectrogram matrix from an `AbstractSpectrogram` container.
-
-# See also: [`get_freq`](@ref), [`get_info`](@ref)
 """
-get_data(s::AbstractSpectrogram) = error("get_spec is not implemented for type $(typeof(s)).")
+get_data(s::AbstractSpectrogram) = error("get_data is not implemented for type $(typeof(s)).")
 
 """
     get_freq(s::AbstractSpectrogram) -> Vector{Float64}
 
 Extract the frequency vector from an `AbstractSpectrogram` container.
-
-# See also: [`get_spec`](@ref), [`get_info`](@ref)
 """
 get_freq(s::AbstractSpectrogram) = error("get_freq is not implemented for type $(typeof(s)).")
+
+get_sr(s::AbstractSpectrogram) = error("get_sr is not implemented for type $(typeof(s)).")
+
+get_nfft(s::AbstractSpectrogram) = error("get_info is not implemented for type $(typeof(s)).")
 
 """
     get_info(s::AbstractSpectrogram) -> NamedTuple
 
 Extract metadata from an `AbstractSpectrogram` container.
-
-# See also: [`get_spec`](@ref), [`get_freq`](@ref)
 """
 get_info(s::AbstractSpectrogram) = error("get_info is not implemented for type $(typeof(s)).")
+
+get_spectype(s::AbstractSpectrogram) = error("get_spectype is not implemented for type $(typeof(s)).")
+
+get_window(s::AbstractSpectrogram) = error("get_spectype is not implemented for type $(typeof(s)).")
+
+# ---------------------------------------------------------------------------- #
+#                                AbstractFBank                                 #
+# ---------------------------------------------------------------------------- #
+abstract type AbstractFBank end
+
+get_data(f::AbstractFBank)          = error("get_data is not implemented for type $(typeof(s)).")
+get_freq(f::AbstractFBank)          = error("get_freq is not implemented for type $(typeof(s)).")
+get_sr(f::AbstractFBank)            = error("get_sr is not implemented for type $(typeof(s)).")
+get_nbands(f::AbstractFBank)        = error("get_nbands is not implemented for type $(typeof(s)).")
+get_scale(f::AbstractFBank)         = error("get_scale is not implemented for type $(typeof(s)).")
+get_norm(f::AbstractFBank)          = error("get_norm is not implemented for type $(typeof(s)).")
+get_freqrange(f::AbstractFBank)     = error("get_freqrange is not implemented for type $(typeof(s)).")
+get_semitonerange(f::AbstractFBank) = error("get_semitonerange is not implemented for type $(typeof(s)).")
