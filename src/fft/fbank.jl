@@ -175,8 +175,6 @@ function FBank(
 
         @views rem(nfft, 2) == 0 ? filterbank[:, 2:(nfft ÷ 2)] .*= 2 : filterbank[:, 2:(nfft ÷ 2 + 1)] .*= 2
         filterbank = @view filterbank[:, 1:(nfft ÷ 2 + 1)]
-        # rem(nfft, 2) == 0 ? filterbank[:, 2:(nfft ÷ 2)] .*= 2 : filterbank[:, 2:(nfft ÷ 2 + 1)] .*= 2
-        # filterbank = filterbank[:, 1:(nfft ÷ 2 + 1)]
 
     else
         if (scale == :htk || scale == :slaney)
