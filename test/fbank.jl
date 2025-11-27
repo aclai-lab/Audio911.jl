@@ -12,6 +12,9 @@ mp3_file = test_file("test.mp3")
 matlab_files_dir()    = joinpath(dirname(@__FILE__), "matlab_files/fbanks")
 matlab_file(filename) = joinpath(matlab_files_dir(), filename)
 
+# ---------------------------------------------------------------------------- #
+#                            test against matlab                               #
+# ---------------------------------------------------------------------------- #
 # [filterBank, Fc, BW] = designAuditoryFilterBank(fs_wav, ...
 #     FrequencyScale="mel", FFTLength=1024, ...
 #     NumBands=26, FrequencyRange=[100,1000], ...
