@@ -47,11 +47,11 @@ stft   = get_stft(frames; nfft=512, spectrum=:power)
 # Access data
 spec_matrix = get_spec(stft)     # Get spectral data
 frequencies = get_freq(stft)     # Get frequency vector
-metadata    = get_info(stft)     # Get analysis parameters
+metadata    = get_setup(stft)     # Get analysis parameters
 ```
 
 # See also:
-[`AbstractSpectrogram`](@ref), [`get_spec`](@ref), [`get_freq`](@ref), [`get_info`](@ref)
+[`AbstractSpectrogram`](@ref), [`get_spec`](@ref), [`get_freq`](@ref), [`get_setup`](@ref)
 """
 struct Stft{F,T} <: AbstractSpectrogram
 	spec :: Matrix{T}
@@ -90,7 +90,7 @@ function Stft(
 	nfft     :: Int64=get_winsize(frames),
 	spectrum :: Base.Callable=power, # power, magnitude
 )::Stft
-	sr        = get_info(frames).sr
+	sr        = get_setup(frames).sr
 	winsize   = get_winsize(frames)
 	overlap   = get_overlap(frames)
 	winframes = get_winframes(frames)
@@ -152,7 +152,7 @@ Base.eltype(::Stft{T}) where T = T
 
 @inline get_data(s::Stft) = s.spec
 @inline get_freq(s::Stft) = s.freq
-@inline get_info(s::Stft) = s.info
+@inline get_setup(s::Stft) = s.info
 
 @inline get_sr(s::Stft)       = s.info.sr
 @inline get_nfft(s::Stft)     = s.info.nfft

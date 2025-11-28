@@ -213,7 +213,7 @@ get_data(f::AudioFrames)      = f.frames
 get_window(f::AudioFrames)    = f.window
 get_winsize(f::AudioFrames)   = length(f.window)
 get_winframes(f::AudioFrames) = get_data(f) .* get_window(f)
-get_info(f::AudioFrames)      = f.info
+get_setup(f::AudioFrames)      = f.info
 
 # ---------------------------------------------------------------------------- #
 #                                   base.show                                  #

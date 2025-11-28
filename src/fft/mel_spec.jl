@@ -105,7 +105,7 @@ end
 # ---------------------------------------------------------------------------- #
 function LinSpec(
 	stft       :: Stft;
-	freq_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_info(frames).sr>>1),
+	freq_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_setup(frames).sr>>1),
 	win_norm   :: Bool=false
 )::LinSpec
 	spec = get_spec(stft)
@@ -134,7 +134,7 @@ end
 
 function get_melspec(
 	stft::Stft;
-	freq_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_info(frames).sr>>1),
+	freq_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_setup(frames).sr>>1),
 	win_norm   :: Bool=false,
     mel_bands        :: Int64=26,
 	mel_style        :: Symbol=:htk, 				 # :htk, :slaney, :tuned
@@ -144,8 +144,8 @@ function get_melspec(
 	st_peak_range    :: FreqRange=FreqRange(200, 700),
 )
     data = get_stft(stft)
-    win_size = get_info(stft).win_size
-    win_step = get_info(stft).win_step
+    win_size = get_setup(stft).win_size
+    win_step = get_setup(stft).win_step
 
 	fb, mel_freq = design_fb(
         stft;
@@ -175,7 +175,7 @@ end
 function get_melspec(
 	frames          :: AudioFrames;
 	stft_size       :: Int64=get_wsize(frames),
-	frequency_range :: FreqRange=FreqRange(0, get_info(frames).sr÷2),
+	frequency_range :: FreqRange=FreqRange(0, get_setup(frames).sr÷2),
 	spectrum_type   :: Symbol=:power, # :power, :magnitude
     kwargs...
 )

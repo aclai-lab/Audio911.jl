@@ -51,7 +51,7 @@ end
 # ---------------------------------------------------------------------------- #
 function LinSpec(
 	stft       :: Stft;
-	freq_range :: FreqRange=(0, get_info(frames).sr>>1),
+	freq_range :: FreqRange=(0, get_setup(frames).sr>>1),
 	win_norm   :: Bool=false
 )::LinSpec
 	spec = get_data(stft)
@@ -83,4 +83,4 @@ Base.eltype(::LinSpec{T}) where T = T
 
 get_data(s::LinSpec) = s.spec'
 get_freq(s::LinSpec) = s.freq
-get_info(s::LinSpec) = s.info
+get_setup(s::LinSpec) = s.info

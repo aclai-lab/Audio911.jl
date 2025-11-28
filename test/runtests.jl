@@ -14,8 +14,8 @@ test_suites = [
     ("Audioreader", ["audioreader.jl",]),
     ("Frames",      ["frames.jl",     ]),
     ("STFT",        ["stft.jl",       ]),
+    ("FilterBanks", ["fbank.jl",      ]),
     ("Lin Spec",    ["lin_spec.jl",   ]),
-    ("FilterBanks", ["fbank.jl",      ])
 ]
 
 @testset "SoleXplorer.jl" begin

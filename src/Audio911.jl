@@ -6,7 +6,7 @@ using  Reexport
 # ---------------------------------------------------------------------------- #
 @reexport using AudioReader: @format_str, File, AudioFormat, AudioFile, load
 @reexport using AudioReader: get_origin_sr, get_nchannels, is_norm
-# export get_data, get_sr
+
 using  AudioReader: AudioFormat, _convert_mono
 import AudioReader: get_data, get_sr
 
@@ -89,46 +89,6 @@ erb_range::ScaleRange = (0.0f0, 43.0f0) # ERB scale range (Float32)
 const  ScaleRange  = Tuple{T, T} where {T<:AudioData}
 export ScaleRange
 
-export AbstractFrames
-export get_data
-export get_size, get_step, get_overlap
-export get_window, get_winframes, get_winsize
-export get_info
-
-export AbstractSpectrogram
-export get_freq, get_sr, get_nfft, get_spectype
-export get_windows
-
-export AbstractFBank
-export get_bandwidth
-export get_nbands, get_scale, get_norm
-export get_freqrange, get_semitonerange
-# include("types.jl")
-
-# ---------------------------------------------------------------------------- #
-#                              frequency range                                 #
-# ---------------------------------------------------------------------------- #
-# abstract type AbstractRange end
-
-# struct FreqRange{T}
-#     low :: T
-#     hi  :: T
-
-#     function FreqRange(low::T, hi:: T) where {T<:Int64}
-#         new{T}(low, hi)
-#     end
-# end
-
-# Base.eltype(::Type{FreqRange{T}}) where T = T
-# Base.collect(fr::FreqRange) = collect(fr.low:fr.hi)
-
-# get_freqs(fr::FreqRange) = (fr.low, fr.hi)
-# get_low(fr::FreqRange)   = fr.low
-# get_hi(fr::FreqRange)    = fr.hi
-
-# export get_freqs, get_low, get_hi
-# export FreqRange
-
 # ---------------------------------------------------------------------------- #
 #                                  modules                                     #
 # ---------------------------------------------------------------------------- #
@@ -153,5 +113,24 @@ export winpower, winmagnitude
 include("fft/lin_spec.jl")
 
 # export get_melspec
+
+# ---------------------------------------------------------------------------- #
+#                                  methods                                     #
+# ---------------------------------------------------------------------------- #
+# general
+export get_data, get_setup
+
+# stft related
+export get_size, get_step, get_overlap
+export get_window, get_winframes, get_winsize
+
+# spectrogram related
+export get_freq, get_sr, get_nfft, get_spectype
+export get_windows
+
+# filterbank related
+export get_bandwidth
+export get_nbands, get_scale, get_norm
+export get_freqrange, get_semitonerange
 
 end
