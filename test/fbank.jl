@@ -298,7 +298,7 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
 end
 
 # ---------------------------------------------------------------------------- #
-#                          test float64 and float32                            #
+#                                type stability                                #
 # ---------------------------------------------------------------------------- #
 
 audiofile = Audio911.load(wav_file, format=Float64)
