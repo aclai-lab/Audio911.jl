@@ -35,13 +35,63 @@ end
 # ---------------------------------------------------------------------------- #
 #                                    methods                                   #
 # ---------------------------------------------------------------------------- #
+"""
+    get_data(f::FBank) -> AbstractArray
+
+Get the filter bank, returned as an M-by-N matrix,
+where M is the number of bands,
+and N is the number of frequency points of a one-sided spectrum.
+"""
 @inline get_data(f::FBank)          = f.fbank
+
+"""
+    get_freq(f::FBank) -> AbstractVector
+
+Get the center frequencies of bandpass filters in Hz.
+```
+"""
 @inline get_freq(f::FBank)          = f.freq
+
+"""
+    get_bandwidth(f::FBank) -> AbstractVector
+
+Get the bandwidth of bandpass filters in Hz.
+"""
 @inline get_bandwidth(f::FBank)     = f.bw
+
+"""
+    get_sr(f::FBank) -> Int64
+
+Get the sampling rate used to design the filterbank.
+"""
 @inline get_sr(f::FBank)            = f.setup.sr
+
+"""
+    get_nbands(f::FBank) -> Int64
+
+Get the number of filter bands in the filterbank.
+"""
 @inline get_nbands(f::FBank)        = f.setup.nbands
+
+"""
+    get_scale(f::FBank) -> Symbol
+
+Get the frequency scale used in the filterbank design.
+"""
 @inline get_scale(f::FBank)         = f.setup.scale
+
+"""
+    get_norm(f::FBank) -> Base.Callable
+
+Get the normalization function used in the filterbank.
+"""
 @inline get_norm(f::FBank)          = f.setup.norm
+
+"""
+    get_freqrange(f::FBank) -> FreqRange
+
+Get the frequency range covered by the filterbank.
+"""
 @inline get_freqrange(f::FBank)     = f.setup.freqrange
 
 function Base.show(io::IO, fb::FBank)
