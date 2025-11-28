@@ -22,16 +22,72 @@ using  DataTreatments
 @reexport using DataTreatments: movingwindow
 
 # ---------------------------------------------------------------------------- #
+#                               abstract types                                 #
+# ---------------------------------------------------------------------------- #
+abstract type AbstractSetup       end
+abstract type AbstractFrame       end
+abstract type AbstractSpectrogram end
+abstract type AbstractFBank       end
+
+# ---------------------------------------------------------------------------- #
 #                                   types                                      #
 # ---------------------------------------------------------------------------- #
-"""
-    Maybe{T}
-
-Type alias for `Union{T, Nothing}`.
-"""
+# type alias for `Union{T, Nothing}`
 const Maybe{T} = Union{T, Nothing}
 
-export AbstractInfo
+"""
+    AudioData
+
+Type alias for audio sample data. Represents a value that can be either `Float64` or `Float32`.
+
+This alias is used for audio arrays and sample values throughout the package to ensure type stability.
+
+# Example
+
+```julia
+x::Vector{AudioData} = rand(Float32, 1024)
+y::AudioData = 0.5
+```
+"""
+const  AudioData = Union{Float64, Float32}
+export AudioData
+
+"""
+    FreqRange
+
+Type alias for a frequency range, represented as a tuple `(min, max)` of integer values.
+
+This alias is used to specify the minimum and maximum frequency (in Hz) for audio processing routines.
+
+# Example
+
+```julia
+fr::FreqRange = (20, 20000)  # 20 Hz to 20 kHz
+```
+"""
+const  FreqRange = Tuple{T, T} where {T<:Int64}
+ 
+get_low(r::FreqRange) = r[1]
+get_hi(r::FreqRange)  = r[2]
+export FreqRange, get_low, get_hi
+
+"""
+    ScaleRange
+
+Type alias for a perceptual scale range, represented as a tuple `(min, max)` of `AudioData` values.
+
+This alias is used to specify the minimum and maximum values in perceptual scales (mel, bark, ERB, semitones)
+for audio processing routines.
+
+# Example
+
+```julia
+mel_range::ScaleRange = (0.0, 45.0)     # Mel scale range
+erb_range::ScaleRange = (0.0f0, 43.0f0) # ERB scale range (Float32)
+```
+"""
+const  ScaleRange  = Tuple{T, T} where {T<:AudioData}
+export ScaleRange
 
 export AbstractFrames
 export get_data
@@ -47,31 +103,31 @@ export AbstractFBank
 export get_bandwidth
 export get_nbands, get_scale, get_norm
 export get_freqrange, get_semitonerange
-include("types.jl")
+# include("types.jl")
 
 # ---------------------------------------------------------------------------- #
 #                              frequency range                                 #
 # ---------------------------------------------------------------------------- #
-abstract type AbstractRange end
+# abstract type AbstractRange end
 
-struct FreqRange{T} <: AbstractRange
-    low :: T
-    hi  :: T
+# struct FreqRange{T}
+#     low :: T
+#     hi  :: T
 
-    function FreqRange(low::T, hi:: T) where T
-        new{T}(low, hi)
-    end
-end
+#     function FreqRange(low::T, hi:: T) where {T<:Int64}
+#         new{T}(low, hi)
+#     end
+# end
 
-Base.eltype(::Type{FreqRange{T}}) where T = T
-Base.collect(fr::FreqRange) = collect(fr.low:fr.hi)
+# Base.eltype(::Type{FreqRange{T}}) where T = T
+# Base.collect(fr::FreqRange) = collect(fr.low:fr.hi)
 
-get_freqs(fr::FreqRange) = (fr.low, fr.hi)
-get_low(fr::FreqRange)   = fr.low
-get_hi(fr::FreqRange)    = fr.hi
+# get_freqs(fr::FreqRange) = (fr.low, fr.hi)
+# get_low(fr::FreqRange)   = fr.low
+# get_hi(fr::FreqRange)    = fr.hi
 
-export get_freqs, get_low, get_hi
-export FreqRange
+# export get_freqs, get_low, get_hi
+# export FreqRange
 
 # ---------------------------------------------------------------------------- #
 #                                  modules                                     #

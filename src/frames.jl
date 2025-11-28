@@ -10,7 +10,7 @@ const AVAIL_WINDOWS = (
 # ---------------------------------------------------------------------------- #
 #                                     info                                     #
 # ---------------------------------------------------------------------------- #
-struct FramesInfo <: AbstractInfo
+struct FramesSetup <: AbstractSetup
     sr   :: Int64
     win  :: Base.Callable
     type :: Base.Callable
@@ -74,12 +74,12 @@ window_func = frames.info.win        # Windowing function used
 struct AudioFrames{T} <: AbstractFrame
     frames :: Matrix{T}
     window :: Vector{T}
-    info   :: FramesInfo
+    info   :: FramesSetup
 
     function AudioFrames(
         frames :: Vector{<:AudioFormat{T}},
         window :: Vector{Float64},
-        info   :: FramesInfo
+        info   :: FramesSetup
     ) where T
         frames_matrix = reduce(hcat, frames)
         new{T}(frames_matrix, window, info)
@@ -88,7 +88,7 @@ struct AudioFrames{T} <: AbstractFrame
     function AudioFrames(
         frames :: Matrix{<:AudioFormat{T}},
         window :: Vector{Float64},
-        info   :: FramesInfo
+        info   :: FramesSetup
     ) where T
         new{T}(frames, window, info)
     end
@@ -192,7 +192,7 @@ function AudioFrames(
     end
 
     # collect infos
-    info = FramesInfo(sr, win, type)
+    info = FramesSetup(sr, win, type)
 
     return AudioFrames(frames, window, info)
 end

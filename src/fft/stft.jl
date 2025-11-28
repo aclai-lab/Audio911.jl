@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------- #
 #                                    info                                      #
 # ---------------------------------------------------------------------------- #
-struct StftInfo <: AbstractInfo
+struct StftSetup <: AbstractSetup
     sr       :: Int64
     nfft     :: Int64
     winsize  :: Int64
@@ -56,12 +56,12 @@ metadata    = get_info(stft)     # Get analysis parameters
 struct Stft{F,T} <: AbstractSpectrogram
 	spec :: Matrix{T}
 	freq :: StepRangeLen
-	info :: StftInfo
+	info :: StftSetup
 
 	function Stft{F}(
 		spec :: Matrix{T},
 		freq :: StepRangeLen,
-		info :: StftInfo
+		info :: StftSetup
 	) where {F,T}
 		new{F,T}(spec, freq, info)
 	end
@@ -119,7 +119,7 @@ function Stft(
 	# frequency vector
 	freq = (0:size(spec, 1)-1) .* (sr / nfft)
 
-	info = StftInfo(
+	info = StftSetup(
 		sr,
 		nfft,
 		winsize,

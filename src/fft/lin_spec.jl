@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------- #
 #                                    info                                      #
 # ---------------------------------------------------------------------------- #
-struct LinSpecInfo <: AbstractInfo
+struct LinSpecSetup <: AbstractSetup
     sr            :: Int64
     freq_range    :: FreqRange
     spectrum_type :: Base.Callable
@@ -14,12 +14,12 @@ end
 struct LinSpec{F,T} <: AbstractSpectrogram
     spec :: Matrix{T}
     freq :: StepRangeLen
-    info :: LinSpecInfo
+    info :: LinSpecSetup
 
     function LinSpec{F}(
         spec :: Matrix{T},
         freq :: StepRangeLen,
-        info :: LinSpecInfo
+        info :: LinSpecSetup
     ) where {F,T}
         new{F,T}(spec, freq, info)
     end
@@ -51,7 +51,7 @@ end
 # ---------------------------------------------------------------------------- #
 function LinSpec(
 	stft       :: Stft;
-	freq_range :: Union{Tuple{Int64,Int64},FreqRange}=FreqRange(0, get_info(frames).sr>>1),
+	freq_range :: FreqRange=(0, get_info(frames).sr>>1),
 	win_norm   :: Bool=false
 )::LinSpec
 	spec = get_data(stft)
@@ -62,9 +62,7 @@ function LinSpec(
 	spectrum_type = get_spectype(stft)
 	window        = get_window(stft)
 
-	freq_range isa Tuple && (freq_range = FreqRange(first(freq_range), last(freq_range)))
-
-	if freq_range != FreqRange(0, sr >> 1)
+	if freq_range != (0, sr >> 1)
 		bin_low, bin_high = get_freq_range(freq_range, stft_size, sr)
 		spec = @views spec[bin_low:bin_high, :]
 		freq = freq[bin_low:bin_high]
@@ -73,7 +71,7 @@ function LinSpec(
 	win_norm_func = eval(Symbol("win" * string(spectrum_type)))
 	win_norm && (spec = win_norm_func(spec, window))
 
-	info = LinSpecInfo(sr, freq_range, spectrum_type, win_norm)
+	info = LinSpecSetup(sr, freq_range, spectrum_type, win_norm)
 
 	return LinSpec{typeof(stft)}(spec .* 2, freq, info)
 end

@@ -1,7 +1,4 @@
-# ---------------------------------------------------------------------------- #
-#                                AbstractInfo                                  #
-# ---------------------------------------------------------------------------- #
-abstract type AbstractInfo end
+
 
 # ---------------------------------------------------------------------------- #
 #                                AbstractFrame                                 #
@@ -124,17 +121,3 @@ get_spectype(s::AbstractSpectrogram) = error("get_spectype is not implemented fo
 
 get_window(s::AbstractSpectrogram) = error("get_spectype is not implemented for type $(typeof(s)).")
 
-# ---------------------------------------------------------------------------- #
-#                                AbstractFBank                                 #
-# ---------------------------------------------------------------------------- #
-abstract type AbstractFBank end
-
-get_data(f::AbstractFBank)          = error("get_data is not implemented for type $(typeof(s)).")
-get_freq(f::AbstractFBank)          = error("get_freq is not implemented for type $(typeof(s)).")
-get_bandwidth(f::AbstractFBank)     = error("get_bandwidth is not implemented for type $(typeof(s)).")
-get_sr(f::AbstractFBank)            = error("get_sr is not implemented for type $(typeof(s)).")
-get_nbands(f::AbstractFBank)        = error("get_nbands is not implemented for type $(typeof(s)).")
-get_scale(f::AbstractFBank)         = error("get_scale is not implemented for type $(typeof(s)).")
-get_norm(f::AbstractFBank)          = error("get_norm is not implemented for type $(typeof(s)).")
-get_freqrange(f::AbstractFBank)     = error("get_freqrange is not implemented for type $(typeof(s)).")
-get_semitonerange(f::AbstractFBank) = error("get_semitonerange is not implemented for type $(typeof(s)).")

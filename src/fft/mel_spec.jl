@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------- #
 #                                    info                                      #
 # ---------------------------------------------------------------------------- #
-struct MelSpecInfo <: AbstractInfo
+struct MelSpecSetup <: AbstractSetup
     sr            :: Int64
     freq_range    :: FreqRange
     spectrum_type :: Base.Callable
@@ -14,12 +14,12 @@ end
 struct MelSpec{F,T} <: AbstractSpectrogram
     spec :: Matrix{T}
     freq :: StepRangeLen
-    info :: MelSpecInfo
+    info :: MelSpecSetup
 
     function MelSpec{F}(
         spec :: Matrix{T},
         freq :: StepRangeLen,
-        info :: MelSpecInfo
+        info :: MelSpecSetup
     ) where {F,T}
         new{F,T}(spec, freq, info)
     end
