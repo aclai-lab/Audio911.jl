@@ -298,3 +298,12 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
 end
 
 @test_nowarn FBank(16000; nfft=1024, nbands=26, scale=:semitones, norm=bandwidth, freqrange=(100,1000))
+
+audiofile = Audio911.load(wav_file, format=Float64)
+frames = AudioFrames(audiofile; win=movingwindow(winsize=1024, winstep=512), type=hamming, periodic=true)
+stft = Stft(frames; spectrum=power)
+
+@btime fbank = FBank(stft; nbands=26, norm=bandwidth, domain=:linear, freqrange=(100,1000))
+# 39.444 μs (557 allocations: 131.79 KiB)
+# 39.157 μs (557 allocations: 131.79 KiB)
+# 38.180 μs (557 allocations: 131.79 KiB)

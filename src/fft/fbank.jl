@@ -18,6 +18,20 @@ struct FBank{T<:AudioData} <: AbstractFBank
 	freq  :: AbstractVector{T}
     bw    :: AbstractVector{T}
     setup :: FBankSetup
+
+    function FBank(
+        filterbank     :: AbstractArray{T},
+        filter_freq    :: AbstractVector{T},
+        bw             :: AbstractVector{T},
+        sr             :: Int64,
+        nbands         :: Int64,
+        scale          :: Symbol,
+        norm           :: Base.Callable,
+        freqrange      :: FreqRange,
+        semitonerange  :: FreqRange
+    ) where {T<:AudioData}
+        new{T}(filterbank, filter_freq, bw, FBankSetup(sr, nbands, scale, norm, freqrange, semitonerange))
+    end
 end
 
 # ---------------------------------------------------------------------------- #
@@ -39,9 +53,9 @@ function Base.show(io::IO, fb::FBank)
     println(io, "  Number of Bands: $(get_nbands(fb))")
     println(io, "  Scale: $(get_scale(fb))")
     println(io, "  Normalization: $(get_norm(fb))")
-    println(io, "  Frequency Range: $(get_freqrange(fb)[1])-$(get_freqrange(fb)[2]) Hz")
+    println(io, "  Frequency Range: $(get_low(get_freqrange(fb)))-$(get_hi(get_freqrange(fb))) Hz")
     # if fb.setup.scale in [:semitones, :tuned_semitones]
-    #     println(io, "  Semitone Range: $(fb.setup.semitonerange[1])-$(fb.setup.semitonerange[2])")
+    #     println(io, "  Semitone Range: $(get_low(fb.setup.semitonerange))-$(get_hi(fb.setup.semitonerange))")
     # end
     print(io, "  Filterbank Size: $(size(get_data(fb)))")
 end
@@ -67,7 +81,7 @@ function hz2mel(
 end
 
 function mel2hz(mel_range::ScaleRange, n_bands::Int64, style::Symbol)
-    mel = LinRange(mel_range[1], mel_range[2], n_bands + 2)
+    mel = LinRange(get_low(mel_range), get_hi(mel_range), n_bands + 2)
     style == :htk    && return @. 700 * (exp10(mel / 2595) - 1)
     style == :slaney && begin
         lin_step = 200 / 3
@@ -83,7 +97,7 @@ function hz2erb(hz::FreqRange)
 end
 
 function erb2hz(erb_range::ScaleRange, n_bands::Int64)
-    erb = LinRange(erb_range[1], erb_range[2], n_bands)
+    erb = LinRange(get_low(erb_range), get_hi(erb_range), n_bands)
     @. (10 ^ (erb / (log(10) * 1000 / (24.673 * 4.368))) - 1) / 0.004368
 end
 
@@ -93,18 +107,19 @@ function hz2bark(hz::FreqRange)
 end
 
 function bark2hz(bark_range::ScaleRange, n_bands::Int64)
-    bark = LinRange(bark_range[1], bark_range[2], n_bands + 2)
+    bark = LinRange(get_low(bark_range), get_hi(bark_range), n_bands + 2)
     bark = map(x -> x < 2 ? (x - 0.3) / 0.85 : x > 20.1 ? (x + 0.22 * 20.1) / 1.22 : x, bark)
     @. 1960 * (bark + 0.53) / (26.28 - bark)
 end
 
 function hz2semitone(hz::FreqRange)
-    hz[1] == 0 ? hz = (20, hz[2]) : nothing
+    get_low(hz) == 0 ? hz = (20, get_hi(hz)) : nothing
     @. 12 * log2(hz)
 end
 
 function semitone2hz(st_range::ScaleRange, nbands::Int64)
-    st_range_vec = st_range[1] .+ collect(0:(nbands+1)) / (nbands+1) * (st_range[2] - st_range[1])
+    st_range_vec = get_low(st_range) .+ 
+        collect(0:(nbands+1)) / (nbands+1) * (get_hi(st_range) - get_low(st_range))
     @. 2 ^ (st_range_vec / 12)
 end
 
@@ -258,7 +273,7 @@ function FBank(
         (norm != :none) && normalize!(filterbank, norm, bw)
     end
     
-    FBank(filterbank, filter_freq, bw, FBankSetup(sr, nbands, scale, norm, freqrange, semitonerange))
+    FBank(filterbank, filter_freq, bw, sr, nbands, scale, norm, freqrange, semitonerange)
 end
 
 FBank(s::AbstractSpectrogram; kwargs...) = FBank(get_sr(s); sfreq=get_freq(s), nfft=get_nfft(s), kwargs...)

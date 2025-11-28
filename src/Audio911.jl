@@ -87,6 +87,9 @@ erb_range::ScaleRange = (0.0f0, 43.0f0) # ERB scale range (Float32)
 ```
 """
 const  ScaleRange  = Tuple{T, T} where {T<:AudioData}
+
+get_low(r::ScaleRange) = r[1]
+get_hi(r::ScaleRange)  = r[2]
 export ScaleRange
 
 # ---------------------------------------------------------------------------- #
