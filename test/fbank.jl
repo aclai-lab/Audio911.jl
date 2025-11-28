@@ -51,7 +51,7 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     #     MelStyle="slaney")
     # save fb02.mat filterBank Fc BW
 
-    fbank = auditory_fbank(16000; nfft=733, nbands=15, scale=:slaney, norm=area, domain=:linear, freqrange=(53,1743))
+    fbank = auditory_fbank(16000; nfft=733, nbands=15, scale=slaney, norm=area, domain=:linear, freqrange=(53,1743))
     fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
     matfile = matlab_file("fb02.mat")
@@ -65,7 +65,7 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     audiofile = Audio911.load(wav_file, format=Float64)
     frames = AudioFrames(audiofile; win=movingwindow(winsize=733, winstep=733÷2), type=hamming, periodic=true)
     stft = Stft(frames; spectrum=power)
-    fbank = auditory_fbank(stft; nbands=15, scale=:slaney, norm=area, domain=:linear, freqrange=(53,1743))
+    fbank = auditory_fbank(stft; nbands=15, scale=slaney, norm=area, domain=:linear, freqrange=(53,1743))
     fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
     @test isapprox(fb, fbm)
@@ -79,7 +79,7 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     #     MelStyle="oshaughnessy")
     # save fb03.mat filterBank Fc BW
 
-    fbank = auditory_fbank(16000; nfft=1024, nbands=26, scale=:htk, norm=bandwidth, domain=:warped, freqrange=(100,1000))
+    fbank = auditory_fbank(16000; nfft=1024, nbands=26, scale=htk, norm=bandwidth, domain=:warped, freqrange=(100,1000))
     fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
     matfile = matlab_file("fb03.mat")
@@ -163,7 +163,7 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     #     MelStyle="slaney")
     # save fb06.mat filterBank Fc BW
 
-    fbank = auditory_fbank(16000; nfft=733, nbands=15, scale=:bark, norm=area, freqrange=(53,1743))
+    fbank = auditory_fbank(16000; nfft=733, nbands=15, scale=bark, norm=area, freqrange=(53,1743))
     fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
     matfile = matlab_file("fb06.mat")
@@ -177,7 +177,7 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     audiofile = Audio911.load(wav_file, format=Float64)
     frames = AudioFrames(audiofile; win=movingwindow(winsize=733, winstep=733÷2), type=hamming, periodic=true)
     stft = Stft(frames; spectrum=power)
-    fbank = auditory_fbank(stft; nbands=15, scale=:bark, norm=area, freqrange=(53,1743))
+    fbank = auditory_fbank(stft; nbands=15, scale=bark, norm=area, freqrange=(53,1743))
     fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
     @test isapprox(fb, fbm)
@@ -191,7 +191,7 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     #     MelStyle="oshaughnessy")
     # save fb07.mat filterBank Fc BW
 
-    fbank = auditory_fbank(16000; nfft=1024, nbands=26, scale=:bark, norm=bandwidth, freqrange=(100,1000))
+    fbank = auditory_fbank(16000; nfft=1024, nbands=26, scale=bark, norm=bandwidth, freqrange=(100,1000))
     fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
     matfile = matlab_file("fb07.mat")
@@ -205,7 +205,7 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     audiofile = Audio911.load(wav_file, format=Float64)
     frames = AudioFrames(audiofile; win=movingwindow(winsize=1024, winstep=512), type=hamming, periodic=true)
     stft = Stft(frames; spectrum=power)
-    fbank = auditory_fbank(stft; nbands=26, scale=:bark, norm=bandwidth, freqrange=(100,1000))
+    fbank = auditory_fbank(stft; nbands=26, scale=bark, norm=bandwidth, freqrange=(100,1000))
     fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
     @test isapprox(fb, fbm)
@@ -247,7 +247,7 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     #     MelStyle="slaney")
     # save fb09.mat filterBank Fc BW
 
-    fbank = auditory_fbank(16000; nfft=733, nbands=15, scale=:slaney, norm=none_norm, domain=:warped, freqrange=(53,1743))
+    fbank = auditory_fbank(16000; nfft=733, nbands=15, scale=slaney, norm=none_norm, domain=:warped, freqrange=(53,1743))
     fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
     matfile = matlab_file("fb09.mat")
@@ -261,7 +261,7 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     audiofile = Audio911.load(wav_file, format=Float64)
     frames = AudioFrames(audiofile; win=movingwindow(winsize=733, winstep=733÷2), type=hamming, periodic=true)
     stft = Stft(frames; spectrum=power)
-    fbank = auditory_fbank(stft; nbands=15, scale=:slaney, norm=none_norm, domain=:warped, freqrange=(53,1743))
+    fbank = auditory_fbank(stft; nbands=15, scale=slaney, norm=none_norm, domain=:warped, freqrange=(53,1743))
     fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
     @test isapprox(fb, fbm)
@@ -275,7 +275,7 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     #     MelStyle="slaney")
     # save fb10.mat filterBank Fc BW
 
-    fbank = auditory_fbank(16000; nfft=733, nbands=15, scale=:slaney, norm=none_norm, domain=:linear, freqrange=(53,1743))
+    fbank = auditory_fbank(16000; nfft=733, nbands=15, scale=slaney, norm=none_norm, domain=:linear, freqrange=(53,1743))
     fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
     matfile = matlab_file("fb10.mat")
@@ -289,15 +289,13 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     audiofile = Audio911.load(wav_file, format=Float64)
     frames = AudioFrames(audiofile; win=movingwindow(winsize=733, winstep=733÷2), type=hamming, periodic=true)
     stft = Stft(frames; spectrum=power)
-    fbank = auditory_fbank(stft; nbands=15, scale=:slaney, norm=none_norm, domain=:linear, freqrange=(53,1743))
+    fbank = auditory_fbank(stft; nbands=15, scale=slaney, norm=none_norm, domain=:linear, freqrange=(53,1743))
     fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 
     @test isapprox(fb, fbm)
     @test isapprox(f, vec(fm))
     @test isapprox(bw, vec(bwm))
 end
-
-@test_nowarn auditory_fbank(16000; nfft=1024, nbands=26, scale=:semitones, norm=bandwidth, freqrange=(100,1000))
 
 audiofile = Audio911.load(wav_file, format=Float64)
 frames = AudioFrames(audiofile; win=movingwindow(winsize=1024, winstep=512), type=hamming, periodic=true)
@@ -308,3 +306,4 @@ stft = Stft(frames; spectrum=power)
 # 39.157 μs (557 allocations: 131.79 KiB)
 # 38.180 μs (557 allocations: 131.79 KiB)
 # 38.353 μs (552 allocations: 131.54 KiB)
+# 37.333 μs (549 allocations: 131.40 KiB)

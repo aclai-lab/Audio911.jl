@@ -61,95 +61,40 @@ end
 # ---------------------------------------------------------------------------- #
 #                         scale convertions functions                          #
 # ---------------------------------------------------------------------------- #
-const htk = (hz::Vector{T} where T<:Real) -> begin
-    mel_range = @. 2595 * log10(1 + hz / 700)
-    band_edges = @. 700 * (exp10(mel_range / 2595) - 1)
-    return mel_range, band_edges
+const htk(hz::Union{StepRangeLen{T},Vector{T}}) where T<:AudioData = @. 2595 * log10(1 + hz / 700)
+const htk(hz::FreqRange, nbands::Int64) = begin
+    melrange = @. 2595 * log10(1 + hz / 700)
+    melvec = LinRange(get_low(melrange), get_hi(melrange), nbands + 2)  
+    return @. 700 * (exp10(melvec / 2595) - 1)
 end
 
-const slaney = (hz::Vector{T} where T<:Real) -> begin
+const slaney(hz::Union{StepRangeLen{T},Vector{T}}) where T<:AudioData = begin
+    lin_step = 200 / 3
+    return @. ifelse(hz < 1000, hz / lin_step,
+        log(hz * 0.001) / (log(6.4) / 27) + (1000 / lin_step))  
+end
+const slaney(hz::FreqRange, nbands::Int64) = begin
     lin_step = 200 / 3
     cp_mel = 1000 / lin_step
-    mel_range = @. ifelse(hz < 1000, hz / lin_step,
-        log(hz * 0.001) / (log(6.4) / 27) + (1000 / lin_step))          
-    band_edges = @. ifelse(mel_range < cp_mel, mel_range * lin_step,
-        1000 * exp(log(6.4) / 27 * (mel_range - cp_mel)))
-    return mel_range, band_edges
+    melrange = @. ifelse(hz < 1000, hz / lin_step,
+        log(hz * 0.001) / (log(6.4) / 27) + (1000 / lin_step))  
+    melvec = LinRange(get_low(melrange), get_hi(melrange), nbands + 2)        
+    return @. ifelse(melvec < cp_mel, melvec * lin_step,
+        1000 * exp(log(6.4) / 27 * (melvec - cp_mel)))
 end
 
-const bark = (hz::Vector{T} where T<:Real) -> begin
+const bark(hz::Union{StepRangeLen{T},Vector{T}}) where T<:AudioData = @. 26.81 * hz / (1960 + hz) - 0.53
+const bark(hz::FreqRange, nbands::Int64) = begin
     bark = @. 26.81 * hz / (1960 + hz) - 0.53
-    bark_range = map(x -> x < 2 ? 0.85 * x + 0.3 : x > 20.1 ? 1.22 * x - 4.422 : x, bark)
-    band_edges = @. 1960 * (bark + 0.53) / (26.28 - bark)
-    return bark_range, band_edges
-end
-
-# erb = (hz::Vector{T} where T<:Real) -> begin
-#     erbrange = @. log(10) * 1000 / (24.673 * 4.368) * log10(1 + 0.004368 * hz)
-#     band_edges = @. (10 ^ (erbrange / (log(10) * 1000 / (24.673 * 4.368))) - 1) / 0.004368
-#     return erbrange, band_edges
-# end
-
-function hz2mel(
-    hz::Union{FreqRange,StepRangeLen{T},Vector{T}},
-    style::Symbol
-) where {T<:AudioData}
-    style == :htk    && return @. 2595 * log10(1 + hz / 700)
-    style == :slaney && begin
-        lin_step = 200 / 3
-        return @. ifelse(hz < 1000, hz / lin_step,
-            log(hz * 0.001) / (log(6.4) / 27) + (1000 / lin_step))
-    end
-    error("Unknown style ($style).")
-end
-
-function mel2hz(mel_range::ScaleRange, nbands::Int64, style::Symbol)
-    mel = LinRange(get_low(mel_range), get_hi(mel_range), nbands + 2)
-    style == :htk    && return @. 700 * (exp10(mel / 2595) - 1)
-    style == :slaney && begin
-        lin_step = 200 / 3
-        cp_mel = 1000 / lin_step
-        return @. ifelse(
-            mel < cp_mel, mel * lin_step, 1000 * exp(log(6.4) / 27 * (mel - cp_mel)))
-    end
-    error("Unknown style ($style).")
-end
-
-function hz2erb(hz::FreqRange)
-    @. log(10) * 1000 / (24.673 * 4.368) * log10(1 + 0.004368 * hz)
-end
-
-function erb2hz(erbrange::ScaleRange, nbands::Int64)
-    erb = LinRange(get_low(erbrange), get_hi(erbrange), nbands)
-    @. (10 ^ (erb / (log(10) * 1000 / (24.673 * 4.368))) - 1) / 0.004368
-end
-
-function hz2bark(hz::FreqRange)
-    bark = @. 26.81 * hz / (1960 + hz) - 0.53
-    map(x -> x < 2 ? 0.85 * x + 0.3 : x > 20.1 ? 1.22 * x - 4.422 : x, bark)
-end
-
-function bark2hz(bark_range::ScaleRange, nbands::Int64)
-    bark = LinRange(get_low(bark_range), get_hi(bark_range), nbands + 2)
-    bark = map(x -> x < 2 ? (x - 0.3) / 0.85 : x > 20.1 ? (x + 0.22 * 20.1) / 1.22 : x, bark)
-    @. 1960 * (bark + 0.53) / (26.28 - bark)
-end
-
-function hz2semitone(hz::FreqRange)
-    get_low(hz) == 0 ? hz = (20, get_hi(hz)) : nothing
-    @. 12 * log2(hz)
-end
-
-function semitone2hz(st_range::ScaleRange, nbands::Int64)
-    st_range_vec = get_low(st_range) .+ 
-        collect(0:(nbands+1)) / (nbands+1) * (get_hi(st_range) - get_low(st_range))
-    @. 2 ^ (st_range_vec / 12)
+    barkrange = map(x -> x < 2 ? 0.85 * x + 0.3 : x > 20.1 ? 1.22 * x - 4.422 : x, bark)
+    barkvec = LinRange(get_low(barkrange), get_hi(barkrange), nbands + 2)
+    bark2 = map(x -> x < 2 ? (x - 0.3) / 0.85 : x > 20.1 ? (x + 0.22 * 20.1) / 1.22 : x, barkvec)
+    return @. 1960 * (bark2 + 0.53) / (26.28 - bark2)
 end
 
 # ---------------------------------------------------------------------------- #
 #                                 normalization                                #
 # ---------------------------------------------------------------------------- #
-# normalization functions
 const area      = (filterbank, bw) -> sum(filterbank, dims=2)
 const bandwidth = (filterbank, bw) -> bw / 2
 const none_norm = (filterbank, bw) -> 1
@@ -215,10 +160,10 @@ function auditory_fbank(
         sfreq         :: Union{StepRangeLen{<:Float64},Nothing}=nothing,
         nfft          :: Int64=512,
         nbands        :: Int64=26,
-        scale         :: Symbol=:htk, # :htk, :slaney, :bark
+        scale         :: Function=htk,       # :htk, :slaney, :bark
         norm          :: Function=bandwidth, # area, bandwidth, or none_norm
         domain        :: Symbol=:linear,
-        freqrange     :: Tuple{Int64, Int64}=(0, round(Int, sr / 2))
+        freqrange     :: FreqRange=(0, round(Int, sr / 2))
 )
     if isnothing(sfreq)
 	    spec_length = get_onesided_stft_range(nfft)[end]
@@ -226,19 +171,7 @@ function auditory_fbank(
     end
 
     domain == :warped && (linfq = (0:nfft - 1) .* (sr / nfft))
-
-    if (scale == :htk || scale == :slaney)
-        mel_range  = hz2mel(freqrange, scale)
-        band_edges = mel2hz(mel_range, nbands, scale)
-    elseif  scale == :bark
-        bark_range = hz2bark(freqrange)
-        band_edges = bark2hz(bark_range, nbands)
-    elseif scale == :semitones
-        st_range   = hz2semitone(freqrange)
-        band_edges = semitone2hz(st_range, nbands)
-    else
-        error("Unknown filterbank frequency scale '$scale', available scales are: :htk, :slaney, :erb, :bark, :semitones, , :semitones_tuned.")
-    end
+    band_edges = scale(freqrange, nbands)
 
     filtfreq = @view band_edges[2:(end - 1)]
     nbands = length(filtfreq)
@@ -252,16 +185,8 @@ function auditory_fbank(
     # bandwidth
     bw = @views band_edges[3:end] .- band_edges[1:(end - 2)]
 
-    # Apply warping transformation if domain is warped
-    if domain == :warped
-        band_edges, sfreq = if scale == :htk || scale == :slaney
-            hz2mel(band_edges, scale), hz2mel(sfreq, scale)
-        elseif scale == :bark
-            hz2bark(band_edges), hz2bark(sfreq)
-        else
-            band_edges, sfreq
-        end
-    end
+    # apply warping transformation if domain is warped
+    domain == :warped && (band_edges = scale(band_edges); sfreq = scale(sfreq))
 
     for k in 1:nbands
         # rising side of triangle
@@ -277,7 +202,7 @@ function auditory_fbank(
     # normalization
     (norm != :none) && normalize!(filterbank, norm, bw)
     
-    FBank(filterbank, filtfreq, bw, sr, nbands, scale, norm, freqrange)
+    FBank(filterbank, filtfreq, bw, sr, nbands, nameof(scale), norm, freqrange)
 end
 
 auditory_fbank(s::AbstractSpectrogram; kwargs...) =
@@ -289,7 +214,7 @@ function gammatone_fbank(
         nfft          :: Int64=512,
         nbands        :: Int64=26,
         norm          :: Function=bandwidth, # area, bandwidth, or none_norm
-        freqrange     :: Tuple{Int64, Int64}=(0, round(Int, sr / 2))
+        freqrange     :: FreqRange=(0, round(Int, sr / 2))
 )
     erbrange = @. log(10) * 1000 / (24.673 * 4.368) * log10(1 + 0.004368 * freqrange)
     erb      = LinRange(get_low(erbrange), get_hi(erbrange), nbands)
