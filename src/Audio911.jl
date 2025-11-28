@@ -109,6 +109,7 @@ include("fft/stft.jl")
 
 export area, bandwidth, none_norm
 export FBank
+export auditory_fbank, gammatone_fbank
 include("fft/fbank.jl")
 
 export LinSpec

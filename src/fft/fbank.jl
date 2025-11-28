@@ -2,12 +2,11 @@
 #                               filterbank setup                               #
 # ---------------------------------------------------------------------------- #
 struct FBankSetup <: AbstractSetup
-    sr            :: Int64
-    nbands        :: Int64
-    scale         :: Symbol        # :htk, :slaney, :erb, :bark, :semitones
-    norm          :: Base.Callable # bandwidth, area, none_norm
-    freqrange     :: FreqRange
-    semitonerange :: FreqRange
+    sr        :: Int64
+    nbands    :: Int64
+    scale     :: Symbol        # :htk, :slaney, :erb, :bark, :semitones
+    norm      :: Base.Callable # bandwidth, area, none_norm
+    freqrange :: FreqRange
 end
 
 # ---------------------------------------------------------------------------- #
@@ -20,17 +19,16 @@ struct FBank{T<:AudioData} <: AbstractFBank
     setup :: FBankSetup
 
     function FBank(
-        filterbank    :: AbstractArray{T},
-        filt_freq     :: AbstractVector{T},
-        bw            :: AbstractVector{T},
-        sr            :: Int64,
-        nbands        :: Int64,
-        scale         :: Symbol,
-        norm          :: Base.Callable,
-        freqrange     :: FreqRange,
-        semitonerange :: FreqRange
+        filterbank :: AbstractArray{T},
+        filtfreq  :: AbstractVector{T},
+        bw         :: AbstractVector{T},
+        sr         :: Int64,
+        nbands     :: Int64,
+        scale      :: Symbol,
+        norm       :: Base.Callable,
+        freqrange  :: FreqRange,
     ) where {T<:AudioData}
-        new{T}(filterbank, filt_freq, bw, FBankSetup(sr, nbands, scale, norm, freqrange, semitonerange))
+        new{T}(filterbank, filtfreq, bw, FBankSetup(sr, nbands, scale, norm, freqrange))
     end
 end
 
@@ -45,7 +43,6 @@ end
 @inline get_scale(f::FBank)         = f.setup.scale
 @inline get_norm(f::FBank)          = f.setup.norm
 @inline get_freqrange(f::FBank)     = f.setup.freqrange
-@inline get_semitonerange(f::FBank) = f.setup.semitonerange
 
 function Base.show(io::IO, fb::FBank)
     println(io, "FBank:")
@@ -54,9 +51,6 @@ function Base.show(io::IO, fb::FBank)
     println(io, "  Scale: $(get_scale(fb))")
     println(io, "  Normalization: $(get_norm(fb))")
     println(io, "  Frequency Range: $(get_low(get_freqrange(fb)))-$(get_hi(get_freqrange(fb))) Hz")
-    # if fb.setup.scale in [:semitones, :tuned_semitones]
-    #     println(io, "  Semitone Range: $(get_low(fb.setup.semitonerange))-$(get_hi(fb.setup.semitonerange))")
-    # end
     print(io, "  Filterbank Size: $(size(get_data(fb)))")
 end
 
@@ -67,6 +61,35 @@ end
 # ---------------------------------------------------------------------------- #
 #                         scale convertions functions                          #
 # ---------------------------------------------------------------------------- #
+const htk = (hz::Vector{T} where T<:Real) -> begin
+    mel_range = @. 2595 * log10(1 + hz / 700)
+    band_edges = @. 700 * (exp10(mel_range / 2595) - 1)
+    return mel_range, band_edges
+end
+
+const slaney = (hz::Vector{T} where T<:Real) -> begin
+    lin_step = 200 / 3
+    cp_mel = 1000 / lin_step
+    mel_range = @. ifelse(hz < 1000, hz / lin_step,
+        log(hz * 0.001) / (log(6.4) / 27) + (1000 / lin_step))          
+    band_edges = @. ifelse(mel_range < cp_mel, mel_range * lin_step,
+        1000 * exp(log(6.4) / 27 * (mel_range - cp_mel)))
+    return mel_range, band_edges
+end
+
+const bark = (hz::Vector{T} where T<:Real) -> begin
+    bark = @. 26.81 * hz / (1960 + hz) - 0.53
+    bark_range = map(x -> x < 2 ? 0.85 * x + 0.3 : x > 20.1 ? 1.22 * x - 4.422 : x, bark)
+    band_edges = @. 1960 * (bark + 0.53) / (26.28 - bark)
+    return bark_range, band_edges
+end
+
+# erb = (hz::Vector{T} where T<:Real) -> begin
+#     erbrange = @. log(10) * 1000 / (24.673 * 4.368) * log10(1 + 0.004368 * hz)
+#     band_edges = @. (10 ^ (erbrange / (log(10) * 1000 / (24.673 * 4.368))) - 1) / 0.004368
+#     return erbrange, band_edges
+# end
+
 function hz2mel(
     hz::Union{FreqRange,StepRangeLen{T},Vector{T}},
     style::Symbol
@@ -80,8 +103,8 @@ function hz2mel(
     error("Unknown style ($style).")
 end
 
-function mel2hz(mel_range::ScaleRange, n_bands::Int64, style::Symbol)
-    mel = LinRange(get_low(mel_range), get_hi(mel_range), n_bands + 2)
+function mel2hz(mel_range::ScaleRange, nbands::Int64, style::Symbol)
+    mel = LinRange(get_low(mel_range), get_hi(mel_range), nbands + 2)
     style == :htk    && return @. 700 * (exp10(mel / 2595) - 1)
     style == :slaney && begin
         lin_step = 200 / 3
@@ -96,8 +119,8 @@ function hz2erb(hz::FreqRange)
     @. log(10) * 1000 / (24.673 * 4.368) * log10(1 + 0.004368 * hz)
 end
 
-function erb2hz(erb_range::ScaleRange, n_bands::Int64)
-    erb = LinRange(get_low(erb_range), get_hi(erb_range), n_bands)
+function erb2hz(erbrange::ScaleRange, nbands::Int64)
+    erb = LinRange(get_low(erbrange), get_hi(erbrange), nbands)
     @. (10 ^ (erb / (log(10) * 1000 / (24.673 * 4.368))) - 1) / 0.004368
 end
 
@@ -106,8 +129,8 @@ function hz2bark(hz::FreqRange)
     map(x -> x < 2 ? 0.85 * x + 0.3 : x > 20.1 ? 1.22 * x - 4.422 : x, bark)
 end
 
-function bark2hz(bark_range::ScaleRange, n_bands::Int64)
-    bark = LinRange(get_low(bark_range), get_hi(bark_range), n_bands + 2)
+function bark2hz(bark_range::ScaleRange, nbands::Int64)
+    bark = LinRange(get_low(bark_range), get_hi(bark_range), nbands + 2)
     bark = map(x -> x < 2 ? (x - 0.3) / 0.85 : x > 20.1 ? (x + 0.22 * 20.1) / 1.22 : x, bark)
     @. 1960 * (bark + 0.53) / (26.28 - bark)
 end
@@ -137,7 +160,7 @@ function normalize!(filterbank::AbstractArray{Float64}, norm_func::Function, bw:
 end
 
 # ---------------------------------------------------------------------------- #
-#                                   gammatone                                  #
+#                           gammatone coefficients                             #
 # ---------------------------------------------------------------------------- #
 function compute_gammatone_coeffs(sr::Int64, bands::AbstractVector{Float64})
     t = 1 / sr
@@ -171,33 +194,31 @@ function compute_gammatone_coeffs(sr::Int64, bands::AbstractVector{Float64})
         (-2 / exp(2 * filt * t) - 2 * exp_im + 2 * (1 + exp_im) / exp_f)^4
     )
 
-    n_bands = length(bands)
+    nbands = length(bands)
     b1 = @. -2 * cos_e
     b2 = @. exp(-2 * filt * t)
 
-    cat([
-            [
-                t/gain[ind] a11[ind]/gain[ind] 0 1 b1[ind] b2[ind]
-                t           a12[ind]           0 1 b1[ind] b2[ind]
-                t           a13[ind]           0 1 b1[ind] b2[ind]
-                t           a14[ind]           0 1 b1[ind] b2[ind]
-            ] for ind in 1:n_bands
-        ]..., dims=3)
+    cat([[
+            t/gain[ind] a11[ind]/gain[ind] 0 1 b1[ind] b2[ind]
+            t           a12[ind]           0 1 b1[ind] b2[ind]
+            t           a13[ind]           0 1 b1[ind] b2[ind]
+            t           a14[ind]           0 1 b1[ind] b2[ind]
+        ] for ind in 1:nbands
+    ]..., dims=3)
 end
 
 # ---------------------------------------------------------------------------- #
 #                           design filterbank matrix                           #
 # ---------------------------------------------------------------------------- #
-function FBank(
+function auditory_fbank(
         sr            :: Int64;
         sfreq         :: Union{StepRangeLen{<:Float64},Nothing}=nothing,
         nfft          :: Int64=512,
         nbands        :: Int64=26,
-        scale         :: Symbol=:htk, # :htk, :slaney, :erb, :bark, :semitones
+        scale         :: Symbol=:htk, # :htk, :slaney, :bark
         norm          :: Function=bandwidth, # area, bandwidth, or none_norm
         domain        :: Symbol=:linear,
-        freqrange     :: Tuple{Int64, Int64}=(0, round(Int, sr / 2)),
-        semitonerange :: Tuple{Int64, Int64}=(200, 700),
+        freqrange     :: Tuple{Int64, Int64}=(0, round(Int, sr / 2))
 )
     if isnothing(sfreq)
 	    spec_length = get_onesided_stft_range(nfft)[end]
@@ -206,77 +227,89 @@ function FBank(
 
     domain == :warped && (linfq = (0:nfft - 1) .* (sr / nfft))
 
-    if scale == :erb
-        erb_range = hz2erb(freqrange)
-        filt_freq = erb2hz(erb_range, nbands)
-        coeffs    = compute_gammatone_coeffs(sr, filt_freq)
-
-        iirfreqz  = (b, a, n)-> fft([b; zeros(n - length(b))]) ./ fft([a; zeros(n - length(a))])
-        sosfilt   = (c, n)   -> reduce((x, y) -> x .* y, map(row -> iirfreqz(row[1:3], row[4:6], n), eachrow(c)))
-        apply_sos = (i)      -> abs.(sosfilt(coeffs[:, :, i], nfft))
-
-        filterbank = hcat(map(apply_sos, 1:nbands)...)'
-        bw = 1.019 * 24.7 * (0.00437 * filt_freq .+ 1)
-
-        (norm != :none) && normalize!(filterbank, norm, bw)
-
-        @views rem(nfft, 2) == 0 ? filterbank[:, 2:(nfft ÷ 2)] .*= 2 : filterbank[:, 2:(nfft ÷ 2 + 1)] .*= 2
-        filterbank = @view filterbank[:, 1:(nfft ÷ 2 + 1)]
-
+    if (scale == :htk || scale == :slaney)
+        mel_range  = hz2mel(freqrange, scale)
+        band_edges = mel2hz(mel_range, nbands, scale)
+    elseif  scale == :bark
+        bark_range = hz2bark(freqrange)
+        band_edges = bark2hz(bark_range, nbands)
+    elseif scale == :semitones
+        st_range   = hz2semitone(freqrange)
+        band_edges = semitone2hz(st_range, nbands)
     else
-        if (scale == :htk || scale == :slaney)
-            mel_range  = hz2mel(freqrange, scale)
-            band_edges = mel2hz(mel_range, nbands, scale)
-        elseif  scale == :bark
-            bark_range = hz2bark(freqrange)
-            band_edges = bark2hz(bark_range, nbands)
-        elseif scale == :semitones
-            st_range   = hz2semitone(freqrange)
-            band_edges = semitone2hz(st_range, nbands)
-        else
-            error("Unknown filterbank frequency scale '$scale', available scales are: :htk, :slaney, :erb, :bark, :semitones, , :semitones_tuned.")
-        end
-
-        filt_freq = @view band_edges[2:(end - 1)]
-        nbands = length(filt_freq)
-
-        p = [findfirst(sfreq .> edge) for edge in band_edges]
-        isnothing(p[end]) ? p[end] = length(sfreq) : nothing
-
-        # create triangular filters for each band
-        filterbank = zeros(nbands, length(sfreq))
-
-        # bandwidth
-        bw = @views band_edges[3:end] .- band_edges[1:(end - 2)]
-
-        # Apply warping transformation if domain is warped
-        if domain == :warped
-            band_edges, sfreq = if scale == :htk || scale == :slaney
-                hz2mel(band_edges, scale), hz2mel(sfreq, scale)
-            elseif scale == :bark
-                hz2bark(band_edges), hz2bark(sfreq)
-            else
-                band_edges, sfreq
-            end
-        end
-
-        for k in 1:nbands
-            # rising side of triangle
-            rise_range = p[k]:(p[k + 1] - 1)
-            @views @. filterbank[k, rise_range] =
-                (sfreq[rise_range] - band_edges[k]) / (band_edges[k + 1] - band_edges[k])
-            # falling side of triangle
-            fall_range = p[k + 1]:(p[k + 2] - 1)
-            @views @. filterbank[k, fall_range] =
-                (band_edges[k + 2] - sfreq[fall_range]) / (band_edges[k + 2] - band_edges[k + 1])
-        end
-
-        # normalization
-        (norm != :none) && normalize!(filterbank, norm, bw)
+        error("Unknown filterbank frequency scale '$scale', available scales are: :htk, :slaney, :erb, :bark, :semitones, , :semitones_tuned.")
     end
+
+    filtfreq = @view band_edges[2:(end - 1)]
+    nbands = length(filtfreq)
+
+    p = [findfirst(sfreq .> edge) for edge in band_edges]
+    isnothing(p[end]) ? p[end] = length(sfreq) : nothing
+
+    # create triangular filters for each band
+    filterbank = zeros(nbands, length(sfreq))
+
+    # bandwidth
+    bw = @views band_edges[3:end] .- band_edges[1:(end - 2)]
+
+    # Apply warping transformation if domain is warped
+    if domain == :warped
+        band_edges, sfreq = if scale == :htk || scale == :slaney
+            hz2mel(band_edges, scale), hz2mel(sfreq, scale)
+        elseif scale == :bark
+            hz2bark(band_edges), hz2bark(sfreq)
+        else
+            band_edges, sfreq
+        end
+    end
+
+    for k in 1:nbands
+        # rising side of triangle
+        rise_range = p[k]:(p[k + 1] - 1)
+        @views @. filterbank[k, rise_range] =
+            (sfreq[rise_range] - band_edges[k]) / (band_edges[k + 1] - band_edges[k])
+        # falling side of triangle
+        fall_range = p[k + 1]:(p[k + 2] - 1)
+        @views @. filterbank[k, fall_range] =
+            (band_edges[k + 2] - sfreq[fall_range]) / (band_edges[k + 2] - band_edges[k + 1])
+    end
+
+    # normalization
+    (norm != :none) && normalize!(filterbank, norm, bw)
     
-    FBank(filterbank, filt_freq, bw, sr, nbands, scale, norm, freqrange, semitonerange)
+    FBank(filterbank, filtfreq, bw, sr, nbands, scale, norm, freqrange)
 end
 
-FBank(s::AbstractSpectrogram; kwargs...) =
-    FBank(get_sr(s); sfreq=get_freq(s), nfft=get_nfft(s), kwargs...)
+auditory_fbank(s::AbstractSpectrogram; kwargs...) =
+    auditory_fbank(get_sr(s); sfreq=get_freq(s), nfft=get_nfft(s), kwargs...)
+
+function gammatone_fbank(
+        sr            :: Int64;
+        # sfreq         :: Union{StepRangeLen{<:Float64},Nothing}=nothing,
+        nfft          :: Int64=512,
+        nbands        :: Int64=26,
+        norm          :: Function=bandwidth, # area, bandwidth, or none_norm
+        freqrange     :: Tuple{Int64, Int64}=(0, round(Int, sr / 2))
+)
+    erbrange = @. log(10) * 1000 / (24.673 * 4.368) * log10(1 + 0.004368 * freqrange)
+    erb      = LinRange(get_low(erbrange), get_hi(erbrange), nbands)
+    filtfreq = @. (10 ^ (erb / (log(10) * 1000 / (24.673 * 4.368))) - 1) / 0.004368
+    coeffs   = compute_gammatone_coeffs(sr, filtfreq)
+
+    iirfreqz = (b, a, n)-> fft([b; zeros(n - length(b))]) ./ fft([a; zeros(n - length(a))])
+    sosfilt  = (c, n)   -> reduce((x, y) -> x .* y, map(row -> iirfreqz(row[1:3], row[4:6], n), eachrow(c)))
+    applysos = (i)      -> abs.(sosfilt(coeffs[:, :, i], nfft))
+
+    filterbank = hcat(map(applysos, 1:nbands)...)'
+    bw = 1.019 * 24.7 * (0.00437 * filtfreq .+ 1)
+
+    (norm != :none) && normalize!(filterbank, norm, bw)
+
+    @views rem(nfft, 2) == 0 ? filterbank[:, 2:(nfft ÷ 2)] .*= 2 : filterbank[:, 2:(nfft ÷ 2 + 1)] .*= 2
+    filterbank = @view filterbank[:, 1:(nfft ÷ 2 + 1)]
+    
+    FBank(filterbank, filtfreq, bw, sr, nbands, :erb, norm, freqrange)
+end
+
+gammatone_fbank(s::AbstractSpectrogram; kwargs...) =
+    gammatone_fbank(get_sr(s); nfft=get_nfft(s), kwargs...)
