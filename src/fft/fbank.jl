@@ -20,17 +20,17 @@ struct FBank{T<:AudioData} <: AbstractFBank
     setup :: FBankSetup
 
     function FBank(
-        filterbank     :: AbstractArray{T},
-        filter_freq    :: AbstractVector{T},
-        bw             :: AbstractVector{T},
-        sr             :: Int64,
-        nbands         :: Int64,
-        scale          :: Symbol,
-        norm           :: Base.Callable,
-        freqrange      :: FreqRange,
-        semitonerange  :: FreqRange
+        filterbank    :: AbstractArray{T},
+        filt_freq     :: AbstractVector{T},
+        bw            :: AbstractVector{T},
+        sr            :: Int64,
+        nbands        :: Int64,
+        scale         :: Symbol,
+        norm          :: Base.Callable,
+        freqrange     :: FreqRange,
+        semitonerange :: FreqRange
     ) where {T<:AudioData}
-        new{T}(filterbank, filter_freq, bw, FBankSetup(sr, nbands, scale, norm, freqrange, semitonerange))
+        new{T}(filterbank, filt_freq, bw, FBankSetup(sr, nbands, scale, norm, freqrange, semitonerange))
     end
 end
 
@@ -194,7 +194,7 @@ function FBank(
         nfft          :: Int64=512,
         nbands        :: Int64=26,
         scale         :: Symbol=:htk, # :htk, :slaney, :erb, :bark, :semitones
-        norm          :: Function=bandwidth,  # area, bandwidth, or none_norm
+        norm          :: Function=bandwidth, # area, bandwidth, or none_norm
         domain        :: Symbol=:linear,
         freqrange     :: Tuple{Int64, Int64}=(0, round(Int, sr / 2)),
         semitonerange :: Tuple{Int64, Int64}=(200, 700),
@@ -208,15 +208,15 @@ function FBank(
 
     if scale == :erb
         erb_range = hz2erb(freqrange)
-        filter_freq = erb2hz(erb_range, nbands)
-        coeffs = compute_gammatone_coeffs(sr, filter_freq)
+        filt_freq = erb2hz(erb_range, nbands)
+        coeffs    = compute_gammatone_coeffs(sr, filt_freq)
 
-        iirfreqz = (b, a, n) -> fft([b; zeros(n - length(b))]) ./ fft([a; zeros(n - length(a))])
-        sosfilt = (c, n)     -> reduce((x, y) -> x .* y, map(row -> iirfreqz(row[1:3], row[4:6], n), eachrow(c)))
-        apply_sosfilt = (i)  -> abs.(sosfilt(coeffs[:, :, i], nfft))
+        iirfreqz  = (b, a, n)-> fft([b; zeros(n - length(b))]) ./ fft([a; zeros(n - length(a))])
+        sosfilt   = (c, n)   -> reduce((x, y) -> x .* y, map(row -> iirfreqz(row[1:3], row[4:6], n), eachrow(c)))
+        apply_sos = (i)      -> abs.(sosfilt(coeffs[:, :, i], nfft))
 
-        filterbank = hcat(map(apply_sosfilt, 1:nbands)...)'
-        bw = 1.019 * 24.7 * (0.00437 * filter_freq .+ 1)
+        filterbank = hcat(map(apply_sos, 1:nbands)...)'
+        bw = 1.019 * 24.7 * (0.00437 * filt_freq .+ 1)
 
         (norm != :none) && normalize!(filterbank, norm, bw)
 
@@ -237,8 +237,8 @@ function FBank(
             error("Unknown filterbank frequency scale '$scale', available scales are: :htk, :slaney, :erb, :bark, :semitones, , :semitones_tuned.")
         end
 
-        filter_freq = @view band_edges[2:(end - 1)]
-        nbands = length(filter_freq)
+        filt_freq = @view band_edges[2:(end - 1)]
+        nbands = length(filt_freq)
 
         p = [findfirst(sfreq .> edge) for edge in band_edges]
         isnothing(p[end]) ? p[end] = length(sfreq) : nothing
@@ -263,17 +263,20 @@ function FBank(
         for k in 1:nbands
             # rising side of triangle
             rise_range = p[k]:(p[k + 1] - 1)
-            @views @. filterbank[k, rise_range] = (sfreq[rise_range] - band_edges[k]) / (band_edges[k + 1] - band_edges[k])
+            @views @. filterbank[k, rise_range] =
+                (sfreq[rise_range] - band_edges[k]) / (band_edges[k + 1] - band_edges[k])
             # falling side of triangle
             fall_range = p[k + 1]:(p[k + 2] - 1)
-            @views @. filterbank[k, fall_range] = (band_edges[k + 2] - sfreq[fall_range]) / (band_edges[k + 2] - band_edges[k + 1])
+            @views @. filterbank[k, fall_range] =
+                (band_edges[k + 2] - sfreq[fall_range]) / (band_edges[k + 2] - band_edges[k + 1])
         end
 
         # normalization
         (norm != :none) && normalize!(filterbank, norm, bw)
     end
     
-    FBank(filterbank, filter_freq, bw, sr, nbands, scale, norm, freqrange, semitonerange)
+    FBank(filterbank, filt_freq, bw, sr, nbands, scale, norm, freqrange, semitonerange)
 end
 
-FBank(s::AbstractSpectrogram; kwargs...) = FBank(get_sr(s); sfreq=get_freq(s), nfft=get_nfft(s), kwargs...)
+FBank(s::AbstractSpectrogram; kwargs...) =
+    FBank(get_sr(s); sfreq=get_freq(s), nfft=get_nfft(s), kwargs...)
