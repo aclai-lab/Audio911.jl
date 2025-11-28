@@ -319,3 +319,20 @@ fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
 @test eltype(f)  <: Float32
 @test eltype(bw) <: Float32
 
+audiofile = Audio911.load(wav_file, format=Float64)
+frames = AudioFrames(audiofile; win=movingwindow(winsize=1024, winstep=512), type=hamming, periodic=true)
+stft = Stft(frames; spectrum=power)
+fbank = gammatone_fbank(stft; nbands=26, norm=bandwidth, freqrange=(100,1000))
+fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
+@test eltype(fb) <: Float64
+@test eltype(f)  <: Float64
+@test eltype(bw) <: Float64
+
+audiofile = Audio911.load(wav_file, format=Float32)
+frames = AudioFrames(audiofile; win=movingwindow(winsize=1024, winstep=512), type=hamming, periodic=true)
+stft = Stft(frames; spectrum=power)
+fbank = gammatone_fbank(stft; nbands=26, norm=bandwidth, freqrange=(100,1000))
+fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
+@test eltype(fb) <: Float32
+@test eltype(f)  <: Float32
+@test eltype(bw) <: Float32

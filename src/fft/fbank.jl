@@ -540,19 +540,20 @@ function gammatone_fbank(
         nfft          :: Int64=512,
         nbands        :: Int64=26,
         norm          :: Function=bandwidth, # area, bandwidth, or none_norm
-        freqrange     :: FreqRange=(0, round(Int, sr / 2))
+        freqrange     :: FreqRange=(0, round(Int, sr / 2)),
+        T             :: Type=Float64
 )
-    erbrange = @. log(10) * 1000 / (24.673 * 4.368) * log10(1 + 0.004368 * freqrange)
+    erbrange = @. log(10) * 1000 / (24.673 * 4.368) * log10(1 + 0.004368 * T.(freqrange))
     erb      = LinRange(get_low(erbrange), get_hi(erbrange), nbands)
-    filtfreq = @. (10 ^ (erb / (log(10) * 1000 / (24.673 * 4.368))) - 1) / 0.004368
+    filtfreq = T.(@. (10 ^ (erb / (log(10) * 1000 / (24.673 * 4.368))) - 1) / 0.004368)
     coeffs   = compute_gammatone_coeffs(sr, filtfreq)
 
     iirfreqz = (b, a, n)-> fft([b; zeros(n - length(b))]) ./ fft([a; zeros(n - length(a))])
     sosfilt  = (c, n)   -> reduce((x, y) -> x .* y, map(row -> iirfreqz(row[1:3], row[4:6], n), eachrow(c)))
-    applysos = (i)      -> abs.(sosfilt(coeffs[:, :, i], nfft))
+    applysos = (i)      -> T.(abs.(sosfilt(coeffs[:, :, i], nfft)))
 
     filterbank = hcat(map(applysos, 1:nbands)...)'
-    bw = 1.019 * 24.7 * (0.00437 * filtfreq .+ 1)
+    bw = T.(1.019 * 24.7 * (0.00437 * filtfreq .+ 1))
 
     (norm != :none) && normalize!(filterbank, norm, bw)
 
@@ -599,4 +600,4 @@ Also
 - [`Stft`](@ref): Stft Spectrogram computation
 """
 gammatone_fbank(s::AbstractSpectrogram; kwargs...) =
-    gammatone_fbank(get_sr(s); nfft=get_nfft(s), kwargs...)
+    gammatone_fbank(get_sr(s); nfft=get_nfft(s), T=eltype(get_data(s)), kwargs...)
