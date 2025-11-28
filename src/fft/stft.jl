@@ -62,7 +62,7 @@ struct Stft{F,T} <: AbstractSpectrogram
 		spec :: Matrix{T},
 		freq :: StepRangeLen,
 		info :: StftSetup
-	) where {F,T}
+	) where {F,T<:AudioData}
 		new{F,T}(spec, freq, info)
 	end
 end
@@ -117,7 +117,8 @@ function Stft(
 	spec = @views fft(winframes, (1,))[get_onesided_stft_range(nfft), :] |> spectrum
 
 	# frequency vector
-	freq = (0:size(spec, 1)-1) .* (sr / nfft)
+	T = eltype(spec)
+	freq = (0:size(spec, 1)-1) .* (T(sr) / T(nfft))
 
 	info = StftSetup(
 		sr,

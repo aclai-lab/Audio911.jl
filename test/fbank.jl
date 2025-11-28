@@ -297,13 +297,25 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
     @test isapprox(bw, vec(bwm))
 end
 
+# ---------------------------------------------------------------------------- #
+#                          test float64 and float32                            #
+# ---------------------------------------------------------------------------- #
+
 audiofile = Audio911.load(wav_file, format=Float64)
 frames = AudioFrames(audiofile; win=movingwindow(winsize=1024, winstep=512), type=hamming, periodic=true)
 stft = Stft(frames; spectrum=power)
+fbank = auditory_fbank(stft; nbands=26, norm=bandwidth, domain=:linear, freqrange=(100,1000))
+fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
+@test eltype(fb) <: Float64
+@test eltype(f)  <: Float64
+@test eltype(bw) <: Float64
 
-@btime fbank = auditory_fbank(stft; nbands=26, norm=bandwidth, domain=:linear, freqrange=(100,1000))
-# 39.444 μs (557 allocations: 131.79 KiB)
-# 39.157 μs (557 allocations: 131.79 KiB)
-# 38.180 μs (557 allocations: 131.79 KiB)
-# 38.353 μs (552 allocations: 131.54 KiB)
-# 37.333 μs (549 allocations: 131.40 KiB)
+audiofile = Audio911.load(wav_file, format=Float32)
+frames = AudioFrames(audiofile; win=movingwindow(winsize=1024, winstep=512), type=hamming, periodic=true)
+stft = Stft(frames; spectrum=power)
+fbank = auditory_fbank(stft; nbands=26, norm=bandwidth, domain=:linear, freqrange=(100,1000))
+fb, f, bw = get_data(fbank), get_freq(fbank), get_bandwidth(fbank)
+@test eltype(fb) <: Float32
+@test eltype(f)  <: Float32
+@test eltype(bw) <: Float32
+

@@ -20,7 +20,7 @@ struct FBank{T<:AudioData} <: AbstractFBank
 
     function FBank(
         filterbank :: AbstractArray{T},
-        filtfreq  :: AbstractVector{T},
+        filtfreq   :: AbstractVector{T},
         bw         :: AbstractVector{T},
         sr         :: Int64,
         nbands     :: Int64,
@@ -61,34 +61,39 @@ end
 # ---------------------------------------------------------------------------- #
 #                         scale convertions functions                          #
 # ---------------------------------------------------------------------------- #
-const htk(hz::Union{StepRangeLen{T},Vector{T}}) where T<:AudioData = @. 2595 * log10(1 + hz / 700)
-const htk(hz::FreqRange, nbands::Int64) = begin
-    melrange = @. 2595 * log10(1 + hz / 700)
+const htk(hz::Union{StepRangeLen{T},Vector{T}} where T<:AudioData) = @. 2595 * log10(1 + hz / 700)
+
+const htk(::Type{T}, hz::FreqRange, nbands::Int64) where {T<:AudioData} = begin
+    melrange = @. 2595 * log10(1 + T.(hz) / 700)
     melvec = LinRange(get_low(melrange), get_hi(melrange), nbands + 2)  
     return @. 700 * (exp10(melvec / 2595) - 1)
 end
 
-const slaney(hz::Union{StepRangeLen{T},Vector{T}}) where T<:AudioData = begin
+const slaney(hz::Union{StepRangeLen{T},Vector{T}} where T<:AudioData) = begin
     lin_step = 200 / 3
     return @. ifelse(hz < 1000, hz / lin_step,
         log(hz * 0.001) / (log(6.4) / 27) + (1000 / lin_step))  
 end
-const slaney(hz::FreqRange, nbands::Int64) = begin
-    lin_step = 200 / 3
-    cp_mel = 1000 / lin_step
-    melrange = @. ifelse(hz < 1000, hz / lin_step,
-        log(hz * 0.001) / (log(6.4) / 27) + (1000 / lin_step))  
+
+const slaney(::Type{T}, hz::FreqRange, nbands::Int64) where {T<:AudioData} = begin
+    lin_step = T(200 / 3)
+    cp_mel = T(1000 / lin_step)
+    hz_T = T.(hz)
+    melrange = @. ifelse(hz_T < 1000, hz_T / lin_step,
+        log(hz_T * 0.001) / (log(6.4) / 27) + (1000 / lin_step))  
     melvec = LinRange(get_low(melrange), get_hi(melrange), nbands + 2)        
     return @. ifelse(melvec < cp_mel, melvec * lin_step,
         1000 * exp(log(6.4) / 27 * (melvec - cp_mel)))
 end
 
-const bark(hz::Union{StepRangeLen{T},Vector{T}}) where T<:AudioData = @. 26.81 * hz / (1960 + hz) - 0.53
-const bark(hz::FreqRange, nbands::Int64) = begin
-    bark = @. 26.81 * hz / (1960 + hz) - 0.53
-    barkrange = map(x -> x < 2 ? 0.85 * x + 0.3 : x > 20.1 ? 1.22 * x - 4.422 : x, bark)
+const bark(hz::Union{StepRangeLen{T},Vector{T}} where T<:AudioData) = @. 26.81 * hz / (1960 + hz) - 0.53
+
+const bark(::Type{T}, hz::FreqRange, nbands::Int64) where {T<:AudioData} = begin
+    hz_T = T.(hz)
+    bark_val = @. 26.81 * hz_T / (1960 + hz_T) - 0.53
+    barkrange = map(x -> x < 2 ? T(0.85) * x + T(0.3) : x > T(20.1) ? T(1.22) * x - T(4.422) : x, bark_val)
     barkvec = LinRange(get_low(barkrange), get_hi(barkrange), nbands + 2)
-    bark2 = map(x -> x < 2 ? (x - 0.3) / 0.85 : x > 20.1 ? (x + 0.22 * 20.1) / 1.22 : x, barkvec)
+    bark2 = map(x -> x < 2 ? (x - T(0.3)) / T(0.85) : x > T(20.1) ? (x + T(0.22) * T(20.1)) / T(1.22) : x, barkvec)
     return @. 1960 * (bark2 + 0.53) / (26.28 - bark2)
 end
 
@@ -99,15 +104,19 @@ const area      = (filterbank, bw) -> sum(filterbank, dims=2)
 const bandwidth = (filterbank, bw) -> bw / 2
 const none_norm = (filterbank, bw) -> 1
 
-function normalize!(filterbank::AbstractArray{Float64}, norm_func::Function, bw::AbstractVector{Float64})
+function normalize!(
+    filterbank :: AbstractArray{T},
+    norm_func  :: Function,
+    bw         :: AbstractVector{T}
+) where {T<:AudioData}
     weight_per_band = norm_func(filterbank, bw)
-    @. filterbank /= (weight_per_band + (weight_per_band == 0))
+    @. filterbank  /= (weight_per_band + (weight_per_band == 0))
 end
 
 # ---------------------------------------------------------------------------- #
 #                           gammatone coefficients                             #
 # ---------------------------------------------------------------------------- #
-function compute_gammatone_coeffs(sr::Int64, bands::AbstractVector{Float64})
+function compute_gammatone_coeffs(sr::Int64, bands::AbstractVector{<:AudioData})
     t = 1 / sr
     erb = @. bands / 9.26449 + 24.7
     filt = 1.019 * 2π * erb
@@ -157,7 +166,7 @@ end
 # ---------------------------------------------------------------------------- #
 function auditory_fbank(
         sr            :: Int64;
-        sfreq         :: Union{StepRangeLen{<:Float64},Nothing}=nothing,
+        sfreq         :: Union{StepRangeLen{<:AudioData},Nothing}=nothing,
         nfft          :: Int64=512,
         nbands        :: Int64=26,
         scale         :: Function=htk,       # :htk, :slaney, :bark
@@ -170,8 +179,9 @@ function auditory_fbank(
 	    sfreq = (0:spec_length - 1) .* (sr / nfft)
     end
 
+    T = eltype(sfreq)
     domain == :warped && (linfq = (0:nfft - 1) .* (sr / nfft))
-    band_edges = scale(freqrange, nbands)
+    band_edges = scale(T, freqrange, nbands)
 
     filtfreq = @view band_edges[2:(end - 1)]
     nbands = length(filtfreq)
@@ -180,7 +190,7 @@ function auditory_fbank(
     isnothing(p[end]) ? p[end] = length(sfreq) : nothing
 
     # create triangular filters for each band
-    filterbank = zeros(nbands, length(sfreq))
+    filterbank = zeros(T, nbands, length(sfreq))
 
     # bandwidth
     bw = @views band_edges[3:end] .- band_edges[1:(end - 2)]
@@ -210,7 +220,6 @@ auditory_fbank(s::AbstractSpectrogram; kwargs...) =
 
 function gammatone_fbank(
         sr            :: Int64;
-        # sfreq         :: Union{StepRangeLen{<:Float64},Nothing}=nothing,
         nfft          :: Int64=512,
         nbands        :: Int64=26,
         norm          :: Function=bandwidth, # area, bandwidth, or none_norm
