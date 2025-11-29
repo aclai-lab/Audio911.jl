@@ -543,17 +543,21 @@ function gammatone_fbank(
         freqrange     :: FreqRange=(0, round(Int, sr / 2)),
         T             :: Type=Float64
 )
-    erbrange = @. log(10) * 1000 / (24.673 * 4.368) * log10(1 + 0.004368 * T.(freqrange))
+    erbrange = @. log(10) * 1000 / (24.673 * 4.368) * log10(1 + 0.004368 * freqrange)
     erb      = LinRange(get_low(erbrange), get_hi(erbrange), nbands)
-    filtfreq = T.(@. (10 ^ (erb / (log(10) * 1000 / (24.673 * 4.368))) - 1) / 0.004368)
+    filtfreq = @. T(10 ^ (erb / (log(10) * 1000 / (24.673 * 4.368))) - 1) / T(0.004368)
     coeffs   = compute_gammatone_coeffs(sr, filtfreq)
 
-    iirfreqz = (b, a, n)-> fft([b; zeros(n - length(b))]) ./ fft([a; zeros(n - length(a))])
-    sosfilt  = (c, n)   -> reduce((x, y) -> x .* y, map(row -> iirfreqz(row[1:3], row[4:6], n), eachrow(c)))
-    applysos = (i)      -> T.(abs.(sosfilt(coeffs[:, :, i], nfft)))
+    iirfreqz = (b, a, n) -> fft([b; zeros(T, n - length(b))]) ./ fft([a; zeros(T, n - length(a))])
+    sosfilt  = (c, n)    -> reduce((x, y) -> x .* y, map(row -> iirfreqz(row[1:3], row[4:6], n), eachrow(c)))
+    applysos = (i)       -> abs.(sosfilt(coeffs[:, :, i], nfft))
 
-    filterbank = hcat(map(applysos, 1:nbands)...)'
-    bw = T.(1.019 * 24.7 * (0.00437 * filtfreq .+ 1))
+    filterbank = zeros(T, nbands, nfft)
+    Threads.@threads for i in 1:nbands
+        filterbank[i, :] = applysos(i)
+    end
+
+    bw = T(1.019 * 24.7) * T.(0.00437 * filtfreq .+ 1)
 
     (norm != :none) && normalize!(filterbank, norm, bw)
 
