@@ -20,7 +20,7 @@ A concrete implementation of `AbstractSpectrogram` that stores Short-Time Fourie
 (STFT) data and associated metadata.
 
 # Type Parameters
-- `F`: Source type that generated this STFT (e.g., `AudioFrames`)
+- `F`: Source type that generated this STFT (e.g., `Frames`)
 - `T`: Element type of the spectral data matrix (e.g., `Float64`, `ComplexF64`)
 
 # Fields
@@ -100,7 +100,7 @@ end
 #                                   get stft                                   #
 #------------------------------------------------------------------------------#
 function Stft(
-	frames   :: AudioFrames;
+	frames   :: Frames;
 	nfft     :: Int64=get_winsize(frames),
 	spectrum :: Base.Callable=power, # power, magnitude
 )::Stft
@@ -143,7 +143,7 @@ function Stft(
 		get_window(frames)
 	)
 
-	return Stft{AudioFrames}(spec, freq, info)
+	return Stft{Frames}(spec, freq, info)
 end
 
 function Stft(
@@ -156,7 +156,7 @@ function Stft(
     periodic :: Bool=true,
 	kwargs...
 	)::Stft
-	frames = AudioFrames(afile; win, type, periodic)
+	frames = Frames(afile; win, type, periodic)
 	Stft(frames; kwargs...)
 end
 

@@ -108,13 +108,14 @@ export winpower, winmagnitude
 @reexport using DSP: bartlett, bartlett_hann, blackman
 
 export AbstractFrames
-export AudioFrames
+export Frames
 include("frames.jl")
 
 export Stft
 export power, magnitude
 include("fft/stft.jl")
 
+export FBank
 export htk, slaney, bark
 export area, bandwidth, none_norm
 export auditory_fbank, gammatone_fbank

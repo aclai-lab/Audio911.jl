@@ -37,7 +37,7 @@ matfile = matlab_file("matlab_melspec_01.mat")
 mat = MAT.matread(matfile)
 mat_mel_spec = mat["features"]
 
-frames = AudioFrames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
+frames = Frames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
 stft = Stft(frames; spectrum=power)
 mel_spec = MelSpec(stft; win_norm=true, freqrange=(100,1000), nbands=26, norm=bandwidth, domain=:linear, scale=htk)
 
@@ -58,7 +58,7 @@ matfile = matlab_file("matlab_melspec_02.mat")
 mat = MAT.matread(matfile)
 mat_mel_spec = mat["features"]
 
-frames = AudioFrames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
+frames = Frames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
 stft = Stft(frames; spectrum=magnitude)
 mel_spec = MelSpec(stft; win_norm=true, freqrange=(100,1000), nbands=26, norm=bandwidth, domain=:linear, scale=htk)
 
@@ -79,7 +79,7 @@ matfile = matlab_file("matlab_melspec_03.mat")
 mat = MAT.matread(matfile)
 mat_mel_spec = mat["features"]
 
-frames = AudioFrames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
+frames = Frames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
 stft = Stft(frames; spectrum=power)
 mel_spec = MelSpec(stft; win_norm=false, freqrange=(100,1000), nbands=26, norm=bandwidth, domain=:linear, scale=htk)
 
@@ -100,7 +100,7 @@ matfile = matlab_file("matlab_melspec_04.mat")
 mat = MAT.matread(matfile)
 mat_mel_spec = mat["features"]
 
-frames = AudioFrames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
+frames = Frames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
 stft = Stft(frames; spectrum=magnitude)
 mel_spec = MelSpec(stft; win_norm=false, freqrange=(100,1000), nbands=26, norm=bandwidth, domain=:linear, scale=htk)
 

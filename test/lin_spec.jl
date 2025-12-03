@@ -35,7 +35,7 @@ matfile = matlab_file("matlab_linspec_01.mat")
 mat = MAT.matread(matfile)
 mat_lin_spec = mat["features"]
 
-frames = AudioFrames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
+frames = Frames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
 stft = Stft(frames; spectrum=power)
 lin_spec = LinSpec(stft; freqrange=(100,1000), win_norm=true)
 
@@ -54,7 +54,7 @@ matfile = matlab_file("matlab_linspec_02.mat")
 mat = MAT.matread(matfile)
 mat_lin_spec = mat["features"]
 
-frames = AudioFrames(audiofile; win=movingwindow(winsize=256, winstep=128), type=bartlett, periodic=false)
+frames = Frames(audiofile; win=movingwindow(winsize=256, winstep=128), type=bartlett, periodic=false)
 stft = Stft(frames; spectrum=magnitude)
 lin_spec = LinSpec(stft; freqrange=(200,800), win_norm=false)
 
@@ -73,7 +73,7 @@ matfile = matlab_file("matlab_linspec_03.mat")
 mat = MAT.matread(matfile)
 mat_lin_spec = mat["features"]
 
-frames = AudioFrames(audiofile; win=movingwindow(winsize=417, winstep=417-111), type=hanning, periodic=false)
+frames = Frames(audiofile; win=movingwindow(winsize=417, winstep=417-111), type=hanning, periodic=false)
 stft = Stft(frames; spectrum=power)
 lin_spec = LinSpec(stft; freqrange=(97,1243), win_norm=false)
 

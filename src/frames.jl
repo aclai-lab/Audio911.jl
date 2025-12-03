@@ -17,10 +17,10 @@ struct FramesSetup <: AbstractSetup
 end
 
 # ---------------------------------------------------------------------------- #
-#                                 AudioFrames                                  #
+#                                 Frames                                  #
 # ---------------------------------------------------------------------------- #
 """
-    AudioFrames{T} <: AbstractFrame
+    Frames{T} <: AbstractFrame
 
 Container for windowed audio data with associated windowing parameters.
 
@@ -42,7 +42,7 @@ along with the window function and metadata used to generate them.
   - `type::Symbol`: window type function from DSP package
 
 # Constructor
-    AudioFrames(frames::Vector{<:AudioFormat{T}}, window::Vector{Float64}, info::NamedTuple)
+    Frames(frames::Vector{<:AudioFormat{T}}, window::Vector{Float64}, info::NamedTuple)
 
 The constructor automatically converts a vector of individual frames into a matrix format
 where each column represents one frame, using `reduce(hcat, frames)` for efficient storage.
@@ -71,12 +71,12 @@ window_func = frames.info.win        # Windowing function used
 
 # See also: [`get_data`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref), [`AudioFormat`](@ref)
 """
-struct AudioFrames{T} <: AbstractFrame
+struct Frames{T} <: AbstractFrame
     frames :: Matrix{T}
     window :: Vector{T}
     info   :: FramesSetup
 
-    function AudioFrames(
+    function Frames(
         frames :: Vector{<:AudioFormat{T}},
         window :: Vector{Float64},
         info   :: FramesSetup
@@ -85,7 +85,7 @@ struct AudioFrames{T} <: AbstractFrame
         new{T}(frames_matrix, window, info)
     end
 
-    function AudioFrames(
+    function Frames(
         frames :: Matrix{<:AudioFormat{T}},
         window :: Vector{Float64},
         info   :: FramesSetup
@@ -98,12 +98,12 @@ end
 #                                    frames                                    #
 # ---------------------------------------------------------------------------- #
 """
-    get_data(X; win=AdaptiveWindow(nwindows=3, relative_overlap=0.1), type=(:hann, :periodic)) -> AudioFrames
+    get_data(X; win=AdaptiveWindow(nwindows=3, relative_overlap=0.1), type=(:hann, :periodic)) -> Frames
 
 Apply windowing to an audio file and return windowed frames with applied window functions.
 
 This function segments the audio data according to the specified windowing strategy,
-applies the chosen window function to each frame, and returns an `AudioFrames` container
+applies the chosen window function to each frame, and returns an `Frames` container
 with the processed data and metadata.
 
 # Arguments
@@ -118,7 +118,7 @@ with the processed data and metadata.
 - `type::Base.Callable`: 
 
 # Returns
-- `AudioFrames{T}`: Container holding the windowed frames, windowing function, and parameters
+- `Frames{T}`: Container holding the windowed frames, windowing function, and parameters
 
 # Examples
 ```julia
@@ -155,9 +155,9 @@ window_type = frames.type          # Window shape and periodicity
 - The window function is automatically sized to match each frame's length
 - All frames are returned as vectors (mono audio) or matrices (multi-channel)
 
-# See also: [`AudioFrames`](@ref)
+# See also: [`Frames`](@ref)
 """
-function AudioFrames(
+function Frames(
     audiofile :: AudioFormat,
     sr        :: Int64;
     win       :: Base.Callable=movingwindow(
@@ -194,31 +194,31 @@ function AudioFrames(
     # collect infos
     info = FramesSetup(sr, win, type)
 
-    return AudioFrames(frames, window, info)
+    return Frames(frames, window, info)
 end
 
-AudioFrames(a::AudioFile; kwargs...) = AudioFrames(get_data(a), get_sr(a); kwargs...)
+Frames(a::AudioFile; kwargs...) = Frames(get_data(a), get_sr(a); kwargs...)
 
 # ---------------------------------------------------------------------------- #
 #                                    methods                                   #
 # ---------------------------------------------------------------------------- #
-Base.length(f::AudioFrames) = size(f.frames, 2)
-Base.eltype(::AudioFrames{T}) where T = T
+Base.length(f::Frames) = size(f.frames, 2)
+Base.eltype(::Frames{T}) where T = T
 
-get_size(f::AudioFrames)    = f.info.win.winsize
-get_step(f::AudioFrames)    = f.info.win.winstep
-get_overlap(f::AudioFrames) = get_size(f) - get_step(f)
+get_size(f::Frames)    = f.info.win.winsize
+get_step(f::Frames)    = f.info.win.winstep
+get_overlap(f::Frames) = get_size(f) - get_step(f)
 
-get_data(f::AudioFrames)      = f.frames
-get_window(f::AudioFrames)    = f.window
-get_winsize(f::AudioFrames)   = length(f.window)
-get_winframes(f::AudioFrames) = get_data(f) .* get_window(f)
-get_setup(f::AudioFrames)      = f.info
+get_data(f::Frames)      = f.frames
+get_window(f::Frames)    = f.window
+get_winsize(f::Frames)   = length(f.window)
+get_winframes(f::Frames) = get_data(f) .* get_window(f)
+get_setup(f::Frames)      = f.info
 
 # ---------------------------------------------------------------------------- #
 #                                   base.show                                  #
 # ---------------------------------------------------------------------------- #
-function Base.show(io::IO, ::MIME"text/plain", f::AudioFrames{T}) where T
+function Base.show(io::IO, ::MIME"text/plain", f::Frames{T}) where T
     n_frames = length(f)
     frame_size = get_size(f)
     step_size = get_step(f)
@@ -230,7 +230,7 @@ function Base.show(io::IO, ::MIME"text/plain", f::AudioFrames{T}) where T
     total_samples = frame_size + (n_frames - 1) * step_size
     duration = total_samples / sr
     
-    println(io, "AudioFrames{$T}")
+    println(io, "Frames{$T}")
     println(io, "  Frames:      $n_frames")
     println(io, "  Frame size:  $frame_size samples")
     println(io, "  Step:        $step_size samples")
@@ -239,8 +239,8 @@ function Base.show(io::IO, ::MIME"text/plain", f::AudioFrames{T}) where T
     println(io, "  Sample rate: $sr Hz")
 end
 
-function Base.show(io::IO, f::AudioFrames{T}) where T
+function Base.show(io::IO, f::Frames{T}) where T
     n_frames = length(f)
     frame_size = get_size(f)
-    print(io, "AudioFrames{$T}($n_frames frames × $frame_size samples)")
+    print(io, "Frames{$T}($n_frames frames × $frame_size samples)")
 end
