@@ -16,6 +16,7 @@ test_suites = [
     ("STFT",        ["stft.jl",       ]),
     ("FilterBanks", ["fbank.jl",      ]),
     ("Lin Spec",    ["lin_spec.jl",   ]),
+    ("Mel Spec",    ["mel_spec.jl",   ]),
 ]
 
 @testset "SoleXplorer.jl" begin
