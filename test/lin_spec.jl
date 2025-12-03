@@ -17,7 +17,7 @@ audiofile = Audio911.load(wav_file, format=Float64)
 # ---------------------------------------------------------------------------- #
 #                            test against matlab                               #
 # ---------------------------------------------------------------------------- #
-matlab_files_dir()    = joinpath(dirname(@__FILE__), "matlab_files")
+matlab_files_dir()    = joinpath(dirname(@__FILE__), "matlab_files/lin_spec")
 matlab_file(filename) = joinpath(matlab_files_dir(), filename)
 
 # [audio_wav,fs_wav] = audioread("/home/paso/Documents/Aclai/PasoStudio73/Audio911.jl/test/test_files/test.wav");

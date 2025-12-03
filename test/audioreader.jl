@@ -57,7 +57,7 @@ end
 # ---------------------------------------------------------------------------- #
 #                            test against matlab                               #
 # ---------------------------------------------------------------------------- #
-matlab_files_dir()    = joinpath(dirname(@__FILE__), "matlab_files")
+matlab_files_dir()    = joinpath(dirname(@__FILE__), "matlab_files/audioread")
 matlab_file(filename) = joinpath(matlab_files_dir(), filename)
 
 @testset "against matlab" begin
