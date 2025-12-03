@@ -11,17 +11,19 @@ end
 # ---------------------------------------------------------------------------- #
 #                          linear spectrogram struct                           #
 # ---------------------------------------------------------------------------- #
-struct MelSpec{F,T} <: AbstractSpectrogram
-    spec :: Matrix{T}
-    freq :: StepRangeLen
-    info :: MelSpecSetup
+struct MelSpec{F,T,B} <: AbstractSpectrogram
+    spec  :: Matrix{T}
+    freq  :: StepRangeLen
+    info  :: MelSpecSetup
+	fbank :: FBank{B}
 
     function MelSpec{F}(
-        spec :: Matrix{T},
-        freq :: StepRangeLen,
-        info :: MelSpecSetup
-    ) where {F,T}
-        new{F,T}(spec, freq, info)
+        spec  :: Matrix{T},
+        freq  :: StepRangeLen,
+        info  :: MelSpecSetup,
+		fbank :: FBank{B}
+    ) where {F,T,B}
+        new{F,T,B}(spec, freq, info, fbank)
     end
 end
 

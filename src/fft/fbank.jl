@@ -448,8 +448,6 @@ are automatically extracted from the spectrogram. Available keywords:
 - `freqrange::FreqRange`: Frequency range tuple
 
 # Examples
-
-## Basic MFCC Feature Extraction
 ```julia
 # Load audio and compute spectrogram
 test_files_dir()    = joinpath(dirname(@__FILE__), "test_files")
