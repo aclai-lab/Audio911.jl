@@ -32,7 +32,7 @@ A concrete implementation of `AbstractSpectrogram` that stores Short-Time Fourie
   - `nfft`: FFT size used for analysis
   - `winsize`: Window size
   - `overlap`: Overlap between windows
-  - `freq_range`: Frequency range analyzed
+  - `freqrange`: Frequency range analyzed
   - `spectrum`: Type of spectrum (`:power` or `:magnitude`)
 
 # Constructor
@@ -66,6 +66,20 @@ struct Stft{F,T} <: AbstractSpectrogram
 		new{F,T}(spec, freq, info)
 	end
 end
+
+#------------------------------------------------------------------------------#
+#                                   methods                                    #
+#------------------------------------------------------------------------------#
+Base.eltype(::Stft{T}) where T = T
+
+@inline get_data(s::Stft)  = s.spec
+@inline get_freq(s::Stft)  = s.freq
+@inline get_setup(s::Stft) = s.info
+
+@inline get_sr(s::Stft)       = s.info.sr
+@inline get_nfft(s::Stft)     = s.info.nfft
+@inline get_spectrum(s::Stft) = s.info.spectrum
+@inline get_window(s::Stft)   = s.info.window
 
 #------------------------------------------------------------------------------#
 #                           spectrum normalizations                            #
@@ -146,16 +160,3 @@ function Stft(
 	Stft(frames; kwargs...)
 end
 
-#------------------------------------------------------------------------------#
-#                                 stft methods                                 #
-#------------------------------------------------------------------------------#
-Base.eltype(::Stft{T}) where T = T
-
-@inline get_data(s::Stft) = s.spec
-@inline get_freq(s::Stft) = s.freq
-@inline get_setup(s::Stft) = s.info
-
-@inline get_sr(s::Stft)       = s.info.sr
-@inline get_nfft(s::Stft)     = s.info.nfft
-@inline get_spectype(s::Stft) = s.info.spectrum
-@inline get_window(s::Stft)   = s.info.window

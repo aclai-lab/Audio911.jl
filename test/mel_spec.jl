@@ -33,50 +33,75 @@ matlab_file(filename) = joinpath(matlab_files_dir(), filename)
 #     MelStyle="oshaughnessy", ApplyLog=false)
 # features = extract(aFE, audio_wav);
 
-# matfile = matlab_file("matlab_linspec_01.mat")
-# mat = MAT.matread(matfile)
-# mat_lin_spec = mat["features"]
+matfile = matlab_file("matlab_melspec_01.mat")
+mat = MAT.matread(matfile)
+mat_mel_spec = mat["features"]
 
 frames = AudioFrames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
 stft = Stft(frames; spectrum=power)
-mel_spec = MelSpec(stft; freq_range=(100,1000), nbands=26, norm=bandwidth, win_norm=true, domain=:linear, scale=htk)
+mel_spec = MelSpec(stft; win_norm=true, freqrange=(100,1000), nbands=26, norm=bandwidth, domain=:linear, scale=htk)
 
-@test isapprox(get_data(lin_spec), mat_lin_spec)
+@test isapprox(get_data(mel_spec), mat_mel_spec)
 
 # aFE = audioFeatureExtractor( ...
 #     SampleRate=fs_wav, ...
-#     Window=bartlett(256), ...
-#     OverlapLength=128, ...
-#     linearSpectrum=true);
-
-# setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[200,800], SpectrumType="magnitude", WindowNormalization=false)
+#     Window=hamming(512,"periodic"), ...
+#     OverlapLength=256, ...
+#     melSpectrum=true);
+# setExtractorParameters(aFE,"melSpectrum",FrequencyRange=[100,1000], ... 
+#     SpectrumType="magnitude", NumBands=26, FilterBankNormalization="bandwidth", ...
+#     WindowNormalization=true, FilterBankDesignDomain="linear", ...
+#     MelStyle="oshaughnessy", ApplyLog=false)
 # features = extract(aFE, audio_wav);
 
-matfile = matlab_file("matlab_linspec_02.mat")
+matfile = matlab_file("matlab_melspec_02.mat")
 mat = MAT.matread(matfile)
-mat_lin_spec = mat["features"]
+mat_mel_spec = mat["features"]
 
-frames = AudioFrames(audiofile; win=movingwindow(winsize=256, winstep=128), type=bartlett, periodic=false)
+frames = AudioFrames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
 stft = Stft(frames; spectrum=magnitude)
-lin_spec = LinSpec(stft; freq_range=(200,800), win_norm=false)
+mel_spec = MelSpec(stft; win_norm=true, freqrange=(100,1000), nbands=26, norm=bandwidth, domain=:linear, scale=htk)
 
-@test isapprox(get_data(lin_spec), mat_lin_spec)
+@test isapprox(get_data(mel_spec), mat_mel_spec)
 
 # aFE = audioFeatureExtractor( ...
 #     SampleRate=fs_wav, ...
-#     Window=hann(417,"periodic"), ...
-#     OverlapLength=111, ...
-#     linearSpectrum=true);
-
-# setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[97,1243], SpectrumType="power", WindowNormalization=false)
+#     Window=hamming(512,"periodic"), ...
+#     OverlapLength=256, ...
+#     melSpectrum=true);
+# setExtractorParameters(aFE,"melSpectrum",FrequencyRange=[100,1000], ... 
+#     SpectrumType="power", NumBands=26, FilterBankNormalization="bandwidth", ...
+#     WindowNormalization=true, FilterBankDesignDomain="linear", ...
+#     MelStyle="oshaughnessy", ApplyLog=false)
 # features = extract(aFE, audio_wav);
 
-matfile = matlab_file("matlab_linspec_03.mat")
+matfile = matlab_file("matlab_melspec_03.mat")
 mat = MAT.matread(matfile)
-mat_lin_spec = mat["features"]
+mat_mel_spec = mat["features"]
 
-frames = AudioFrames(audiofile; win=movingwindow(winsize=417, winstep=417-111), type=hanning, periodic=false)
+frames = AudioFrames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
 stft = Stft(frames; spectrum=power)
-lin_spec = LinSpec(stft; freq_range=(97,1243), win_norm=false)
+mel_spec = MelSpec(stft; win_norm=false, freqrange=(100,1000), nbands=26, norm=bandwidth, domain=:linear, scale=htk)
 
-@test isapprox(get_data(lin_spec), mat_lin_spec)
+@test isapprox(get_data(mel_spec), mat_mel_spec)
+
+# aFE = audioFeatureExtractor( ...
+#     SampleRate=fs_wav, ...
+#     Window=hamming(512,"periodic"), ...
+#     OverlapLength=256, ...
+#     melSpectrum=true);
+# setExtractorParameters(aFE,"melSpectrum",FrequencyRange=[100,1000], ... 
+#     SpectrumType="magnitude", NumBands=26, FilterBankNormalization="bandwidth", ...
+#     WindowNormalization=true, FilterBankDesignDomain="linear", ...
+#     MelStyle="oshaughnessy", ApplyLog=false)
+# features = extract(aFE, audio_wav);
+
+matfile = matlab_file("matlab_melspec_04.mat")
+mat = MAT.matread(matfile)
+mat_mel_spec = mat["features"]
+
+frames = AudioFrames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
+stft = Stft(frames; spectrum=magnitude)
+mel_spec = MelSpec(stft; win_norm=false, freqrange=(100,1000), nbands=26, norm=bandwidth, domain=:linear, scale=htk)
+
+@test isapprox(get_data(mel_spec), mat_mel_spec)

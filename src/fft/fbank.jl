@@ -376,15 +376,15 @@ fb = auditory_fbank(16000;
 ```
 """
 function auditory_fbank(
-        sr            :: Int64;
-        sfreq         :: Union{StepRangeLen{<:AudioData},Nothing}=nothing,
-        nfft          :: Int64=512,
-        nbands        :: Int64=26,
-        scale         :: Function=htk,       # :htk, :slaney, :bark
-        norm          :: Function=bandwidth, # area, bandwidth, or none_norm
-        domain        :: Symbol=:linear,
-        freqrange     :: FreqRange=(0, round(Int, sr / 2))
-)
+    sr        :: Int64;
+    sfreq     :: Union{StepRangeLen{<:AudioData},Nothing}=nothing,
+    nfft      :: Int64=512,
+    nbands    :: Int64=26,
+    scale     :: Function=htk,       # :htk, :slaney, :bark
+    norm      :: Function=bandwidth, # area, bandwidth, or none_norm
+    domain    :: Symbol=:linear,
+    freqrange :: FreqRange=(0, round(Int, sr / 2))
+)::FBank
     if isnothing(sfreq)
 	    spec_length = get_onesided_stft_range(nfft)[end]
 	    sfreq = (0:spec_length - 1) .* (sr / nfft)

@@ -93,6 +93,14 @@ get_hi(r::ScaleRange)  = r[2]
 export ScaleRange
 
 # ---------------------------------------------------------------------------- #
+#                           spectrum normalizations                            #
+# ---------------------------------------------------------------------------- #
+winpower(f, w)     = f / sum(w).^2
+winmagnitude(f, w) = f / sum(w)
+
+export winpower, winmagnitude
+
+# ---------------------------------------------------------------------------- #
 #                                  modules                                     #
 # ---------------------------------------------------------------------------- #
 # reexport DSP's window functions
@@ -113,10 +121,10 @@ export auditory_fbank, gammatone_fbank
 include("fft/fbank.jl")
 
 export LinSpec
-export winpower, winmagnitude
 include("fft/lin_spec.jl")
 
-# export get_melspec
+export MelSpec
+include("fft/mel_spec.jl")
 
 # ---------------------------------------------------------------------------- #
 #                                  methods                                     #
@@ -129,7 +137,7 @@ export get_size, get_step, get_overlap
 export get_window, get_winframes, get_winsize
 
 # spectrogram related
-export get_freq, get_sr, get_nfft, get_spectype
+export get_freq, get_sr, get_nfft, get_spectrum
 export get_windows
 
 # filterbank related
