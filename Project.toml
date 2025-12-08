@@ -10,9 +10,6 @@ DataTreatments = "1b3ff5f2-9b56-42a2-b38a-76a033f741ca"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 
-[sources]
-DataTreatments = {rev = "main", url = "/home/paso/Documents/Aclai/PasoStudio73/DataTreatments.jl"}
-
 [compat]
 AudioReader = "0.2"
 DSP = "0.8"
