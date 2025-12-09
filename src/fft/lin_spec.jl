@@ -92,10 +92,10 @@ end
 # ---------------------------------------------------------------------------- #
 #                                  utilities                                   #
 # ---------------------------------------------------------------------------- #
-function get_freq_range(
+function _get_freq_range(
     freqrange :: FreqRange,
-    stft_size  :: Int64,
-    sr         :: Int64
+    stft_size :: Int64,
+    sr        :: Int64
 )
     # convert frequencies to bin indices
     bin_low  = cld(get_low(freqrange) * stft_size, sr) + 1
@@ -164,7 +164,7 @@ function LinSpec(
 	window        = get_window(stft)
 
 	if freqrange != (0, sr >> 1)
-		bin_low, bin_high = get_freq_range(freqrange, stft_size, sr)
+		bin_low, bin_high = _get_freq_range(freqrange, stft_size, sr)
 		spec = @views spec[bin_low:bin_high, :]
 		freq = freq[bin_low:bin_high]
 	end

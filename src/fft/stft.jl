@@ -195,7 +195,7 @@ magnitude(f) = @. abs(f)
 #------------------------------------------------------------------------------#
 #                                  utilities                                   #
 #------------------------------------------------------------------------------#
-function get_onesided_stft_range(nfft::Int64)::UnitRange
+function _get_onesided_stft_range(nfft::Int64)::UnitRange
 	return iseven(nfft) ?
 		(1:nfft >> 1 + 1) : # even
         (1:(nfft + 1) >> 1) # odd
@@ -204,6 +204,53 @@ end
 #------------------------------------------------------------------------------#
 #                                   get stft                                   #
 #------------------------------------------------------------------------------#
+"""
+    Stft(frames::Frames; nfft::Int64, spectrum::Base.Callable) -> Stft
+
+Compute Short-Time Fourier Transform (STFT) from pre-computed audio frames.
+
+Applies FFT to each windowed frame to obtain a time-frequency representation.
+Zero-padding is automatically applied if `nfft > winsize` to achieve frequency 
+interpolation without changing spectral content.
+
+# Arguments
+- `frames::Frames`: Pre-computed windowed audio frames
+
+# Keyword Arguments
+- `nfft::Int64`: FFT size (default: `winsize`). Must be ≥ window size.
+  Larger values provide finer frequency resolution through interpolation.
+- `spectrum::Base.Callable`: Spectrum type (default: `power`)
+  - `power`: Power spectral density |X(f)|²
+  - `magnitude`: Magnitude spectrum |X(f)|
+
+# Returns
+- `Stft`: STFT object containing spectral data and metadata
+
+# Examples
+```julia
+# Basic usage with default FFT size
+frames = Frames(afile; winsize=512, winstep=256)
+stft = Stft(frames)
+
+# With zero-padding for finer frequency resolution
+stft = Stft(frames; nfft=1024)  # Double frequency bins
+
+# Magnitude spectrum instead of power
+stft = Stft(frames; spectrum=magnitude)
+```
+
+# Throws
+- `ArgumentError`: If overlap ≥ winsize or nfft < winsize
+
+# Notes
+- Zero-padding in time domain = frequency interpolation
+- Does not change spectral content, only interpolates between bins
+- One-sided spectrum is returned (real signals are symmetric in frequency)
+- Frequency resolution: Δf = sr / nfft
+
+# See also
+[`Frames`](@ref), [`power`](@ref), [`magnitude`](@ref)
+"""
 function Stft(
 	frames   :: Frames;
 	nfft     :: Int64=get_winsize(frames),
@@ -233,7 +280,7 @@ function Stft(
 		winframes[1:nfft, :]
 
 	# fft -> one side -> spectrum normalization
-	spec = @views fft(winframes, (1,))[get_onesided_stft_range(nfft), :] |> spectrum
+	spec = @views fft(winframes, (1,))[_get_onesided_stft_range(nfft), :] |> spectrum
 
 	# frequency vector
 	T = eltype(spec)
@@ -251,6 +298,53 @@ function Stft(
 	return Stft{Frames}(spec, freq, info)
 end
 
+"""
+    Stft(afile::AudioFile; win::Base.Callable, type::Base.Callable, periodic::Bool, kwargs...) -> Stft
+
+Compute Short-Time Fourier Transform (STFT) directly from an audio file.
+
+Convenience constructor that combines frame extraction and STFT computation in one call.
+Automatically selects appropriate default window parameters based on sample rate.
+
+# Arguments
+- `afile::AudioFile`: Input audio file
+
+# Keyword Arguments
+- `win::Base.Callable`: Window configuration function (default: adaptive based on sample rate)
+  - For sr ≤ 8000 Hz: winsize=256, winstep=128
+  - For sr > 8000 Hz: winsize=512, winstep=256
+- `type::Base.Callable`: Window type function (default: `hanning`)
+  - Examples: `hanning`, `hamming`, `blackman`, `rectangular`
+- `periodic::Bool`: Use periodic window normalization (default: `true`)
+- Additional kwargs are passed to `Stft(frames; kwargs...)`
+  - `nfft::Int64`: FFT size
+  - `spectrum::Base.Callable`: Spectrum type (`power` or `magnitude`)
+
+# Returns
+- `Stft`: STFT object containing spectral data and metadata
+
+# Examples
+```julia
+# Default settings (adaptive based on sample rate)
+afile = AudioFile("speech.wav")
+stft = Stft(afile)
+
+# Custom window configuration
+stft = Stft(afile; 
+    win=movingwindow(winsize=1024, winstep=512),
+    type=hamming
+)
+
+# Custom FFT size and magnitude spectrum
+stft = Stft(afile; 
+    nfft=2048,
+    spectrum=magnitude
+)
+```
+
+# See also
+[`Stft(::Frames)`](@ref), [`Frames`](@ref), [`AudioFile`](@ref), [`movingwindow`](@ref)
+"""
 function Stft(
 	afile    :: AudioFile;
     win      :: Base.Callable=movingwindow(
