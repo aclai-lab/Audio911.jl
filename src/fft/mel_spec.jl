@@ -54,6 +54,20 @@ Get the configuration metadata for the mel spectrogram.
 """
 @inline get_setup(m::MelSpec) = m.info
 
+"""
+    get_sr(s::MelSpec) -> Int64
+
+Get the sample rate used in mel spectrogram computation.
+"""
+@inline get_sr(m::MelSpec) = m.info.sr
+
+"""
+    get_nbands(s::MelSpec) -> Int64
+
+Get the number of filter bands in the filterbank.
+"""
+@inline get_nbands(m::MelSpec) = get_nbands(m.fbank)
+
 # ---------------------------------------------------------------------------- #
 #                                     show                                     #
 # ---------------------------------------------------------------------------- #

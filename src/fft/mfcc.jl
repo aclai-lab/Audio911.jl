@@ -127,17 +127,18 @@ mfcc = Mfcc(melspec, 16000; nbands=40, ncoeffs=20, rect=cubic_root, dither=true)
 [`MelSpec`](@ref), [`mlog`](@ref), [`cubic_root`](@ref), [`create_dct_matrix`](@ref)
 """
 function Mfcc(
-    spec    :: MelSpec,
-    sr      :: Int64;
-    nbands  :: Int64,
+    mel     :: MelSpec;
     ncoeffs :: Int64=round(Int, nbands / 2),
     rect    :: Base.Callable=mlog, # mlog, cubic_root
     dither  :: Bool=false,
 )::Mfcc
+    spec   = get_data(mel)
+    sr     = get_sr(mel)
+    nbands = get_nbands(mel)
     dither ? spec[spec .< 1e-8] .= 1e-8 : spec[spec .== 0] .= floatmin(Float64)
 
     dct_matrix = _create_dct_matrix(nbands)
-    coeffs = rect(dct_matrix, spec)
+    coeffs = rect(dct_matrix, spec')
 
     info = MfccSetup(sr, ncoeffs, rect, dither)
 
