@@ -70,11 +70,6 @@ end
 #------------------------------------------------------------------------------#
 #                                   methods                                    #
 #------------------------------------------------------------------------------#
-"""
-    Base.eltype(::Stft{F,T}) -> Type
-
-Return the element type of the stft spectrogram data.
-"""
 Base.eltype(::Stft{F,T}) where {F,T} = T
 
 """

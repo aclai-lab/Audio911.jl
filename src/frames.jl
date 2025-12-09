@@ -19,58 +19,6 @@ end
 # ---------------------------------------------------------------------------- #
 #                                 Frames                                  #
 # ---------------------------------------------------------------------------- #
-"""
-    Frames{T} <: AbstractFrame
-
-Container for windowed audio data with associated windowing parameters.
-
-This struct holds the result of applying a windowing function to audio data,
-storing the windowed frames as a matrix where each column represents one frame,
-along with the window function and metadata used to generate them.
-
-# Type Parameters
-- `T`: The numeric type of the audio data elements (e.g., `Float32`, `Float64`)
-
-# Fields
-- `frames::Matrix{T}`: Matrix of windowed audio frames where each column is one frame.
-  For mono audio, each column contains the windowed samples for that frame.
-  For multi-channel audio, the matrix structure preserves channel information.
-- `window::Vector{Float64}`: The actual window function values that were applied to each frame
-- `info::NamedTuple`: Metadata containing:
-  - `sr::Int`: Sample rate of the original audio
-  - `win::WinFunction`: The windowing function object used
-  - `type::Symbol`: window type function from DSP package
-
-# Constructor
-    Frames(frames::Vector{<:AudioFormat{T}}, window::Vector{Float64}, info::NamedTuple)
-
-The constructor automatically converts a vector of individual frames into a matrix format
-where each column represents one frame, using `reduce(hcat, frames)` for efficient storage.
-
-# Matrix Structure
-- **Rows**: Sample indices within each frame (window_size samples per frame)
-- **Columns**: Frame indices (number of frames depends on audio length and windowing parameters)
-
-# Example
-```julia
-# Load audio file
-audiofile = load("audio.wav")
-
-# Create windowing function
-win = MovingWindow(window_size=512, window_step=256)
-
-# Generate frames with Hann window
-frames = get_data(audiofile; win=win, type=hanning)
-
-# Access the data
-frames_matrix = frames.frames        # Matrix where each column is a frame
-window_values = frames.window        # Window function values applied
-sample_rate = frames.info.sr         # Original sample rate
-window_func = frames.info.win        # Windowing function used
-```
-
-# See also: [`get_data`](@ref), [`WinFunction`](@ref), [`MovingWindow`](@ref), [`AudioFormat`](@ref)
-"""
 struct Frames{T} <: AbstractFrame
     frames :: Matrix{T}
     window :: Vector{T}
@@ -98,7 +46,7 @@ end
 #                                    frames                                    #
 # ---------------------------------------------------------------------------- #
 """
-    get_data(X; win=AdaptiveWindow(nwindows=3, relative_overlap=0.1), type=(:hann, :periodic)) -> Frames
+    Frames(X; win=AdaptiveWindow(nwindows=3, relative_overlap=0.1), type=(:hann, :periodic)) -> Frames
 
 Apply windowing to an audio file and return windowed frames with applied window functions.
 
@@ -154,8 +102,6 @@ window_type = frames.type          # Window shape and periodicity
 - Frame lengths may vary depending on the windowing strategy used
 - The window function is automatically sized to match each frame's length
 - All frames are returned as vectors (mono audio) or matrices (multi-channel)
-
-# See also: [`Frames`](@ref)
 """
 function Frames(
     audiofile :: AudioFormat,
