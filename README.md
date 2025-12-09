@@ -1,8 +1,32 @@
-# Audio911.jl – Audio Feature Extraction in Julia
+<div align="center">
+    <img src="logo.png" alt="Audio911" width="200">
+</div>
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://PasoStudio73.github.io/Audio911.jl/stable)
-[![Build Status](https://github.com/PasoStudio73/Audio911.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/PasoStudio73/Audio911.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![Coverage](https://codecov.io/gh/PasoStudio73/Audio911.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/PasoStudio73/Audio911.jl)
+<h2 align="center">Audio Feature Extraction in Julia
+<p align="center">
+  <a href="https://github.com/aclai-lab/Audio911.jl/actions">
+    <img src="https://github.com/aclai-lab/Audio911.jl/workflows/CI/badge.svg"
+         alt="Build Status">
+  </a>
+  <a href="https://aclai-lab.github.io/Audio911.jl/dev/">
+    <img src="https://img.shields.io/badge/docs-dev-blue.svg"
+         alt="dev documentation">
+  </a>
+  <a href="https://aclai-lab.github.io/Audio911.jl/stable/">
+    <img src="https://img.shields.io/badge/docs-stable-blue.svg"
+         alt="stable documentation">
+  </a>
+  <a href="https://opensource.org/licenses/MIT">
+    <img src="https://img.shields.io/badge/License-MIT-yelllow"
+       alt="bibtex">
+  </a>
+  <a href="https://codecov.io/gh/aclai-lab/Audio911.jl">
+    <img src="https://codecov.io/gh/aclai-lab/Audio911.jl/branch/main/graph/badge.svg"
+       alt="CodeCov">
+  </a>
+
+</p>
+</h2>
 
 **Audio911.jl** is your Swiss Army knife for extracting audio features in a simple and fast way.
 
