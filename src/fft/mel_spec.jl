@@ -38,21 +38,21 @@ Base.eltype(::MelSpec{F,B,T}) where {F,B,T} = T
 
 Get the mel spectrogram data matrix, transposed to (nframes × nbands).
 """
-get_data(m::MelSpec)  = m.spec'
+@inline get_data(m::MelSpec)  = m.spec'
 
 """
     get_freq(m::MelSpec) -> Vector
 
 Get the frequency range in Hz.
 """
-get_freq(m::MelSpec)  = get_freqrange(m.fbank)
+@inline get_freq(m::MelSpec)  = get_freqrange(m.fbank)
 
 """
     get_setup(m::MelSpec) -> MelSpecSetup
 
 Get the configuration metadata for the mel spectrogram.
 """
-get_setup(m::MelSpec) = m.info
+@inline get_setup(m::MelSpec) = m.info
 
 # ---------------------------------------------------------------------------- #
 #                                     show                                     #
@@ -124,7 +124,7 @@ function MelSpec(
 	stft     :: Stft,
     fbank    :: AbstractFBank;
 	win_norm :: Bool=false
-)
+)::MelSpec
     spectrum   = get_spectrum(stft)
 	window     = get_window(stft)
 	spec       = get_data(stft)

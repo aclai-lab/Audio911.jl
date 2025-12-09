@@ -70,21 +70,126 @@ end
 #------------------------------------------------------------------------------#
 #                                   methods                                    #
 #------------------------------------------------------------------------------#
-Base.eltype(::Stft{T}) where T = T
+"""
+    Base.eltype(::Stft{F,T}) -> Type
 
+Return the element type of the stft spectrogram data.
+"""
+Base.eltype(::Stft{F,T}) where {F,T} = T
+
+"""
+    get_data(m::Stft{F,T}) -> Matrix
+
+Get the stft spectrogram data matrix, transposed to (nframes × nbands).
+"""
 @inline get_data(s::Stft)  = s.spec
+
+"""
+    get_freq(m::Stft{F,T}) -> Vector
+
+Get the frequency range in Hz.
+"""
 @inline get_freq(s::Stft)  = s.freq
+
+"""
+    get_setup(m::Stft{F,T}) -> StftSetup
+
+Get the configuration metadata for the stft spectrogram.
+"""
 @inline get_setup(s::Stft) = s.info
 
+"""
+    get_sr(s::Stft) -> Int64
+
+Get the sample rate used in STFT computation.
+"""
 @inline get_sr(s::Stft)       = s.info.sr
+
+"""
+    get_nfft(s::Stft) -> Int64
+
+Get the FFT size used in STFT computation.
+
+The FFT size determines frequency resolution and the number of frequency bins.
+For one-sided spectra (real signals), the number of bins is nfft/2 + 1.
+"""
 @inline get_nfft(s::Stft)     = s.info.nfft
+
+"""
+    get_spectrum(s::Stft) -> Function
+
+Get the spectrum type function used in STFT computation.
+"""
 @inline get_spectrum(s::Stft) = s.info.spectrum
+
+"""
+    get_window(s::Stft) -> Vector{<:Real}
+
+Get the time-domain window coefficients used in STFT computation.
+"""
 @inline get_window(s::Stft)   = s.info.window
+
+# ---------------------------------------------------------------------------- #
+#                                     show                                     #
+# ---------------------------------------------------------------------------- #
+function Base.show(io::IO, s::Stft{F,T}) where {F,T}
+    nfreqs, nframes = size(get_data(s))
+    sr = s.info.sr
+    spec_type = string(s.info.spectrum)
+    
+    print(io, "Stft{$F,$T}(")
+    print(io, "$nframes frames × $nfreqs bins, ")
+    print(io, "sr=$sr Hz, ")
+    print(io, "spectrum=$spec_type)")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", s::Stft{F,T}) where {F,T}
+    nfreqs, nframes = size(get_data(s))
+    sr = s.info.sr
+    nfft = s.info.nfft
+    winsize = s.info.winsize
+    overlap = s.info.overlap
+    spectrum_type = s.info.spectrum
+    
+    freq_range = extrema(get_freq(s))
+    hop_size = winsize - overlap
+    
+    println(io, "Stft{$F,$T}")
+    println(io, "  Dimensions:")
+    println(io, "    Frames:          $nframes")
+    println(io, "    Frequency bins:  $nfreqs")
+    println(io, "  Configuration:")
+    println(io, "    Sample rate:     $sr Hz")
+    println(io, "    FFT size:        $nfft")
+    println(io, "    Window size:     $winsize samples")
+    println(io, "    Overlap:         $overlap samples")
+    println(io, "    Hop size:        $hop_size samples")
+    println(io, "    Spectrum type:   $spectrum_type")
+    println(io, "  Frequency:")
+    println(io, "    Range:           $(round(freq_range[1], digits=1)) - $(round(freq_range[2], digits=1)) Hz")
+end
 
 #------------------------------------------------------------------------------#
 #                           spectrum normalizations                            #
 #------------------------------------------------------------------------------#
+"""
+    power(f::AbstractArray) -> AbstractArray
+
+Compute power spectral density from complex FFT values.
+
+Transforms complex frequency-domain values to real power values by computing
+the squared magnitude: |X(f)|² = real(X(f) · conj(X(f))).
+"""
 power(f)     = @. real(f * conj(f))
+
+"""
+    magnitude(f::AbstractArray) -> AbstractArray
+
+Compute magnitude spectrum from complex FFT values.
+
+Transforms complex frequency-domain values to real magnitude values by computing
+the absolute value: |X(f)|.
+"""
 magnitude(f) = @. abs(f)
 
 #------------------------------------------------------------------------------#

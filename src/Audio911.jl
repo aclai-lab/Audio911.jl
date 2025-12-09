@@ -127,6 +127,10 @@ include("fft/lin_spec.jl")
 export MelSpec
 include("fft/mel_spec.jl")
 
+export Mfcc
+export mlog, cubic_root
+include("fft/mfcc.jl")
+
 # ---------------------------------------------------------------------------- #
 #                                  methods                                     #
 # ---------------------------------------------------------------------------- #
