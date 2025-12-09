@@ -219,16 +219,12 @@ get_setup(f::Frames)      = f.info
 #                                   base.show                                  #
 # ---------------------------------------------------------------------------- #
 function Base.show(io::IO, ::MIME"text/plain", f::Frames{T}) where T
-    n_frames = length(f)
+    n_frames   = length(f)
     frame_size = get_size(f)
-    step_size = get_step(f)
-    overlap = get_overlap(f)
-    sr = f.info.sr
-    win_type = f.info.type
-    
-    # Calculate total duration
-    total_samples = frame_size + (n_frames - 1) * step_size
-    duration = total_samples / sr
+    step_size  = get_step(f)
+    overlap    = get_overlap(f)
+    sr         = f.info.sr
+    win_type   = f.info.type
     
     println(io, "Frames{$T}")
     println(io, "  Frames:      $n_frames")
@@ -240,7 +236,7 @@ function Base.show(io::IO, ::MIME"text/plain", f::Frames{T}) where T
 end
 
 function Base.show(io::IO, f::Frames{T}) where T
-    n_frames = length(f)
+    n_frames   = length(f)
     frame_size = get_size(f)
     print(io, "Frames{$T}($n_frames frames × $frame_size samples)")
 end

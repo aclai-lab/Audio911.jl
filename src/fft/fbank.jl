@@ -380,9 +380,9 @@ function auditory_fbank(
     sfreq     :: Union{StepRangeLen{<:AudioData},Nothing}=nothing,
     nfft      :: Int64=512,
     nbands    :: Int64=26,
-    scale     :: Function=htk,       # :htk, :slaney, :bark
+    scale     :: Function=htk,       # htk, slaney, bark
     norm      :: Function=bandwidth, # area, bandwidth, or none_norm
-    domain    :: Symbol=:linear,
+    domain    :: Symbol=:linear,     # :linear, :warped
     freqrange :: FreqRange=(0, round(Int, sr / 2))
 )::FBank
     if isnothing(sfreq)

@@ -197,7 +197,7 @@ mel = MelSpec(stft;
 """
 function MelSpec(
 	stft     :: Stft;
-    win_norm ::Bool=true,
+    win_norm :: Bool=true,
     kwargs... # auditory filterbank kwargs
 )
     fbank = auditory_fbank(get_sr(stft); sfreq=get_freq(stft), nfft=get_nfft(stft), kwargs...)

@@ -1,14 +1,110 @@
-# Audio911.jl – Audio features in Julia
+# Audio911.jl – Audio Feature Extraction in Julia
 
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://PasoStudio73.github.io/Audio911.jl/stable)
+[![Build Status](https://github.com/PasoStudio73/Audio911.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/PasoStudio73/Audio911.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Coverage](https://codecov.io/gh/PasoStudio73/Audio911.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/PasoStudio73/Audio911.jl)
 
-<!-- [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://aclai-lab.github.io/SoleModels.jl/stable)
-[![Build Status](https://api.cirrus-ci.com/github/aclai-lab/SoleModels.jl.svg?branch=main)](https://cirrus-ci.com/github/aclai-lab/SoleModels.jl)
-[![Coverage](https://codecov.io/gh/aclai-lab/SoleModels.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/aclai-lab/SoleModels.jl)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/aclai-lab/SoleModels.jl/HEAD?labpath=pluto-demo.jl) -->
-<!-- [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle) -->
+**Audio911.jl** is your Swiss Army knife for extracting audio features in a simple and fast way.
 
-```shell
-pip install librosa
+Inspired by MATLAB's audio feature extraction toolkit, Audio911.jl guarantees the same results while being designed to be modular, allowing you to connect various extraction algorithms as you prefer. It currently provides STFT, linear spectrograms, mel/bark/ERB spectrograms, and MFCC coefficients, with new algorithms being added constantly—so stay tuned!
+
+## Features
+
+- **MATLAB-Compatible Results**: Produces identical outputs to MATLAB's audio processing functions
+- **Modular Design**: Compose your own audio processing pipelines by chaining algorithms
+- **Multiple Spectrograms**: Linear, Mel, Bark, and ERB scale spectrograms
+- **MFCC Support**: Full MFCC coefficient extraction with delta and delta-delta
+- **Multi-Format Audio**: Load WAV, MP3, and FLAC files via [AudioReader.jl](https://github.com/PasoStudio73/AudioReader.jl)
+- **On-the-Fly Resampling**: Built-in sample rate conversion
+
+## Installation
+
+```julia
+using Pkg
+Pkg.add("Audio911")
 ```
 
+## Quick Start
+
+```julia
+using Audio911
+
+# Load an audio file (automatically resampled to 16kHz)
+audio = load("speech.wav"; sr=16000, mono=true, norm=true)
+
+# Compute STFT
+stft = Stft(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true, spectrum=power)
+
+# Generate Mel spectrogram
+mel_spec = MelSpec(stft; win_norm=true, nbands=32, norm=bandwidth, domain=:linear, scale=htk)
+
+# Extract MFCC coefficients
+mfcc = Mfcc(mel_spec; ncoeffs=30, rect=cubic_root)
+
+# Access the results
+mfcc_coeffs = get_data(mfcc)  # 13×N matrix of coefficients
+```
+
+## Available Features
+
+### Time-Frequency Representations
+- **STFT**: Short-Time Fourier Transform with customizable windows
+- **Linear Spectrogram**: `LinSpec`
+- **Mel Spectrogram**: `MelSpec` (HTK and Slaney styles)
+- **Bark Spectrogram**: Auditory Bark scale
+- **ERB Spectrogram**: Equivalent Rectangular Bandwidth scale
+
+### Coefficients
+- **MFCC**: Mel-Frequency Cepstral Coefficients with delta/delta-delta
+- **Customizable Rectification**: Log or cubic root
+- **Energy Options**: Standard or MFCC-based log energy
+
+## Configuration Options
+
+### STFT Parameters
+```julia
+Stft(frames;
+    spectrum = :power,        # :power or :magnitude
+    frequency_range = (0, sr÷2)
+)
+```
+
+### Mel Spectrogram Parameters
+```julia
+MelSpec(stft;
+    nbands    = 26,
+    scale     = :htk,      # htk, slaney, bark
+    norm      = bandwidth, # area, bandwidth, or none_norm
+    domain    = :linear,   # :linear, :warped
+    freqrange = [0, sr÷2],
+    win_norm  = true
+)
+```
+
+### MFCC Parameters
+```julia
+Mfcc(mel;
+    ncoeffs = 13,
+    rect    = mlog, # mlog or cubic_root
+    dither  = false
+)
+```
+
+## Learn More
+
+For a comprehensive understanding of Audio911.jl's capabilities, check out our **[tutorials in the documentation](https://aclai-lab/Audio911.jl/stable/tutorials/)**. The tutorials cover:
+
+- **Real-world examples** for speech recognition, music analysis, and environmental sound classification
+- **Step-by-step guides** for building complete audio processing pipelines
+- **Best practices** for parameter selection and optimization
+- **Advanced techniques** including custom filterbank designs and feature engineering
+
+Each tutorial includes reproducible code examples with real audio files, so you can follow along and adapt the techniques to your own projects.
+
 ## About
+
+Audio911.jl is developed by the [ACLAI Lab](https://aclai.unife.it/en/) @ University of Ferrara.
+
+## License
+
+MIT License
