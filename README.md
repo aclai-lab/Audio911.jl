@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="logo.png" alt="Audio911" width="200">
+    <img src="logo.png" alt="Audio911" width="400">
 </div>
 
 <h2 align="center">Audio Feature Extraction in Julia
