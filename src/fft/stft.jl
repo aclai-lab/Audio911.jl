@@ -117,6 +117,10 @@ Get the spectrum type function used in STFT computation.
 """
 @inline get_spectrum(s::Stft{T}) where T = s.info.spectrum
 
+@inline get_winsize(s::Stft{T}) where T = s.info.winsize
+
+@inline get_overlap(s::Stft{T}) where T = s.info.overlap
+
 """
     get_window(s::Stft{T}) where T -> Vector{<:Real}
 
@@ -342,8 +346,7 @@ function Stft(
     periodic :: Bool=true,
 	kwargs...
 	)::Stft
-    win = DataTreatments.movingwindow(; winsize, winstep)
-	frames = Frames(audio; win, type, periodic)
+	frames = Frames(audio; winsize, winstep, type, periodic)
 	Stft(frames; kwargs...)
 end
 

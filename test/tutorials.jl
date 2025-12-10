@@ -38,10 +38,9 @@ audio = load(test_file)
 
 audio = Audio911.load(test_file; sr=8000, format=Float32, norm=true)
 
-# si richiede che l'audio venga caricato nel modo seguente:
-# - se la frequenza di campionamento originale del file è differente, ricampionarlo a 8000 Hz
-# - il formato può essere `Float32` o `Float64`.
-# - si richiede di normalizzare l'audio (aumentare, se possibile, il volume al massimo)
+# - sr: se la frequenza di campionamento originale del file è differente, ricampionarlo a 8000 Hz
+# - format: il formato può essere `Float32` o `Float64`.
+# - norm: si richiede di normalizzare l'audio (aumentare, se possibile, il volume al massimo)
 
 ## from time-domain to frequency domain using fast Fourier transform
 
@@ -49,23 +48,30 @@ audio = Audio911.load(test_file; sr=8000, format=Float32, norm=true)
 
 audioframes = Audio911.Frames(audio; winsize=512, winstep=492, type=hanning)
 
+# - winsize: dimensione della finestra in campioni, si ricorda che più grande è la finestra, 
+# maggiore sarà la risoluzione in frequenza e minore la risoluzione temporale.
+# si consiglia di partire con una finestra di 256 punti, se la frequenza di campionamento
+# è inferiore a 8000hz, oppure 512 se la frequenza di campionamento è superiore a 8000hz
+# - winstep: avanzamento della finestra (deve sempre essere inferiore alla winsize)
+# - type: tipo di finestra adottata, vedi: https://docs.juliadsp.org/stable/windows/
+
 # quindi è possibile calcolare la stft passandogli i frames
 
 stft_spec = Audio911.Stft(audioframes, nfft=1024, spectrum=power)
 
+# - nfft: dimensione finestra fft, teoricamente la dimensione deve essere uguale a quella della winsize,
+# ma è possibile sperimentare con finestre fft più grandi.
+# - spectrum: tipo di normalizzazione dello spettro: power(default) più vicino all'ascolto umano,
+# magnitude: nessuna normalizzazione
+
+# oppure, più conciso:
+
 stft_spec = Audio911.Stft(audio; nfft=1024, winsize=512, winstep=492, type=hanning, spectrum=power)
 
-# Stft{Float32}
-#   Dimensions:
-#     Frames:          34
-#     Frequency bins:  513
-#   Configuration:
-#     Sample rate:     8000 Hz
-#     FFT size:        1024
-#     Window size:     512 samples
-#     Overlap:         20 samples
-#     Hop size:        492 samples
-#     Spectrum type:   power
-#   Frequency:
-#     Range:           0.0 - 4000.0 Hz
+
+# ora siamo nel dominio delle frequenze e possiamo plottarne il risultato:
+
+Audio911.plot(stft_spec)
+
+
 

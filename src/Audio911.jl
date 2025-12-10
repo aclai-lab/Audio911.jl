@@ -20,6 +20,7 @@ using  FFTW, DSP
 # ---------------------------------------------------------------------------- #
 using  DataTreatments
 @reexport using DataTreatments: movingwindow
+using Plots
 
 # ---------------------------------------------------------------------------- #
 #                               abstract types                                 #
@@ -149,5 +150,11 @@ export get_windows
 export get_bandwidth
 export get_nbands, get_scale, get_norm
 export get_freqrange, get_semitonerange
+
+# ---------------------------------------------------------------------------- #
+#                                   plots                                      #
+# ---------------------------------------------------------------------------- #
+export plot
+include("plots.jl")
 
 end
