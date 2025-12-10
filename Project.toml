@@ -5,15 +5,15 @@ authors = ["Riccardo PASINI"]
 
 [deps]
 AudioReader = "a9c2ce0f-e965-4f6d-9ec4-ce2d5ed55f28"
-DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 DataTreatments = "1b3ff5f2-9b56-42a2-b38a-76a033f741ca"
+DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 
 [compat]
 AudioReader = "0.2"
-DSP = "0.8"
 DataTreatments = "0.1"
+DSP = "0.8"
 FFTW = "1.9"
 Reexport = "1.2"
 julia = "1"

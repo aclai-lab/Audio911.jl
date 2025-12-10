@@ -5,7 +5,7 @@ DocMeta.setdocmeta!(Audio911, :DocTestSetup, :(using Audio911); recursive = true
 
 makedocs(;
     modules=[Audio911],
-    authors="Giovanni Pagliarini, Riccardo Pasini",
+    authors="Riccardo Pasini",
     repo=Documenter.Remotes.GitHub("aclai-lab", "Audio911.jl"),
     sitename="Audio911.jl",
     format=Documenter.HTML(;

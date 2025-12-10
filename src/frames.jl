@@ -17,7 +17,7 @@ struct FramesSetup <: AbstractSetup
 end
 
 # ---------------------------------------------------------------------------- #
-#                                 Frames                                  #
+#                                    Frames                                    #
 # ---------------------------------------------------------------------------- #
 struct Frames{T} <: AbstractFrame
     frames :: Matrix{T}
@@ -40,6 +40,48 @@ struct Frames{T} <: AbstractFrame
     ) where T
         new{T}(frames, window, info)
     end
+end
+
+# ---------------------------------------------------------------------------- #
+#                                    methods                                   #
+# ---------------------------------------------------------------------------- #
+Base.length(f::Frames{T}) where T = size(f.frames, 2)
+Base.eltype(::Frames{T})  where T = T
+
+get_size(f::Frames{T}) where T = f.info.win.winsize
+get_step(f::Frames{T}) where T = f.info.win.winstep
+get_overlap(f::Frames{T}) where T = get_size(f) - get_step(f)
+
+get_data(f::Frames{T}) where T = f.frames
+get_window(f::Frames{T}) where T = f.window
+get_winsize(f::Frames{T}) where T = length(f.window)
+get_winframes(f::Frames{T}) where T = get_data(f) .* get_window(f)
+get_setup(f::Frames{T}) where T = f.info
+
+# ---------------------------------------------------------------------------- #
+#                                   base.show                                  #
+# ---------------------------------------------------------------------------- #
+function Base.show(io::IO, ::MIME"text/plain", f::Frames{T}) where T
+    n_frames   = length(f)
+    frame_size = get_size(f)
+    step_size  = get_step(f)
+    overlap    = get_overlap(f)
+    sr         = f.info.sr
+    win_type   = f.info.type
+    
+    println(io, "Frames{$T}")
+    println(io, "  Sample rate: $sr Hz")
+    println(io, "  Frames:      $n_frames")
+    println(io, "  Frame size:  $frame_size samples")
+    println(io, "  Step:        $step_size samples")
+    println(io, "  Overlap:     $overlap samples ($(round(100 * overlap / frame_size, digits=1))%)")
+    println(io, "  Window:      $win_type")
+end
+
+function Base.show(io::IO, f::Frames{T}) where T
+    n_frames   = length(f)
+    frame_size = get_size(f)
+    print(io, "Frames{$T}($n_frames frames × $frame_size samples)")
 end
 
 # ---------------------------------------------------------------------------- #
@@ -106,10 +148,8 @@ window_type = frames.type          # Window shape and periodicity
 function Frames(
     audiofile :: AudioFormat,
     sr        :: Int64;
-    win       :: Base.Callable=movingwindow(
-        winsize=sr ≤ 8000 ? 256 : 512,
-        winstep=sr ≤ 8000 ? 128 : 256
-    ),
+    winsize   :: Int64=sr ≤ 8000 ? 256 : 512,
+    winstep   :: Int64=sr ≤ 8000 ? 128 : 256,
 	type      :: Base.Callable=hanning,
     periodic  :: Bool=true
 )
@@ -120,12 +160,13 @@ function Frames(
     file_length = length(audiofile)
 
     # check invalid parameters
-    file_length < win.winsize && throw(ArgumentError("Audio file length ($file_length)" * 
+    file_length < winsize && throw(ArgumentError("Audio file length ($file_length)" * 
         " is shorter than window size ($(get_size(win)))"))
     in(type, AVAIL_WINDOWS) || throw(ArgumentError("Window type $(type) not supported." * 
         " Available windows: $(AVAIL_WINDOWS)"))
 
     # buffer audio file
+    win = DataTreatments.movingwindow(; winsize, winstep)
     intervals = win(file_length)
     frames = [audiofile[i] for i in intervals]
 
@@ -145,44 +186,3 @@ end
 
 Frames(a::AudioFile; kwargs...) = Frames(get_data(a), get_sr(a); kwargs...)
 
-# ---------------------------------------------------------------------------- #
-#                                    methods                                   #
-# ---------------------------------------------------------------------------- #
-Base.length(f::Frames) = size(f.frames, 2)
-Base.eltype(::Frames{T}) where T = T
-
-get_size(f::Frames)    = f.info.win.winsize
-get_step(f::Frames)    = f.info.win.winstep
-get_overlap(f::Frames) = get_size(f) - get_step(f)
-
-get_data(f::Frames)      = f.frames
-get_window(f::Frames)    = f.window
-get_winsize(f::Frames)   = length(f.window)
-get_winframes(f::Frames) = get_data(f) .* get_window(f)
-get_setup(f::Frames)      = f.info
-
-# ---------------------------------------------------------------------------- #
-#                                   base.show                                  #
-# ---------------------------------------------------------------------------- #
-function Base.show(io::IO, ::MIME"text/plain", f::Frames{T}) where T
-    n_frames   = length(f)
-    frame_size = get_size(f)
-    step_size  = get_step(f)
-    overlap    = get_overlap(f)
-    sr         = f.info.sr
-    win_type   = f.info.type
-    
-    println(io, "Frames{$T}")
-    println(io, "  Frames:      $n_frames")
-    println(io, "  Frame size:  $frame_size samples")
-    println(io, "  Step:        $step_size samples")
-    println(io, "  Overlap:     $overlap samples ($(round(100 * overlap / frame_size, digits=1))%)")
-    println(io, "  Window:      $win_type")
-    println(io, "  Sample rate: $sr Hz")
-end
-
-function Base.show(io::IO, f::Frames{T}) where T
-    n_frames   = length(f)
-    frame_size = get_size(f)
-    print(io, "Frames{$T}($n_frames frames × $frame_size samples)")
-end

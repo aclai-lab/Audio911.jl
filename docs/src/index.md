@@ -2,8 +2,9 @@
 CurrentModule = Audio911
 ```
 
+```@raw html
 <div align="center">
-    <img src="logo.png" alt="Audio911" width="600">
+    <img src="../img/logo.png" alt="Audio911" width="600">
 </div>
 
 <h2 align="center">Audio Feature Extraction in Julia
@@ -28,9 +29,9 @@ CurrentModule = Audio911
     <img src="https://codecov.io/gh/aclai-lab/Audio911.jl/branch/main/graph/badge.svg"
        alt="CodeCov">
   </a>
-
 </p>
 </h2>
+```
 
 **Audio911.jl** is your Swiss Army knife for extracting audio features in a simple and fast way.
 
@@ -38,11 +39,21 @@ Inspired by MATLAB's audio feature extraction toolkit, Audio911.jl guarantees th
 
 ## Features
 
-- **MATLAB-Compatible Results**: Produces identical outputs to MATLAB's audio processing functions
+### Time-Frequency Representations
+- **STFT**: Short-Time Fourier Transform with customizable windows
+- **Linear Spectrogram**: `LinSpec`
+- **Mel Spectrogram**: `MelSpec` (HTK and Slaney styles)
+- **Bark Spectrogram**: Auditory Bark scale
+- **ERB Spectrogram**: Equivalent Rectangular Bandwidth scale
+
+### Coefficients
+- **MFCC**: Mel-Frequency Cepstral Coefficients with delta/delta-delta
+- **Customizable Rectification**: Log or cubic root
+- **Energy Options**: Standard or MFCC-based log energy
+
+### Extras
 - **Modular Design**: Compose your own audio processing pipelines by chaining algorithms
-- **Multiple Spectrograms**: Linear, Mel, Bark, and ERB scale spectrograms
-- **MFCC Support**: Full MFCC coefficient extraction with delta and delta-delta
-- **Multi-Format Audio**: Load WAV, MP3, and FLAC files via [AudioReader.jl](https://github.com/PasoStudio73/AudioReader.jl)
+- **Multi-Format Audio**: Load WAV, MP3, FLAC and OGG files via [AudioReader.jl](https://github.com/PasoStudio73/AudioReader.jl)
 - **On-the-Fly Resampling**: Built-in sample rate conversion
 
 ## Installation
@@ -73,57 +84,12 @@ mfcc = Mfcc(mel_spec; ncoeffs=30, rect=cubic_root)
 mfcc_coeffs = get_data(mfcc)  # 13×N matrix of coefficients
 ```
 
-## Available Features
-
-### Time-Frequency Representations
-- **STFT**: Short-Time Fourier Transform with customizable windows
-- **Linear Spectrogram**: `LinSpec`
-- **Mel Spectrogram**: `MelSpec` (HTK and Slaney styles)
-- **Bark Spectrogram**: Auditory Bark scale
-- **ERB Spectrogram**: Equivalent Rectangular Bandwidth scale
-
-### Coefficients
-- **MFCC**: Mel-Frequency Cepstral Coefficients with delta/delta-delta
-- **Customizable Rectification**: Log or cubic root
-- **Energy Options**: Standard or MFCC-based log energy
-
-## Configuration Options
-
-### STFT Parameters
-```julia
-Stft(frames;
-    spectrum = :power,        # :power or :magnitude
-    frequency_range = (0, sr÷2)
-)
-```
-
-### Mel Spectrogram Parameters
-```julia
-MelSpec(stft;
-    nbands    = 26,
-    scale     = :htk,      # htk, slaney, bark
-    norm      = bandwidth, # area, bandwidth, or none_norm
-    domain    = :linear,   # :linear, :warped
-    freqrange = [0, sr÷2],
-    win_norm  = true
-)
-```
-
-### MFCC Parameters
-```julia
-Mfcc(mel;
-    ncoeffs = 13,
-    rect    = mlog, # mlog or cubic_root
-    dither  = false
-)
-```
-
 ## Learn More
 
 For a comprehensive understanding of Audio911.jl's capabilities, check out our **[tutorials in the documentation](https://aclai-lab/Audio911.jl/stable/tutorials/)**. The tutorials cover:
 
+- **Step-by-step guide** for building complete audio processing pipelines
 - **Real-world examples** for speech recognition, music analysis, and environmental sound classification
-- **Step-by-step guides** for building complete audio processing pipelines
 - **Best practices** for parameter selection and optimization
 - **Advanced techniques** including custom filterbank designs and feature engineering
 
