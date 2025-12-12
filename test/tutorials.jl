@@ -69,9 +69,11 @@ stft_spec = Audio911.Stft(audioframes, nfft=1024, spectrum=power)
 stft_spec = Audio911.Stft(audio; nfft=1024, winsize=512, winstep=492, type=hanning, spectrum=power)
 
 
-# ora siamo nel dominio delle frequenze e possiamo plottarne il risultato:
+# siamo nel dominio delle frequenze e possiamo plottarne il risultato:
 
 Audio911.plot(stft_spec)
 
+# lo spettrogramma generato dalla stft è ancora troppo dettagliato per poter permettere un analisi efficace.
+# il metodo migliore è applicare un banco filtro.
 
 
