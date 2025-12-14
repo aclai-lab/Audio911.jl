@@ -11,11 +11,10 @@ audiofile = Audio911.load(wav_file; mono=true, sr=8000, norm=false)
 
 @test_nowarn Stft(audiofile)
 
-@test_nowarn Stft(audiofile; win=Audio911.movingwindow(winsize=1024, winstep=512))
-@test_nowarn Stft(audiofile; win=Audio911.movingwindow(winsize=512, winstep=256))
+@test_nowarn Stft(audiofile; winsize=1024, winstep=512)
+@test_nowarn Stft(audiofile; winsize=512, winstep=256)
 
-win = Audio911.movingwindow(winsize=512, winstep=256)
-frames = Frames(audiofile; win, type=hamming, periodic=true)
+frames = Frames(audiofile; winsize=512, winstep=256, type=hamming, periodic=true)
 
 @test_nowarn Stft(frames)
 

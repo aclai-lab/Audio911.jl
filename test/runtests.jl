@@ -20,7 +20,7 @@ test_suites = [
     ("Mfcc",        ["mfcc.jl",       ]),
 ]
 
-@testset "SoleXplorer.jl" begin
+@testset "Audio911.jl" begin
     for ts in eachindex(test_suites)
         name = test_suites[ts][1]
         list = test_suites[ts][2]

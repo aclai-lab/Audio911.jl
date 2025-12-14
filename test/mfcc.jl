@@ -35,7 +35,7 @@ matfile = matlab_file("matlab_mfcc_01.mat")
 mat = MAT.matread(matfile)
 mat_mfcc = mat["features"]
 
-frames = Frames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
+frames = Frames(audiofile; winsize=512, winstep=256, type=hamming, periodic=true)
 stft = Stft(frames; spectrum=power)
 mel_spec = MelSpec(stft; win_norm=true, nbands=32, norm=bandwidth, domain=:linear, scale=htk)
 mfcc = Mfcc(mel_spec; ncoeffs=13, rect=mlog)
@@ -55,7 +55,7 @@ matfile = matlab_file("matlab_mfcc_02.mat")
 mat = MAT.matread(matfile)
 mat_mfcc = mat["features"]
 
-frames = Frames(audiofile; win=movingwindow(winsize=512, winstep=256), type=hamming, periodic=true)
+frames = Frames(audiofile; winsize=512, winstep=256, type=hamming, periodic=true)
 stft = Stft(frames; spectrum=power)
 mel_spec = MelSpec(stft; win_norm=true, nbands=32, norm=bandwidth, domain=:linear, scale=htk)
 mfcc = Mfcc(mel_spec; ncoeffs=30, rect=cubic_root)

@@ -11,10 +11,9 @@ audiofile = Audio911.load(wav_file; mono=true, sr=8000, norm=false)
 
 @test_nowarn Frames(audiofile)
 
-win = Audio911.movingwindow(winsize=256, winstep=128)
-@test_nowarn Frames(audiofile; win, type=hamming, periodic=true)
+@test_nowarn Frames(audiofile; winsize=256, winstep=128, type=hamming, periodic=true)
 
-frames_data = Frames(audiofile; win, type=hamming)
+frames_data = Frames(audiofile; winsize=256, winstep=128, type=hamming)
 @test length(frames_data) == 132
 
 audiofile = load(wav_file; sr=6000)
