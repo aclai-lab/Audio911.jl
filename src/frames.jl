@@ -88,7 +88,7 @@ end
 #                                    frames                                    #
 # ---------------------------------------------------------------------------- #
 """
-    Frames(X; win=AdaptiveWindow(nwindows=3, relative_overlap=0.1), type=(:hann, :periodic)) -> Frames
+    Frames(X; win=adaptivewindow(nwindows=3, overlap=0.1), type=(:hann, :periodic)) -> Frames
 
 Apply windowing to an audio file and return windowed frames with applied window functions.
 
@@ -100,8 +100,8 @@ with the processed data and metadata.
 - `X::AudioFile`: Input audio file containing the audio data to be windowed
 
 # Keyword Arguments
-- `win::WinFunction`: Windowing strategy to use. Default is `AdaptiveWindow(nwindows=3, relative_overlap=0.1)`
-  - `AdaptiveWindow`: Creates overlapping windows with adaptive sizing
+- `win::WinFunction`: Windowing strategy to use. Default is `adaptivewindow(nwindows=3, overlap=0.1)`
+  - `adaptivewindow`: Creates overlapping windows with adaptive sizing
   - `MovingWindow`: Sliding window with fixed size and step
   - `SplitWindow`: Equal non-overlapping segments
   - `WholeWindow`: Single window encompassing entire audio
@@ -130,7 +130,7 @@ frames = get_data(audiofile;
 
 # Adaptive windowing with high overlap
 frames = get_data(audiofile;
-                   win=AdaptiveWindow(nwindows=5, relative_overlap=0.5),
+                   win=adaptivewindow(nwindows=5, overlap=0.5),
                    type=(:hann, :periodic))
 
 # Access the results
