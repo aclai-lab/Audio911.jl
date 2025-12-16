@@ -74,6 +74,17 @@ stft_spec = Audio911.Stft(audio; nfft=1024, winsize=512, winstep=492, type=hanni
 Audio911.plot(stft_spec)
 
 # lo spettrogramma generato dalla stft è ancora troppo dettagliato per poter permettere un analisi efficace.
-# il metodo migliore è applicare un banco filtro.
+# soprattutto è lineare, mentre l'esperienza ha insegnato che uno spettrogramma logaritmico,
+# essendo più coerente rispetto al tipo di ascolto dell'essere umano, riesce ad essere molto più preciso.
 
+# per fare questo avremo bisogno innanzitutto di un banco filtro, ovvero una struttura dati che 
+# suddivide le frequenze in modo logaritmico:
+
+fbank = auditory_fbank(8000; nfft=1024, nbands=26, norm=bandwidth, domain=:linear, freqrange=(100,1000))
+
+# ora possiamo costruirci un nuovo spettrogramma più preciso e leggero: scegliamo uno spettrogramma di tipo Mel
+mel_spec = MelSpec(stft_spec, fbank; win_norm=true)
+
+# o più conciso:
+mel_spec = MelSpec(stft_spec; win_norm=true, freqrange=(100,1000), nbands=26, norm=bandwidth, domain=:linear, scale=htk)
 

@@ -43,6 +43,13 @@ Get the mel spectrogram data matrix, transposed to (nframes × nbands).
 """
     get_freq(m::MelSpec) -> Vector
 
+Get the frequency bins in Hz.
+"""
+@inline get_freq(m::MelSpec)  = get_freq(m.fbank)
+
+"""
+    get_freqrange(m::MelSpec) -> Vector
+
 Get the frequency range in Hz.
 """
 @inline get_freq(m::MelSpec)  = get_freqrange(m.fbank)

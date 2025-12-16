@@ -24,7 +24,7 @@ A concrete implementation of `AbstractSpectrogram` that stores Short-Time Fourie
 - `T`: Element type of the spectral data matrix (e.g., `Float64`, `ComplexF64`)
 
 # Fields
-- `spec::Matrix{T}`: The STFT spectral data matrix where each column represents 
+- `spec::AbstractArray{T}`: The STFT spectral data matrix where each column represents 
   a time frame and each row represents a frequency bin
 - `freq::Vector{Float64}`: Frequency vector corresponding to the spectral bins (Hz)
 - `info::NamedTuple`: Metadata containing analysis parameters including:
@@ -36,7 +36,7 @@ A concrete implementation of `AbstractSpectrogram` that stores Short-Time Fourie
   - `spectrum`: Type of spectrum (`:power` or `:magnitude`)
 
 # Constructor
-    Stft{F}(spec::Matrix{T}, freq::Vector{Float64}, info::NamedTuple) where {T}
+    Stft{F}(spec::AbstractArray{T}, freq::Vector{Float64}, info::NamedTuple) where {T}
 
 # Examples
 ```julia
@@ -54,12 +54,12 @@ metadata    = get_setup(stft)     # Get analysis parameters
 [`AbstractSpectrogram`](@ref), [`get_spec`](@ref), [`get_freq`](@ref), [`get_setup`](@ref)
 """
 struct Stft{T} <: AbstractSpectrogram
-	spec :: Matrix{T}
+	spec :: AbstractArray{T}
 	freq :: StepRangeLen
 	info :: StftSetup
 
 	function Stft(
-		spec :: Matrix{T},
+		spec :: AbstractArray{T},
 		freq :: StepRangeLen,
 		info :: StftSetup
 	) where {T<:AudioData}
@@ -73,7 +73,7 @@ end
 Base.eltype(::Stft{T}) where T = T
 
 """
-    get_data(m::Stft{T}) -> Matrix
+    get_data(m::Stft{T}) -> AbstractArray
 
 Get the stft spectrogram data matrix, transposed to (nframes × nbands).
 """
@@ -339,14 +339,16 @@ stft = Stft(audio;
 [`Stft(::Frames)`](@ref), [`Frames`](@ref), [`AudioFile`](@ref), [`movingwindow`](@ref)
 """
 function Stft(
-	audio    :: AudioFile;
+	audio    :: AudioFormat,
+    sr       :: Int64;
 	winsize  :: Int64=get_sr(audio)≤8000 ? 256 : 512,
 	winstep  :: Int64=get_sr(audio)≤8000 ? 128 : 256,
 	type     :: Base.Callable=hanning,
     periodic :: Bool=true,
 	kwargs...
 	)::Stft
-	frames = Frames(audio; winsize, winstep, type, periodic)
+	frames = Frames(audio, sr; winsize, winstep, type, periodic)
 	Stft(frames; kwargs...)
 end
 
+Stft(a::AudioFile; kwargs...) = Stft(get_data(a), get_sr(a); kwargs...)

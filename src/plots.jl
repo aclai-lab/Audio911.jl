@@ -66,3 +66,17 @@ function Audio911.plot(s::AbstractSpectrogram;
     
     return p
 end
+
+# must be fixed
+function Audio911.plot(fbank::AbstractFBank)
+    f_length = round(Int, size(fbank.fbank, 2)÷(fbank.setup.sr/2/fbank.setup.freqrange[2]))
+    freqs = range(fbank.setup.freqrange[1], fbank.setup.freqrange[2], length=f_length)
+
+    p = plot(title = "Filter Bank Responses", xlabel = "Frequency (Hz)", ylabel = "Amplitude", legend = false)
+
+    for i in eachrow(fbank.fbank)
+        plot!(p, freqs, i[1:f_length], label = "", alpha = 0.6)
+    end
+
+    display(p)
+end
