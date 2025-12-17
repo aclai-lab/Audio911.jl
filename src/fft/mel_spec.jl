@@ -52,7 +52,7 @@ Get the frequency bins in Hz.
 
 Get the frequency range in Hz.
 """
-@inline get_freq(m::MelSpec)  = get_freqrange(m.fbank)
+@inline get_freqrange(m::MelSpec)  = get_freqrange(m.fbank)
 
 """
     get_setup(m::MelSpec) -> MelSpecSetup
