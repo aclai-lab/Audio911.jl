@@ -386,8 +386,8 @@ function auditory_fbank(
     freqrange :: FreqRange=(0, round(Int, sr / 2))
 )::FBank
     if isnothing(sfreq)
-	    spec_length = _get_onesided_stft_range(nfft)[end]
-	    sfreq = (0:spec_length - 1) .* (sr / nfft)
+        spec_length = _get_onesided_stft_range(nfft)[end]
+        sfreq = (0:spec_length - 1) .* (sr / nfft)
     end
 
     T = eltype(sfreq)
