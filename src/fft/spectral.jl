@@ -1,33 +1,66 @@
 # ---------------------------------------------------------------------------- #
 #                                    info                                      #
 # ---------------------------------------------------------------------------- #
-struct SpectralCentroidSetup <: AbstractSetup
+struct SpectralSetup <: AbstractSetup
     sr::Int64
 end
 
-# ---------------------------------------------------------------------------------- #
-#                                     utilities                                      #
-# ---------------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+#                                    utils                                     #
+# ---------------------------------------------------------------------------- #
 # Calculate sums
 sum_s = (s) -> sum(s', dims = 1)
 sum_sfreq = (s, sfreq) -> sum(s' .* sfreq, dims = 1)
+arithmetic_mean = (s) -> sum_s(s) ./ size(s, 2)
 
 # ---------------------------------------------------------------------------- #
-#                               spectral feature                               #
+#                               spectral centroid                              #
 # ---------------------------------------------------------------------------- #
 struct SpectralCentroid{T} <: AbstractSpectral
     spec :: Vector{<:AbstractFloat} 
-    info :: SpectralCentroidSetup
+    info :: SpectralSetup
 
     function SpectralCentroid(
         spec :: AbstractSpectrogram,    
     )
         s, sfreq = get_data(spec), get_freq(spec)
 		vspec = vec(sum_sfreq(s, sfreq) ./ sum_s(s))
-        info = SpectralCentroidSetup(get_sr(spec))
+        info = SpectralSetup(get_sr(spec))
         new{typeof(spec)}(vspec, info)
     end
 end
+
+# ---------------------------------------------------------------------------- #
+#                               spectral crest                              #
+# ---------------------------------------------------------------------------- #
+struct SpectralCrest{T} <: AbstractSpectral
+    spec :: Vector{<:AbstractFloat} 
+    info :: SpectralSetup
+
+    function SpectralCrest(
+        spec :: AbstractSpectrogram,    
+    )
+        s = get_data(spec)
+		peak = maximum(s, dims = 2)
+		vspec = vec(peak ./ arithmetic_mean(s)')
+        info = SpectralSetup(get_sr(spec))
+        new{typeof(spec)}(vspec, info)
+    end
+end
+
+# function spectral_crest(
+# 	s::AbstractArray{Float64},
+# 	data::AudioData,
+# 	sum_x1::Vector{Float64},
+# 	arithmetic_mean::Vector{Float64},
+# )
+# 	# # calculate spectral mean
+# 	# m = sum(real(s), dims=1) ./ size(s, 1)
+# 	# calculate spectral peak
+# 	peak = maximum(s, dims = 1)
+# 	# calculate spectral crest
+# 	data.spectral_crest = vec(peak ./ arithmetic_mean')
+# end
 
 # ---------------------------------------------------------------------------- #
 #                                    methods                                   #
@@ -62,19 +95,7 @@ Get the configuration metadata for the Spectral spectrogram.
 # 	error("Unknown spectral spectrum")
 # end
 
-# function spectral_crest(
-# 	s::AbstractArray{Float64},
-# 	data::AudioData,
-# 	sum_x1::Vector{Float64},
-# 	arithmetic_mean::Vector{Float64},
-# )
-# 	# # calculate spectral mean
-# 	# m = sum(real(s), dims=1) ./ size(s, 1)
-# 	# calculate spectral peak
-# 	peak = maximum(s, dims = 1)
-# 	# calculate spectral crest
-# 	data.spectral_crest = vec(peak ./ arithmetic_mean')
-# end
+
 
 # function spectral_decrease(s::AbstractArray{Float64}, data::AudioData)
 # 	# calculate decrease
@@ -218,16 +239,7 @@ Get the configuration metadata for the Spectral spectrogram.
 # sum_s = (s) -> sum(s, dims = 1)
 # sum_sfreq = (s, sfreq) -> sum(s .* sfreq, dims = 1)
 
-# # ---------------------------------------------------------------------------------- #
-# #                                  spectral centroid                                 #
-# # ---------------------------------------------------------------------------------- #
-# function _get_spec_centroid(
-# 	s::AbstractArray{Float64},
-# 	sfreq::AbstractVector{Float64},
-# )
-# 	vec(sum_sfreq(s, sfreq) ./ sum_s(s))
-# 	# replace!(vec(sum(s .* sfreq, dims = 1) ./ sum(x1, dims=1)), NaN => 0)
-# end
+
 # # ---------------------------------------------------------------------------------- #
 # #                                  spectral spread                                   #
 # # ---------------------------------------------------------------------------------- #

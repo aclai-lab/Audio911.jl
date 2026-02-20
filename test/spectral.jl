@@ -40,3 +40,20 @@ spectral = SpectralCentroid(lin_spec)
 
 @test isapprox(get_data(spectral), mat_spectral)
 
+# aFE = audioFeatureExtractor( ...
+#     SampleRate=fs_wav, ...
+#     Window=hamming(512,"periodic"), ...
+#     OverlapLength=256, ...
+#     spectralCrest=true);
+# setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
+# features = extract(aFE, audio_wav);
+
+matfile = matlab_file("matlab_spectralCrest.mat")
+mat = MAT.matread(matfile)
+mat_spectral = mat["features"]
+
+spectral = SpectralCrest(lin_spec)
+
+@test isapprox(get_data(spectral), mat_spectral)
+
+

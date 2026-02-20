@@ -135,7 +135,7 @@ export Mfcc
 export mlog, cubic_root
 include("fft/mfcc.jl")
 
-export SpectralCentroid
+export SpectralCentroid, SpectralCrest
 include("fft/spectral.jl")
 
 # ---------------------------------------------------------------------------- #
