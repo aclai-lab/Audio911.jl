@@ -9,8 +9,8 @@ end
 #                                    utils                                     #
 # ---------------------------------------------------------------------------- #
 # Calculate sums
-sum_s = (s) -> sum(s', dims = 1)
-sum_sfreq = (s, sfreq) -> sum(s' .* sfreq, dims = 1)
+sum_s = (s) -> sum(s, dims = 2)
+sum_sfreq = (s, sfreq) -> sum(s .* sfreq', dims = 2)
 arithmetic_mean = (s) -> sum_s(s) ./ size(s, 2)
 
 # ---------------------------------------------------------------------------- #
@@ -42,25 +42,85 @@ struct SpectralCrest{T} <: AbstractSpectral
     )
         s = get_data(spec)
 		peak = maximum(s, dims = 2)
-		vspec = vec(peak ./ arithmetic_mean(s)')
+		vspec = vec(peak ./ arithmetic_mean(s))
         info = SpectralSetup(get_sr(spec))
         new{typeof(spec)}(vspec, info)
     end
 end
 
-# function spectral_crest(
-# 	s::AbstractArray{Float64},
-# 	data::AudioData,
-# 	sum_x1::Vector{Float64},
-# 	arithmetic_mean::Vector{Float64},
-# )
-# 	# # calculate spectral mean
-# 	# m = sum(real(s), dims=1) ./ size(s, 1)
-# 	# calculate spectral peak
-# 	peak = maximum(s, dims = 1)
-# 	# calculate spectral crest
-# 	data.spectral_crest = vec(peak ./ arithmetic_mean')
-# end
+# ---------------------------------------------------------------------------- #
+#                               spectral decrease                              #
+# ---------------------------------------------------------------------------- #
+struct SpectralDecrease{T} <: AbstractSpectral
+    spec :: Vector{<:AbstractFloat} 
+    info :: SpectralSetup
+
+    function SpectralDecrease(
+        spec :: AbstractSpectrogram,    
+    )
+        s = get_data(spec)
+		vspec = vec(sum((s[:, 2:end] .- s[:, 1]) ./ (1:size(s, 2)-1)', dims = 2) ./ sum(s[:, 2:end], dims = 2))
+        info = SpectralSetup(get_sr(spec))
+        new{typeof(spec)}(vspec, info)
+    end
+end
+
+# ---------------------------------------------------------------------------- #
+#                               spectral entropy                               #
+# ---------------------------------------------------------------------------- #
+struct SpectralEntropy{T} <: AbstractSpectral
+    spec :: Vector{<:AbstractFloat} 
+    info :: SpectralSetup
+
+    function SpectralEntropy(
+        spec :: AbstractSpectrogram,    
+    )
+        s = get_data(spec)
+		X = s ./ repeat(sum_s(s)', size(s, 2), 1)'
+		t = replace!(-sum(X .* log2.(X), dims = 2), NaN => 0)
+		vspec = vec(t ./ log2(size(s, 2)))
+        info = SpectralSetup(get_sr(spec))
+        new{typeof(spec)}(vspec, info)
+    end
+end
+
+# ---------------------------------------------------------------------------- #
+#                               spectral flatness                              #
+# ---------------------------------------------------------------------------- #
+struct SpectralFlatness{T} <: AbstractSpectral
+    spec :: Vector{<:AbstractFloat} 
+    info :: SpectralSetup
+
+    function SpectralFlatness(
+        spec :: AbstractSpectrogram,    
+    )
+        s = get_data(spec)
+		geometric_mean = exp.(sum(log.(s .+ eps(Float64)), dims = 2) / size(s, 2))
+		vspec = vec(geometric_mean ./ arithmetic_mean(s))
+        info = SpectralSetup(get_sr(spec))
+        new{typeof(spec)}(vspec, info)
+    end
+end
+
+# ---------------------------------------------------------------------------- #
+#                                 spectral flux                                #
+# ---------------------------------------------------------------------------- #
+struct SpectralFlux{T} <: AbstractSpectral
+    spec :: Vector{<:AbstractFloat} 
+    info :: SpectralSetup
+
+    function SpectralFlux(
+        spec :: AbstractSpectrogram;
+		norm :: Int64=2
+    )
+        s = get_data(spec)
+		initial_condition = s[1, :]
+		temp = diff(hcat(initial_condition, s'), dims = 2)
+		vspec = [LinearAlgebra.norm(temp[:, i]) for i in axes(temp, 2)]
+        info = SpectralSetup(get_sr(spec))
+        new{typeof(spec)}(vspec, info)
+    end
+end
 
 # ---------------------------------------------------------------------------- #
 #                                    methods                                   #
@@ -93,46 +153,6 @@ Get the configuration metadata for the Spectral spectrogram.
 # 	setup.spectral_spectrum == :mel && return data.mel_spectrogram', data.mel_frequencies
 # 	setup.spectral_spectrum == :lin && return data.lin_spectrogram', data.lin_frequencies
 # 	error("Unknown spectral spectrum")
-# end
-
-
-
-# function spectral_decrease(s::AbstractArray{Float64}, data::AudioData)
-# 	# calculate decrease
-# 	data.spectral_decrease = vec(real(sum((s[2:end, :] .- s[1, :]') ./ (1:size(s, 1)-1), dims = 1) ./ sum(s[2:end, :], dims = 1)))
-# end
-
-# function spectral_entropy(
-# 	s::AbstractArray{Float64},
-# 	data::AudioData,
-# 	sum_x1::Vector{Float64},
-# )
-# 	# calculate entropy
-# 	X = s ./ repeat(sum_x1', size(s, 1), 1)
-# 	t = replace!(-sum(X .* log2.(X), dims = 1), NaN => 0)
-# 	data.spectral_entropy = vec(t ./ log2(size(s, 1)))
-# end
-
-# function spectral_flatness(
-# 	s::AbstractArray{Float64},
-# 	data::AudioData,
-# 	sum_x1::Vector{Float64},
-# 	arithmetic_mean::Vector{Float64},
-# )
-# 	# calculate geometric mean, arithmetic mean, and flatness
-# 	geometric_mean = exp.(sum(log.(s .+ eps(Float64)), dims = 1) / size(s, 1))
-# 	data.spectral_flatness = vec(geometric_mean ./ arithmetic_mean')
-# end
-
-# function spectral_flux(s::AbstractArray{Float64}, data::AudioData)
-# 	initial_condition = s[:, 1]
-# 	# calculate flux
-# 	temp = diff(hcat(initial_condition, s), dims = 2)
-# 	fl = []
-# 	for i in axes(temp, 2)
-# 		append!(fl, norm(temp[:, i]))
-# 	end
-# 	data.spectral_flux = fl
 # end
 
 # function spectral_kurtosis(

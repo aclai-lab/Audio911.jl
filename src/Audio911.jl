@@ -20,6 +20,8 @@ using  FFTW, DSP
 # ---------------------------------------------------------------------------- #
 using  DataTreatments
 @reexport using DataTreatments: movingwindow
+
+using LinearAlgebra
 using Plots
 
 # ---------------------------------------------------------------------------- #
@@ -135,7 +137,7 @@ export Mfcc
 export mlog, cubic_root
 include("fft/mfcc.jl")
 
-export SpectralCentroid, SpectralCrest
+export SpectralCentroid, SpectralCrest, SpectralDecrease, SpectralEntropy, SpectralFlatness
 include("fft/spectral.jl")
 
 # ---------------------------------------------------------------------------- #
