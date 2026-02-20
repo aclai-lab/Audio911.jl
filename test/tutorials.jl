@@ -68,7 +68,6 @@ stft_spec = Audio911.Stft(audioframes, nfft=1024, spectrum=power)
 
 stft_spec = Audio911.Stft(audio; nfft=1024, winsize=512, winstep=492, type=hanning, spectrum=power)
 
-
 # siamo nel dominio delle frequenze e possiamo plottarne il risultato:
 
 Audio911.plot(stft_spec)
@@ -85,6 +84,6 @@ fbank = auditory_fbank(8000; nfft=1024, nbands=26, norm=bandwidth, domain=:linea
 # ora possiamo costruirci un nuovo spettrogramma più preciso e leggero: scegliamo uno spettrogramma di tipo Mel
 mel_spec = MelSpec(stft_spec, fbank; win_norm=true)
 
-# o più conciso:
+# o più conciso, senza bisogno di calcolare il filterbank in anticipo:
 mel_spec = MelSpec(stft_spec; win_norm=true, freqrange=(100,1000), nbands=26, norm=bandwidth, domain=:linear, scale=htk)
 

@@ -152,7 +152,7 @@ freq_axis = get_freq(linspec)  # frequency vector in Hz
 """
 function LinSpec(
 	stft      :: Stft;
-	freqrange :: FreqRange=(0, get_setup(frames).sr>>1),
+	freqrange :: FreqRange=(0, get_sr(stft)>>1),
 	win_norm  :: Bool=false
 )::LinSpec
 	spec = get_data(stft)

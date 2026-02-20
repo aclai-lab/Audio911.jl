@@ -1,0 +1,42 @@
+using Test
+using Audio911
+
+using MAT
+
+test_files_dir()    = joinpath(dirname(@__FILE__), "test_files")
+test_file(filename) = joinpath(test_files_dir(), filename)
+
+wav_file = test_file("test.wav")
+mp3_file = test_file("test.mp3")
+
+audiofile = Audio911.load(wav_file, format=Float64)
+@test get_sr(audiofile) == 16000
+@test is_norm(audiofile) == false
+@test size(get_data(audiofile), 2) == 1
+
+# ---------------------------------------------------------------------------- #
+#                            test against matlab                               #
+# ---------------------------------------------------------------------------- #
+matlab_files_dir()    = joinpath(dirname(@__FILE__), "matlab_files/spectral")
+matlab_file(filename) = joinpath(matlab_files_dir(), filename)
+
+# [audio_wav,fs_wav] = audioread("/home/paso/Documents/Aclai/Audio911.jl/test/test_files/test.wav");
+
+# aFE = audioFeatureExtractor( ...
+#     SampleRate=fs_wav, ...
+#     Window=hamming(512,"periodic"), ...
+#     OverlapLength=256, ...
+#     spectralCentroid=true);
+# setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
+# features = extract(aFE, audio_wav);
+
+matfile = matlab_file("matlab_spectralCentroid.mat")
+mat = MAT.matread(matfile)
+mat_spectral = mat["features"]
+
+stft = Stft(audiofile; winsize=512, winstep=256, type=hamming, periodic=true, spectrum=power)
+lin_spec = LinSpec(stft; freqrange=(100,1000), win_norm=true)
+spectral = SpectralCentroid(lin_spec)
+
+@test isapprox(get_data(spectral), mat_spectral)
+

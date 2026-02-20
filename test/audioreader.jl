@@ -108,13 +108,13 @@ orig_indices = 1:n_samples
 res_indices = round.(Int, 1:ratio:n_samples*ratio)
 
 plot(orig_indices, orig_data[1:n_samples], 
-     label="Original (44.1kHz)", 
-     title="MP3 Comparison: 44.1kHz vs 96kHz", 
-     linewidth=1.5,
-     xlabel="Sample index (normalized)",
-     ylabel="Amplitude")
+    label="Original (44.1kHz)", 
+    title="MP3 Comparison: 44.1kHz vs 96kHz", 
+    linewidth=1.5,
+    xlabel="Sample index (normalized)",
+    ylabel="Amplitude")
 plot!(orig_indices, res_data[res_indices], 
-      label="Resampled (96kHz)", 
-      linewidth=1.5, 
-      linestyle=:dash,
-      alpha=0.7)
+    label="Resampled (96kHz)", 
+    linewidth=1.5, 
+    linestyle=:dash,
+    alpha=0.7)

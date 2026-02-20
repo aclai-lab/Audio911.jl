@@ -25,10 +25,13 @@ using Plots
 # ---------------------------------------------------------------------------- #
 #                               abstract types                                 #
 # ---------------------------------------------------------------------------- #
-abstract type AbstractSetup       end
-abstract type AbstractFrame       end
+abstract type AbstractSetup end
+abstract type AbstractFrame end
+abstract type AbstractFBank end
 abstract type AbstractSpectrogram end
-abstract type AbstractFBank       end
+abstract type AbstractSpectral end
+
+get_sr(s::AbstractSpectrogram) = s.info.sr
 
 # ---------------------------------------------------------------------------- #
 #                                   types                                      #
@@ -131,6 +134,9 @@ include("fft/mel_spec.jl")
 export Mfcc
 export mlog, cubic_root
 include("fft/mfcc.jl")
+
+export SpectralCentroid
+include("fft/spectral.jl")
 
 # ---------------------------------------------------------------------------- #
 #                                  methods                                     #
