@@ -111,12 +111,12 @@ struct SpectralFlux{T} <: AbstractSpectral
 
     function SpectralFlux(
         spec :: AbstractSpectrogram;
-		norm :: Int64=2
+		p :: Int64=2
     )
         s = get_data(spec)
 		initial_condition = s[1, :]
 		temp = diff(hcat(initial_condition, s'), dims = 2)
-		vspec = [LinearAlgebra.norm(temp[:, i]) for i in axes(temp, 2)]
+		vspec = [LinearAlgebra.norm(temp[:, i], p) for i in axes(temp, 2)]
         info = SpectralSetup(get_sr(spec))
         new{typeof(spec)}(vspec, info)
     end

@@ -121,7 +121,7 @@ matfile = matlab_file("matlab_spectralFlux1.mat")
 mat = MAT.matread(matfile)
 mat_spectral = mat["features"]
 
-spectral = SpectralFlux(lin_spec; norm=1)
+spectral = SpectralFlux(lin_spec; p=1)
 
 @test isapprox(get_data(spectral), mat_spectral)
 
@@ -139,8 +139,7 @@ matfile = matlab_file("matlab_spectralFlux2.mat")
 mat = MAT.matread(matfile)
 mat_spectral = mat["features"]
 
-spectral = SpectralFlux(lin_spec, norm=2)
+spectral = SpectralFlux(lin_spec, p=2)
 
 @test isapprox(get_data(spectral), mat_spectral)
-
 

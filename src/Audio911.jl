@@ -138,6 +138,7 @@ export mlog, cubic_root
 include("fft/mfcc.jl")
 
 export SpectralCentroid, SpectralCrest, SpectralDecrease, SpectralEntropy, SpectralFlatness
+export SpectralFlux
 include("fft/spectral.jl")
 
 # ---------------------------------------------------------------------------- #
