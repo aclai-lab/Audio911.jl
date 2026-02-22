@@ -57,6 +57,7 @@ get_window(f::Frames{T}) where T = f.window
 get_winsize(f::Frames{T}) where T = length(f.window)
 get_winframes(f::Frames{T}) where T = get_data(f) .* get_window(f)
 get_setup(f::Frames{T}) where T = f.info
+get_sr(f::Frames{T}) where T = f.info.sr
 
 # ---------------------------------------------------------------------------- #
 #                                   base.show                                  #

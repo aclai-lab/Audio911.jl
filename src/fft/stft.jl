@@ -249,7 +249,7 @@ function Stft(
 	nfft     :: Int64=get_winsize(frames),
 	spectrum :: Base.Callable=power, # power, magnitude
 )::Stft
-	sr        = get_setup(frames).sr
+	sr        = get_sr(frames)
 	winsize   = get_winsize(frames)
 	overlap   = get_overlap(frames)
 	winframes = get_winframes(frames)
@@ -341,8 +341,8 @@ stft = Stft(audio;
 function Stft(
 	audio    :: AudioFormat,
     sr       :: Int64;
-	winsize  :: Int64=get_sr(audio)≤8000 ? 256 : 512,
-	winstep  :: Int64=get_sr(audio)≤8000 ? 128 : 256,
+	winsize  :: Int64=sr≤8000 ? 256 : 512,
+	winstep  :: Int64=sr≤8000 ? 128 : 256,
 	type     :: Base.Callable=hanning,
     periodic :: Bool=true,
 	kwargs...
