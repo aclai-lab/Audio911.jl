@@ -1,3 +1,0 @@
-- Decide package name
-- Docstrings
-- Add tests and replace `include(...)` with `using Audio911`, @test, @test_nowarn, @test_broken

@@ -1,19 +1,27 @@
-using Audio911
 using Test
-using Random
 
 function run_tests(list)
     println("\n" * ("#"^50))
     for test in list
         println("TEST: $test")
-        @time include(test)
+        include(test)
     end
 end
 
 println("Julia version: ", VERSION)
 
 test_suites = [
-    ("Core", ["spectral_audioflux.jl"]),
+    ("Audioreader", ["audioreader.jl",]),
+    ("Frames", ["frames.jl",]),
+    ("STFT", ["stft.jl",]),
+    ("FilterBanks", ["fbank.jl",]),
+    ("Lin Spec", ["lin_spec.jl",]),
+    ("Mel Spec", ["mel_spec.jl",]),
+    ("Bark Spec", ["bark_spec.jl",]),
+    ("Erb Spec", ["erb_spec.jl",]),
+    ("Mfcc", ["mfcc.jl",]),
+    ("Gtcc", ["gtcc.jl",]),
+    ("Spectral", ["spectral.jl"]),
 ]
 
 @testset "Audio911.jl" begin
