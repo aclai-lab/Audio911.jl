@@ -137,7 +137,7 @@ include("fft/lin_spec.jl")
 export MelSpec, BarkSpec, ErbSpec
 include("fft/mel_spec.jl")
 
-export Mfcc
+export Mfcc, Gtcc
 export mlog, cubic_root
 include("fft/mfcc.jl")
 

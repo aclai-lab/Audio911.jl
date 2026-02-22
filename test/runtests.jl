@@ -20,6 +20,7 @@ test_suites = [
     ("Bark Spec", ["bark_spec.jl",]),
     ("Erb Spec", ["erb_spec.jl",]),
     ("Mfcc", ["mfcc.jl",]),
+    ("Gtcc", ["gtcc.jl",]),
     ("Spectral", ["spectral.jl"]),
 ]
 
