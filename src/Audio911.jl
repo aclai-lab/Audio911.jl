@@ -30,8 +30,12 @@ using Plots
 abstract type AbstractSetup end
 abstract type AbstractFrame end
 abstract type AbstractFBank end
-abstract type AbstractSpectrogram end
-abstract type AbstractSpectral end
+abstract type AbstractAudioSpectrum end
+
+abstract type AbstractSpectrogram <: AbstractAudioSpectrum end
+abstract type AbstractCepstrum <: AbstractAudioSpectrum end
+abstract type AbstractDelta <: AbstractAudioSpectrum end
+abstract type AbstractSpectral <: AbstractAudioSpectrum end
 
 get_sr(s::AbstractSpectrogram) = s.info.sr
 
@@ -136,6 +140,9 @@ include("fft/mel_spec.jl")
 export Mfcc
 export mlog, cubic_root
 include("fft/mfcc.jl")
+
+export Delta
+include("fft/delta.jl")
 
 export SpectralCentroid, SpectralCrest, SpectralDecrease, SpectralEntropy
 export SpectralFlatness, SpectralFlux, SpectralKurtosis, SpectralRolloff

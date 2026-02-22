@@ -11,7 +11,7 @@ end
 # ---------------------------------------------------------------------------- #
 #                                     mfcc                                     #
 # ---------------------------------------------------------------------------- #
-struct Mfcc{T} <: AbstractSpectrogram
+struct Mfcc{T} <: AbstractCepstrum
     spec :: Matrix{T} 
     info :: MfccSetup
 
@@ -46,6 +46,13 @@ Get the mfcc spectrogram data matrix, transposed to (nframes × nbands).
 Get the configuration metadata for the mfcc spectrogram.
 """
 @inline get_setup(m::Mfcc) = m.info
+
+"""
+    get_sr(m::Mfcc) -> Int64
+
+Return the sample rate (in Hz) associated with the MFCC spectrogram.
+"""
+@inline get_sr(m::Mfcc) = m.info.sr
 
 # ---------------------------------------------------------------------------- #
 #                                    utils                                     #
