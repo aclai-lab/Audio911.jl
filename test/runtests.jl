@@ -17,6 +17,8 @@ test_suites = [
     ("FilterBanks", ["fbank.jl",]),
     ("Lin Spec", ["lin_spec.jl",]),
     ("Mel Spec", ["mel_spec.jl",]),
+    ("Bark Spec", ["bark_spec.jl",]),
+    ("Erb Spec", ["erb_spec.jl",]),
     ("Mfcc", ["mfcc.jl",]),
     ("Spectral", ["spectral.jl"]),
 ]

@@ -134,7 +134,7 @@ include("fft/fbank.jl")
 export LinSpec
 include("fft/lin_spec.jl")
 
-export MelSpec
+export MelSpec, BarkSpec, ErbSpec
 include("fft/mel_spec.jl")
 
 export Mfcc
