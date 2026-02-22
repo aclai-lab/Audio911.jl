@@ -63,7 +63,6 @@ spectral = SpectralCrest(lin_spec)
 #     spectralDecrease=true);
 # setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
 # features = extract(aFE, audio_wav);
-# save matlab_spectralDecrease.mat features
 
 matfile = matlab_file("matlab_spectralDecrease.mat")
 mat = MAT.matread(matfile)
@@ -80,7 +79,6 @@ spectral = SpectralDecrease(lin_spec)
 #     spectralEntropy=true);
 # setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
 # features = extract(aFE, audio_wav);
-# save matlab_spectralEntropy.mat features
 
 matfile = matlab_file("matlab_spectralEntropy.mat")
 mat = MAT.matread(matfile)
@@ -97,7 +95,6 @@ spectral = SpectralEntropy(lin_spec)
 #     spectralFlatness=true);
 # setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
 # features = extract(aFE, audio_wav);
-# save matlab_spectralFlatness.mat features
 
 matfile = matlab_file("matlab_spectralFlatness.mat")
 mat = MAT.matread(matfile)
@@ -115,7 +112,6 @@ spectral = SpectralFlatness(lin_spec)
 # setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
 # setExtractorParameters(aFE,"spectralFlux",  NormType=1)
 # features = extract(aFE, audio_wav);
-# save matlab_spectralFlux1.mat features
 
 matfile = matlab_file("matlab_spectralFlux1.mat")
 mat = MAT.matread(matfile)
@@ -133,7 +129,6 @@ spectral = SpectralFlux(lin_spec; p=1)
 # setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
 # setExtractorParameters(aFE,"spectralFlux",  NormType=2)
 # features = extract(aFE, audio_wav);
-# save matlab_spectralFlux2.mat features
 
 matfile = matlab_file("matlab_spectralFlux2.mat")
 mat = MAT.matread(matfile)
@@ -143,3 +138,98 @@ spectral = SpectralFlux(lin_spec, p=2)
 
 @test isapprox(get_data(spectral), mat_spectral)
 
+# aFE = audioFeatureExtractor( ...
+#     SampleRate=fs_wav, ...
+#     Window=hamming(512,"periodic"), ...
+#     OverlapLength=256, ...
+#     spectralKurtosis=true);
+# setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
+# features = extract(aFE, audio_wav);
+
+matfile = matlab_file("matlab_spectralKurtosis.mat")
+mat = MAT.matread(matfile)
+mat_spectral = mat["features"]
+
+spectral = SpectralKurtosis(lin_spec)
+
+@test isapprox(get_data(spectral), mat_spectral)
+
+# aFE = audioFeatureExtractor( ...
+#     SampleRate=fs_wav, ...
+#     Window=hamming(512,"periodic"), ...
+#     OverlapLength=256, ...
+#     spectralRolloffPoint=true);
+# setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
+# setExtractorParameters(aFE,"spectralRolloffPoint", Threshold=0.95)
+# features = extract(aFE, audio_wav);
+
+matfile = matlab_file("matlab_spectralRolloff95.mat")
+mat = MAT.matread(matfile)
+mat_spectral = mat["features"]
+
+spectral = SpectralRolloff(lin_spec; threshold=0.95)
+
+@test isapprox(get_data(spectral), mat_spectral)
+
+# aFE = audioFeatureExtractor( ...
+#     SampleRate=fs_wav, ...
+#     Window=hamming(512,"periodic"), ...
+#     OverlapLength=256, ...
+#     spectralRolloffPoint=true);
+# setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
+# setExtractorParameters(aFE,"spectralRolloffPoint", Threshold=0.65)
+# features = extract(aFE, audio_wav);
+
+matfile = matlab_file("matlab_spectralRolloff65.mat")
+mat = MAT.matread(matfile)
+mat_spectral = mat["features"]
+
+spectral = SpectralRolloff(lin_spec, threshold=0.65)
+
+@test isapprox(get_data(spectral), mat_spectral)
+
+# aFE = audioFeatureExtractor( ...
+#     SampleRate=fs_wav, ...
+#     Window=hamming(512,"periodic"), ...
+#     OverlapLength=256, ...
+#     spectralSkewness=true);
+# setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
+# features = extract(aFE, audio_wav);
+
+matfile = matlab_file("matlab_spectralSkewness.mat")
+mat = MAT.matread(matfile)
+mat_spectral = mat["features"]
+
+spectral = SpectralSkewness(lin_spec)
+
+# aFE = audioFeatureExtractor( ...
+#     SampleRate=fs_wav, ...
+#     Window=hamming(512,"periodic"), ...
+#     OverlapLength=256, ...
+#     spectralSlope=true);
+# setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
+# features = extract(aFE, audio_wav);
+
+matfile = matlab_file("matlab_spectralSlope.mat")
+mat = MAT.matread(matfile)
+mat_spectral = mat["features"]
+
+spectral = SpectralSlope(lin_spec)
+
+@test isapprox(get_data(spectral), mat_spectral)
+
+# aFE = audioFeatureExtractor( ...
+#     SampleRate=fs_wav, ...
+#     Window=hamming(512,"periodic"), ...
+#     OverlapLength=256, ...
+#     spectralSpread=true);
+# setExtractorParameters(aFE,"linearSpectrum",FrequencyRange=[100,1000], SpectrumType="power", WindowNormalization=true)
+# features = extract(aFE, audio_wav);
+
+matfile = matlab_file("matlab_spectralSpread.mat")
+mat = MAT.matread(matfile)
+mat_spectral = mat["features"]
+
+spectral = SpectralSpread(lin_spec)
+
+@test isapprox(get_data(spectral), mat_spectral)

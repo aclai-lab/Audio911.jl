@@ -12,12 +12,13 @@ println("Julia version: ", VERSION)
 
 test_suites = [
     ("Audioreader", ["audioreader.jl",]),
-    ("Frames",      ["frames.jl",     ]),
-    ("STFT",        ["stft.jl",       ]),
-    ("FilterBanks", ["fbank.jl",      ]),
-    ("Lin Spec",    ["lin_spec.jl",   ]),
-    ("Mel Spec",    ["mel_spec.jl",   ]),
-    ("Mfcc",        ["mfcc.jl",       ]),
+    ("Frames", ["frames.jl",]),
+    ("STFT", ["stft.jl",]),
+    ("FilterBanks", ["fbank.jl",]),
+    ("Lin Spec", ["lin_spec.jl",]),
+    ("Mel Spec", ["mel_spec.jl",]),
+    ("Mfcc", ["mfcc.jl",]),
+    ("Spectral", ["spectral.jl"]),
 ]
 
 @testset "Audio911.jl" begin
