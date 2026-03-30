@@ -15,7 +15,7 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 [compat]
 AudioReader = "0.2"
 DSP = "0.7, 0.8"
-DataTreatments = "0.2"
+DataTreatments = "0.4"
 FFTW = "1.10"
 LinearAlgebra = "1.12"
 Plots = "1.41"
