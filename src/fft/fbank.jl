@@ -383,7 +383,7 @@ function auditory_fbank(
     scale     :: Function=htk,       # htk, slaney, bark
     norm      :: Function=bandwidth, # area, bandwidth, or none_norm
     domain    :: Symbol=:linear,     # :linear, :warped
-    freqrange :: FreqRange=(0, round(Int, sr / 2))
+    freqrange :: FreqRange=(0, sr÷2)
 )::FBank
     if isnothing(sfreq)
         spec_length = _get_onesided_stft_range(nfft)[end]
