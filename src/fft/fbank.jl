@@ -414,7 +414,6 @@ function auditory_fbank(
     T = eltype(sfreq)
     domain == :warped && (linfq = (0:nfft - 1) .* (sr / nfft))
     band_edges = scale(T, freqrange, nbands)
-    @show typeof(band_edges)
 
     filtfreq = @view band_edges[2:(end - 1)]
     nbands = length(filtfreq)
