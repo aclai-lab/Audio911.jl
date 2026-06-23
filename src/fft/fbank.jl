@@ -138,22 +138,21 @@ const slaney(::Type{T}, hz::FreqRange, nbands::Int) where {T<:AudioData} = begin
 end
 
 const bark(::Type{T}, hz::FreqRange, nbands::Int) where {T<:AudioData} = begin
-    hz_T = T.(hz)
-    bark_val = @. 26.81 * hz_T / (1960 + hz_T) - 0.53
+    bark_val = @. 26.81 * hz / (1960 + hz) - 0.53
     barkrange = map(x -> x < 2 ?
-        T(0.85) * x + T(0.3) :
-        x > T(20.1) ?
-            T(1.22) * x - T(4.422) :
+        0.85 * x + 0.3 :
+        x > 20.1 ?
+            1.22 * x - 4.422 :
             x, bark_val
     )
     barkvec = LinRange(get_low(barkrange), get_hi(barkrange), nbands + 2)
     bark2 = map(x -> x < 2 ?
-        (x - T(0.3)) / T(0.85) :
-        x > T(20.1) ?
-            (x + T(0.22) * T(20.1)) / T(1.22) :
+        (x - 0.3) / 0.85 :
+        x > 20.1 ?
+            x + 0.22 * 20.1 / 1.22 :
             x, barkvec
     )
-    return @. 1960 * (bark2 + 0.53) / (26.28 - bark2)
+    return @. T(1960 * (bark2 + 0.53) / (26.28 - bark2))
 end
 
 # these functions are exclusively used in case of `domain = :warped`
@@ -415,6 +414,7 @@ function auditory_fbank(
     T = eltype(sfreq)
     domain == :warped && (linfq = (0:nfft - 1) .* (sr / nfft))
     band_edges = scale(T, freqrange, nbands)
+    @show typeof(band_edges)
 
     filtfreq = @view band_edges[2:(end - 1)]
     nbands = length(filtfreq)
